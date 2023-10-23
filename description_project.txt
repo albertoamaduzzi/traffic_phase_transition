@@ -1,0 +1,42 @@
+The project wants to understand traffic in either a synthetically created graph or a planar graph from a real cartography.
+
+Cities are graphs G = (V,E).
+For each v in V:
+    C = capacity
+    n = number users
+    rate_production = rate production per user each timestep
+
+For each e in E:
+    number_vehicles = number of vehicles travelling
+    average_velocity = average velocity of vehicles 
+    average_time_percorrence = time percorrence of vehicles
+    state = 'traffic', 'free flow'
+    distribution_velocities = vector of velocities [to asses this, I ]
+    time_recovery = time needed to all people to have free flow
+
+
+
+
+
+
+
+
+
+
+The problem here is to find some macroscopic function that will be enough descriptive what is going on at smaller scales, finer refinement.
+
+
+Users can move among different edges of the graph.
+
+For this pourpose I need to build feature rich cartography that I can use as network rich in features.
+Essentially this would allow to define eta and T for economic attractivity and traffic.
+
+The data I am using are HDX from Meta that allow to understand how many people are in different zones (hexagonal polygons.)
+
+
+As cities grow, 
+    A -> A'
+    N_roads -> N_roads' (A)
+    N_people -> N_people'
+    N_jobs -> N_jobs'
+    J_
