@@ -1,10 +1,11 @@
 import numpy as np
 from graph-tools.all import *
 from plotting_procedures import xy_plot
+import pyhull
 
 
 
-class graph:
+class graph_gt:
     def __init__(self,
                  library_used = 'graph-tools',
                  type_graph = 'lattice',
@@ -16,46 +17,38 @@ class graph:
             instantiate graph (different type for the different purpose)  
         '''
         self.library_used = library_used
-        self.availble_libraries = ['networkx','pytorch','graph-tools','real_data']
         self.list_type_graphs = ['lattice','newman','real_data']
-        self.library2type_graph = {u:v for u,v in zip(self.availble_libraries,self.list_type_graph)}
         if reading_mode == False:
-            self.type_graph = type_graph
-            if library_used == 'networkx':
-                self.graph = self.create_graph(type_graph,reading_mode)
-            elif library_used == 'pytorch':
-                self.graph = self.create_graph(type_graph,reading_mode)
-            elif library_used == 'graph-tools':
-                self.graph = self.create_graph(type_graph,reading_mode)
+            self.graph = self.create_graph(type_graph,reading_mode)
         else:
             self.type_graph = 'real_data'
             self.graph = self.create_graph(type_graph,reading_mode,geojson_path)               
 
     def create_graph(self,
                      reading_mode = False,
-                     number_nodes = 100,
-                     number_edges = 1000,
+                     number_nodes = 223330,
+                     number_edges = 547696,
                      probability_connection = 0.5,
+                     total_length = 48000,
+                     area = 181000000,
+                     populatoin = 715000000,
                      geojson_path = None):
         '''
-            type_graph = 'lattice','newman'
+            type_graph = 'lattice','newman-barthelemy','real_data'
             reading_mode = False, True (False if you want to create a graph from an ensamble of graph_type)
-            number_nodes = 100, if reading_mode = False (number of nodes in the graph)
-            number_edges = 1000, if reading_mode = False (number of edges in the graph)
-            probability_connection = 0.5, if reading_mode = False (probability of connection between two nodes)
+            if reading_mode = False:
+                number_nodes = 223330, Default: San Francisco from OSM
+                number_edges = 547696, Default: San Francisco from OSM
+                total_length = 48000, is the total (m) of the road network Default: San Francisco Bay Area
+                area = 181000000, is the total (m^2) of the road network Default: San Francisco Bay Area
+                population = 715000000, is the total population of the road network Default: San Francisco Bay Area 
+                probability_connection = 0.5, if reading_mode = False (probability of connection between two nodes)
         '''
         self.nuber_nodes = number_nodes
         if reading_mode == False:
             if self.type_graph == 'lattice':
-                if self.library_used == 'networkx':
-                    import networkx as nx
-                    self.graph = nx.watts_strogatz_graph(number_nodes,number_edges,probability_connection)
-                elif self.library_used == 'pytorch':
-                    import pytorch as pt
-                    self.graph = pt.watts_strogatz_graph(number_nodes,number_edges,probability_connection)
-                elif self.library_used == 'graph-tools':
-                    from graph_tools.all import lattice
-                    self.graph = lattice([number_nodes,number_nodes])
+                from graph_tools.all import lattice
+                self.graph = lattice([number_nodes,number_nodes])
             if self.type_graph == 'newman':
 
         else:
@@ -107,7 +100,11 @@ class graph:
         avg_Nv = np.array(N_v)/np.array(self.degree_distribution)
         xy_plot(avg_Nv,steps,'$r$','$N_v(r)$','Average number of nodes at distance r')
 
-    
+    def _edges_over_nodes(self):
+        '''
+            Modeling Urban Street Patterns Marc Barthélemy and Alessandro Flammini
+            Expected E(N) = aplha*N  (alpha in [1,2] [tree-like,regular lattice])
+        '''
 
     def _create_origin_destination(self,type_centricity):
         '''
@@ -117,17 +114,63 @@ class graph:
         
         return self.OD
     
+    def _rewire_OD(self,rewire_probability):
+        '''
+        Polycentricity according to:
+            Transport on Coupled Spatial Networks R. G. Morris and M. Barthelemy
+        Description:
+            For each origin-destination pair, we rewire the destination with a probability rewire_probability
+            Starting from a monocentric case, we can obtain a polycentric case.
+        '''
+        assert self.OD!=None:
+        self.rewire_probability = rewire_probability
+        for vertex in self.graph.vertices():
+            if np.random.random() < self.rewire_probability:
+                pass
+            else:
+                 
+                D1 = np.randint(0,self.number_nodes)
+                while(D1 == vertex.index()):
+                    D1 = np.randint(0,self.number_nodes)
+                self.OD[vertex.index()][D1] = self.OD[vertex.index()][self.center_index]
+                self.OD[vertex.index()][self.center_index] = 0
+        else:
+            print('No OD matrix to rewire')
+            break
+
+    def _save_origin_destination(self,OD_path):
+        '''
+            #TODO
+            Description:
+                This function saves the origin destination matrix in a csv format.
+        '''
+        number_trips_OD = np
+        for i in range(self.population.number_people):
+            for origin_idx in range(len(self.OD)):
+                for destination_idx in range(len(self.OD[origin_idx])):
+
+        df['SAMPN']
+        df['PERNO']
+        df['origin']
+        df['destination']
+        df.to_csv(OD_path, self.OD, delimiter=",")
+
+    def _check_moran_index(self):
+        '''
+            #TODO
+            Description:
+                This function checks the moran index of the graph.
+        '''
+        self.moran_index = spatial.moran(self.graph)
+        return self.moran_index
+
     def _compute_centrality_index(self):
         '''
+            #TODO
             Description:
                 This function returns the centrality index of the graph.
         '''
-        if self.library_used == 'networkx':
-            pass
-        elif self.library_used == 'pytorch':
-            pass
-        elif self.library_used == 'graph-tools':
-            self.centrality_index = centrality.closeness(self.graph)
+        self.centrality_index = centrality.closeness(self.graph)
         return self.centrality_index
 
 
@@ -137,10 +180,16 @@ class graph:
             Description:
                 This function saves the graph in a csv format (nodes.csv,edges.csv,origin_dest.csv).
         '''
+        self.save_node_file(os.path.join(graph_path,'nodes.csv'))
+        self.save_edge_file(os.path.join(graph_path,'edges.csv'))
 
         self.graph.save(graph_path)
 
+    def save_node_file(self,total_graph_path):
 
+    def save_edge_file(self,total_graph_path):
+        
+        'uniqueid','osmid_u','osmid_v','length','lanes','speed_mph','u','v'
 
 
 

@@ -3,10 +3,12 @@ import simulation
 import json 
 import graph
 import parameters
+import psutil
+import os
 '''
 
 '''
-
+global NUMBER_AVAILABLE_CPU = os.cpu_count() 
 if __name__=="__main__":
     total_iterations = 1000
     list_dynamics = ['NaSch','Cuda_Helbing']
