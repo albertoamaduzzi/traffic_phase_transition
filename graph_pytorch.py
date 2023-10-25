@@ -1,13 +1,12 @@
 import numpy as np
 from graph-tools.all import *
 from plotting_procedures import xy_plot
-import pyhull
 
 
 
-class graph_gt:
+class graph_pytorch:
     def __init__(self,
-                 library_used = 'graph-tools',
+                 library_used = 'pytorch',
                  type_graph = 'lattice',
                  reading_mode = False,
                  geojson_path = None):
@@ -17,8 +16,9 @@ class graph_gt:
             instantiate graph (different type for the different purpose)  
         '''
         self.library_used = library_used
-        self.list_type_graphs = ['lattice','newman','real_data']
-        if reading_mode == False:
+        self.list_type_graphs = ['lattice','newman','barthelemy','real_data']
+        self.library2type_graph = {u:v for u,v in zip(self.availble_libraries,self.list_type_graph)}
+        if reading_mode == False: 
             self.graph = self.create_graph(type_graph,reading_mode)
         else:
             self.type_graph = 'real_data'
@@ -47,17 +47,64 @@ class graph_gt:
         self.nuber_nodes = number_nodes
         if reading_mode == False:
             if self.type_graph == 'lattice':
-                from graph_tools.all import lattice
-                self.graph = lattice([number_nodes,number_nodes])
-            if self.type_graph == 'newman':
-
+            elif self.type_graph == 'newman':
+                self.graph = self._create_newman_graph()
+            elif self.type_graph == 'barthelemy':
+                self.graph = self._create_bartehelemy_graph()
         else:
             self.read_graph(geojson_path)
 
-    def _generate_uniform_distribution_nodes_in_space(self,radius_city):  
+    ############### GENERATION PLANAR GRAPHS ##################
+    
+    def _create_bartehelemy_graph(self,characteristic_length,tau_c = 3):
         '''
-            Generate a uniform distribution of points in a circle of radius radius_city
-            Initialize postiions and distance matrix
+            Citation:
+                Modeling Urban Street Patterns: Marc Barthélemy and Alessandro Flammini
+            Input:
+                characteristic_length: float = side(radius) length of the square(circle) of around city (m)
+                tau_c: int = time of creation of a new center 
+            Description:
+                New centers (houses, commercial centers, etc.) are created at a constant rate and are connected to the existing network by new roads.        
+        '''
+        self.points_in_network = []
+        self.radius_city = characteristic_length
+        unit_length = average_degree*self.radius_city*np.sqrt(self.number_nodes)/(2*number_edges)
+        for tau_r in range(self.number_nodes):
+            if tau_r%tau_c == 0:
+                point = self.create_random_center()
+                self.points_in_network.append(point)
+                self.add_barthelemy_node_graph(tau_r,tau_c,point)
+
+    def add_barthelemy_node_graph(self,tau_r,tau_c,point):
+        self.graph.add_vertex(tau_r/tau_c)
+        self.graph.vertex_properties['pos'][tau_r/tau_c] = point
+        
+
+    def _create_random_center(self):
+        '''
+            Description:
+                Create a random center in the space
+        '''
+        center_x = np.random.random()*self.radius_city
+        center_y = np.random.random()*self.radius_city
+        center = np.array([center_x,center_y])
+        return center
+
+    def _create_newman_graph(self):
+        '''
+            Citation:
+                The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+            Description:
+        '''
+    
+    def _generate_uniform_distribution_nodes_in_space_circle(self,radius_city):  
+        '''
+            Citation:
+                The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+            Description:
+                Generate a uniform distribution of points in a circle of radius radius_city
+                Initialize postiions and distance matrix
+                ALL in one step:
         '''  
         from scipy.spatial import distance_matrix
         self.radius_city = radius_city
@@ -66,6 +113,22 @@ class graph_gt:
         self.x = nodes_r*(self.radius_city)*nodes_costeta
         self.y = nodes_r*(self.radius_city)*np.sqrt(1-nodes_costeta**2)    
         self.distance_matrix = distance_matrix(np.array[self.x,self.y].T,np.array[self.x,self.y].T)
+
+    def _generate_uniform_distribution_nodes_in_space_square(self,side_city):
+        '''
+            Citation:
+                The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+            Description:
+                Generate a uniform distribution of points in a circle of radius radius_city
+                Initialize postiions and distance matrix
+                ALL in one step:        
+        '''
+        from scipy.spatial import distance_matrix
+        self.radius_city = side_city
+        self.x = np.random.random(self.number_nodes)*side_city
+        self.y = np.random.random(self.number_nodes)*side_city    
+        self.distance_matrix = distance_matrix(np.array[self.x,self.y].T,np.array[self.x,self.y].T)
+
 
     def _connect_nodes(self,probability_connection):
         '''
@@ -100,11 +163,7 @@ class graph_gt:
         avg_Nv = np.array(N_v)/np.array(self.degree_distribution)
         xy_plot(avg_Nv,steps,'$r$','$N_v(r)$','Average number of nodes at distance r')
 
-    def _edges_over_nodes(self):
-        '''
-            Modeling Urban Street Patterns Marc Barthélemy and Alessandro Flammini
-            Expected E(N) = aplha*N  (alpha in [1,2] [tree-like,regular lattice])
-        '''
+    
 
     def _create_origin_destination(self,type_centricity):
         '''
@@ -114,63 +173,28 @@ class graph_gt:
         
         return self.OD
     
-    def _rewire_OD(self,rewire_probability):
-        '''
-        Polycentricity according to:
-            Transport on Coupled Spatial Networks R. G. Morris and M. Barthelemy
-        Description:
-            For each origin-destination pair, we rewire the destination with a probability rewire_probability
-            Starting from a monocentric case, we can obtain a polycentric case.
-        '''
+    def _rewire_OD(self):
         assert self.OD!=None:
-        self.rewire_probability = rewire_probability
-        for vertex in self.graph.vertices():
-            if np.random.random() < self.rewire_probability:
-                pass
-            else:
-                 
-                D1 = np.randint(0,self.number_nodes)
-                while(D1 == vertex.index()):
-                    D1 = np.randint(0,self.number_nodes)
-                self.OD[vertex.index()][D1] = self.OD[vertex.index()][self.center_index]
-                self.OD[vertex.index()][self.center_index] = 0
+        if self.library_used == 'pytorch':
+            pass
+        elif self.library_used == 'graph-tools':
+            if self.OD!=None:
+                self.OD = self.OD.rewire()
         else:
             print('No OD matrix to rewire')
             break
 
-    def _save_origin_destination(self,OD_path):
-        '''
-            #TODO
-            Description:
-                This function saves the origin destination matrix in a csv format.
-        '''
-        number_trips_OD = np
-        for i in range(self.population.number_people):
-            for origin_idx in range(len(self.OD)):
-                for destination_idx in range(len(self.OD[origin_idx])):
-
-        df['SAMPN']
-        df['PERNO']
-        df['origin']
-        df['destination']
-        df.to_csv(OD_path, self.OD, delimiter=",")
-
-    def _check_moran_index(self):
-        '''
-            #TODO
-            Description:
-                This function checks the moran index of the graph.
-        '''
-        self.moran_index = spatial.moran(self.graph)
-        return self.moran_index
-
     def _compute_centrality_index(self):
         '''
-            #TODO
             Description:
                 This function returns the centrality index of the graph.
         '''
-        self.centrality_index = centrality.closeness(self.graph)
+        if self.library_used == 'networkx':
+            pass
+        elif self.library_used == 'pytorch':
+            pass
+        elif self.library_used == 'graph-tools':
+            self.centrality_index = centrality.closeness(self.graph)
         return self.centrality_index
 
 
@@ -237,7 +261,39 @@ class graph_gt:
 
 
 
+class barthelemy_vertex:
+    '''
+        Citation:
+            Modeling Urban Street Patterns: Marc Barthélemy and Alessandro Flammini
+            Modeling and visualization of leaf venation patterns: Adam Runions, Martin Fuhrer, Brendan Lane, Pavol Federl,
+                                                                  Anne-Ga¨elle Rolland-Lagan, Przemyslaw Prusinkiewicz
+            Growth Tensor of Plant Organs: Z. HEJNOWICZ, JOHN A. ROMBERGER
+        Description:
+            Wants to build an object whose attributes are able to describe the properties needed to create that graph
+    '''
+    def __init__(self,position,time_creation):
+        self.position = position
+        self.time_creation = time_creation
+        self.relative_neighbors = []
+        self.distance_from_all_vertices = []
 
+    def _compute_distance_from_all_vertices(self)
+
+    def add_relative_neighbor(self,points_in_network,):
+        
+
+
+    def add_edge(self,edge):
+        self.edges.append(edge)
+
+    def get_edges(self):
+        return self.edges
+
+    def get_position(self):
+        return self.position
+
+    def get_time_creation(self):
+        return self.time_creation
 
 
 
