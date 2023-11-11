@@ -1,12 +1,36 @@
 import numpy as np
 from graph-tools.all import *
 from plotting_procedures import xy_plot
+import scipy.spatial as sp
+import pyhull
 
 
 
-class graph_pytorch:
+class graph_gt:
+    '''
+        Properties graph:
+            Nodes:
+                Mandatory: (at initialization)
+                    'id': int
+                    'position': np.array(dtype=float)
+                Optional: (computed by some function)
+                    'topological_distance': vector<int>
+                    'metric_distance': vector<float>
+            Edges:
+                Mandatory: (at initialization)
+                    'length': float
+                    'unweighted': float 
+                Optional: (computed by some function)
+                    'time percorrence': float
+
+        Description:
+            This class creates a graph with the library graph-tools. The functions of the class are created for the scope of reproducing
+            directed percolation universality classes for different planar networks according to the papers cited in them.
+            The hope is to verify the existence of the dependence of the phase transition exponent with the distribution of
+            centers (sinks of mobility) in the network.
+    '''
     def __init__(self,
-                 library_used = 'pytorch',
+                 library_used = 'graph-tools',
                  type_graph = 'lattice',
                  reading_mode = False,
                  geojson_path = None):
@@ -16,9 +40,8 @@ class graph_pytorch:
             instantiate graph (different type for the different purpose)  
         '''
         self.library_used = library_used
-        self.list_type_graphs = ['lattice','newman','barthelemy','real_data']
-        self.library2type_graph = {u:v for u,v in zip(self.availble_libraries,self.list_type_graph)}
-        if reading_mode == False: 
+        self.list_type_graphs = ['lattice','newman','real_data']
+        if reading_mode == False:
             self.graph = self.create_graph(type_graph,reading_mode)
         else:
             self.type_graph = 'real_data'
@@ -47,15 +70,21 @@ class graph_pytorch:
         self.nuber_nodes = number_nodes
         if reading_mode == False:
             if self.type_graph == 'lattice':
+                from graph_tools.all import lattice
+                self.graph = lattice([number_nodes,number_nodes])
             elif self.type_graph == 'newman':
-                self.graph = self._create_newman_graph()
+                self.create_newman_graph()
             elif self.type_graph == 'barthelemy':
-                self.graph = self._create_bartehelemy_graph()
+                self.graph = self._create_barthelemy_graph()
         else:
             self.read_graph(geojson_path)
 
-    ############### GENERATION PLANAR GRAPHS ##################
+                                
+                                
+    ################################################ GENERATION PLANAR GRAPHS ##################################################
     
+    ############## BARtHELEMY GRAPHS ##########################################################
+
     def _create_bartehelemy_graph(self,characteristic_length,tau_c = 3):
         '''
             Citation:
@@ -63,8 +92,12 @@ class graph_pytorch:
             Input:
                 characteristic_length: float = side(radius) length of the square(circle) of around city (m)
                 tau_c: int = time of creation of a new center 
+            Definitions:
+                centers : houses, commercial centers, etc.
             Description:
-                New centers (houses, commercial centers, etc.) are created at a constant rate and are connected to the existing network by new roads.        
+                New centers are created at a constant rate and are connected to the existing network by new roads.   
+            Drawbacks:
+                1) The initial position of centers is random     
         '''
         self.points_in_network = []
         self.radius_city = characteristic_length
@@ -89,14 +122,40 @@ class graph_pytorch:
         center_y = np.random.random()*self.radius_city
         center = np.array([center_x,center_y])
         return center
+    
+    def _update_distance_matrix(self):
+        coords = (np.array([self.graph.vp['x'].a,self.graph.vp['y'].a]).T) 
+        self.distance_matrix = sp.distance_matrix(coords,coords)
 
+    def _compute_relative_neighbor(self):
+        for vertex_idx in self.distance_matrix:
+            idx_s = np.where(self.distance_matrix[vertex_idx,:] == np.min(self.distance_matrix[vertex_idx,:]))                
+            # get vertex TODO
+            vertex = # vertex with vertex_idx
+            # ad the relative neighbor idx_s
+            vertex.vp['relative_neighbor'] = # vertex with index = idx_s 
+
+    
+    ############### NEWMAN GRAPHS #############################################################
     def _create_newman_graph(self):
         '''
             Citation:
                 The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
             Description:
         '''
-    
+        self._generate_uniform_distribution_nodes_in_space_circle(self.radius_city)
+        self.graph = gt.Graph(directed=False)
+        for i in range(len(self.x)):
+            self.graph.add_vertex()
+        
+            self.graph.vertex_properties['pos'][i] = np.array([self.x[i],self.y[i]])
+
+    def _simulated_anneahling(self):
+        self.Tmax = 25000
+        self.number_iterations = 100
+        self.alpha = 0.95
+        self.energy = 0
+        self.temperature_min = 0.00001
     def _generate_uniform_distribution_nodes_in_space_circle(self,radius_city):  
         '''
             Citation:
@@ -197,6 +256,43 @@ class graph_pytorch:
             self.centrality_index = centrality.closeness(self.graph)
         return self.centrality_index
 
+        
+
+    def _save_origin_destination(self,OD_path):
+        '''
+            #TODO
+            Description:
+                This function saves the origin destination matrix in a csv format.
+        '''
+        number_trips_OD = np
+        for i in range(self.population.number_people):
+            for origin_idx in range(len(self.OD)):
+                for destination_idx in range(len(self.OD[origin_idx])):
+
+        df['SAMPN']
+        df['PERNO']
+        df['origin']
+        df['destination']
+        df.to_csv(OD_path, self.OD, delimiter=",")
+
+    def _check_moran_index(self):
+        '''
+            #TODO
+            Description:
+                This function checks the moran index of the graph.
+        '''
+        self.moran_index = spatial.moran(self.graph)
+        return self.moran_index
+
+    def _compute_centrality_index(self):
+        '''
+            #TODO
+            Description:
+                This function returns the centrality index of the graph.
+        '''
+        self.centrality_index = centrality.closeness(self.graph)
+        return self.centrality_index
+
 
 
     def _save_graph(self,graph_path):
@@ -261,6 +357,16 @@ class graph_pytorch:
 
 
 
+
+class city:
+    '''
+        Growth Tensor of Plant Organs: Z. HEJNOWICZ, JOHN A. ROMBERGER
+    '''
+    def __init__(self):
+        self.growth_tensor: np.ndarray(dtype=float) # [number_barthelemy_vertices,spatial_dimension(2)]
+        self.Area: float
+        self.length: float
+
 class barthelemy_vertex:
     '''
         Citation:
@@ -270,16 +376,37 @@ class barthelemy_vertex:
             Growth Tensor of Plant Organs: Z. HEJNOWICZ, JOHN A. ROMBERGER
         Description:
             Wants to build an object whose attributes are able to describe the properties needed to create that graph
+
     '''
     def __init__(self,position,time_creation):
-        self.position = position
-        self.time_creation = time_creation
+        self.position: np.array(dtype=float) = position
+        self.all_vertices: np.ndarray(dtype=float)
+        self.time_creation: int = time_creation
         self.relative_neighbors = []
         self.distance_from_all_vertices = []
+        self.growth_direction: np.array(dtype=float)
+        self.velocity_growth: float
+        self.velocity_gradient_direction: np.array(dtype=float)
+        self.velocity_gradient: float
 
-    def _compute_distance_from_all_vertices(self)
+    
+    def _update_position(self):
+        self.position += self.velocity_growth*self.growth_direction
 
-    def add_relative_neighbor(self,points_in_network,):
+    def _compute_distance_from_all_vertices(self):
+        '''
+            all_vertices: (np.ndarray) [number_vertices,spatial_dimension(2)]
+            NOTE: the index of the vertices must be in order with the index of the distance matrix
+        '''
+        self.distance_matrix = sp.distance_matrix(self.position,self.all_vertices)
+
+    def _choose_closest_neighbor(self):
+        d1 = np.ma.masked_array(self.distance_matrix,mask = np.eye(len(d)))
+        nd = np.unravel_index(np.argmin(d1, axis=None), d1.shape)
+
+
+    def add_relative_neighbor(self,relative_neighbor):
+        self.relative_neighbors.append(relative_neighbor)
         
 
 
@@ -296,10 +423,10 @@ class barthelemy_vertex:
         return self.time_creation
 
 
-
-
-
-
+def growing_city():
+    for vertex in vertices:
+        vertex._compute_distance_from_all_vertices()
+        vertex._compute_growth_direction()
 
 
 
@@ -321,11 +448,23 @@ class partition:
     c = 1,..., average_wage.
     In general I have 
     '''
-    def __init__(self,graph,typegraph):
-        if typegraph == 'networkx':
-
-        elif typegraph == 'pytorch':
-            
+    def __init__(self):
 
 
 
+def generate_graph_from_points(points,add_vertex_property = True,vertex_property_name = 'id',vertex_property = 'int'):
+    G = gt.Graph(directed=False)
+    for i in range(len(points)):
+        G.add_vertex()
+    if add_vertex_property:
+        vprop = G.new_vertex_property(vertex_property)
+        G.vertex_properties[vertex_property_name] = vprop
+    return G    
+def add_vertex_property(G,vertex_property_name = 'id',vertex_property = 'int'):
+    vprop = G.new_vertex_property(vertex_property)
+    G.vertex_properties[vertex_property_name] = vprop
+    return G
+def add_edge_property(G,edge_property_name = 'id',edge_property = 'int'):
+    eprop = G.new_edge_property(edge_property)
+    G.edge_properties[edge_property_name] = eprop
+    return G

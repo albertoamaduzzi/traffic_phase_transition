@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import graph_tools as gt
 from contextily import add_basemap
 
 
@@ -27,6 +28,8 @@ def xy_plot(x,y,xlabel,ylabel,title,set_logx=False,set_logy=False):
         ax.set_yscale('linear')
     ax.grid()
     plt.show()
+
+# Barthelemy-Flammini plots
 
 def edges_over_nodes(nodes,edges,path_to_save=None):
     '''
@@ -67,6 +70,58 @@ def nodes_total_length(nodes,total_length,path_to_save=None):
     ax.savefig(join(path_to_save,'edges_over_nodes.png'),dpi=150)
     plt.show()
 
+
+# Newmann plots
+def distribution_edges(g):
+    '''
+        Citation: The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+        Figure (1)
+    '''
+    A = gt.spectral.adjacency(g)
+    list_degrees = []
+    for i in range(len(A)):
+        list_degrees.append(np.sum(A[i]))
+    n,bins = np.histogram(list_degrees)
+    plt.plot(bins[:-1],n)
+    plt.xlabel('Degree')
+    plt.ylabel('Number of nodes')
+    plt.show()
+    
+
+
+
+def dimension_graph(g):
+    '''
+        Citation: The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+        Figure (2)
+    '''
+    
+    dist_ = gt.topology.shortest_distance(g)
+    diameter_ = _get_diameter_graph(dist,g)
+    list_N_vr = np.zeros((len(g.vertices),diameter_))
+    r = np.arange(diameter_)
+    for r in range(diameter_):
+        for vertex in g.vertices:
+            Nv_r = len(dist_[vertex].a[True if x==r else False for x in dist_[vertex].a])
+            list_N_vr[vertex,r] = Nv_r
+    Avg_Nv_r = np.sum(list_N_vr,axis=0)/len(g.vertices)
+    fig,ax = plt.subplots(1,1,figsize=(12,6))
+    ax.plot(r,Avg_Nv_r)
+    ax.set_xlabel('r')
+    ax.set_ylabel('$\langle N_v(r) \rangle$')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+     
+def _get_diameter_graph(dist,g):
+    '''
+        Given a graph-tool graph, and already computed shortest distance ,return the diameter of the graph
+    '''
+    diameter_ = 0
+    for vertex in g.vertices:
+        for vertex_ in g.vertices:
+            if dist[vertex,vertex_] > diameter_:
+                diameter_ = dist[vertex,vertex_]
+    return diameter_
 
 def plot_adjacent_nx_maps(G_gdf,G_nx,number_axes):
     '''
