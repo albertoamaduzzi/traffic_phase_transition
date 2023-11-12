@@ -40,3 +40,17 @@ As cities grow,
     N_people -> N_people'
     N_jobs -> N_jobs'
     J_
+
+
+
+6917324
+user jan 3124196
+user march 1956768
+user may 1836360
+
+count   384399
+unique  384399
+top           
+freq         1
+
+	
