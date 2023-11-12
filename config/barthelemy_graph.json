@@ -1,6 +1,6 @@
 {
     "side_city": 10,
-    "ratio_growth2size_city": 0.001,
+    "ratio_growth2size_city": 0.1,
     "number_iterations":1000,
     "tau_c":4,
     "ratio_evolving2initial":0.1,

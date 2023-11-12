@@ -261,8 +261,75 @@ class barthelemy_graph:
                     if not i in self.graph.vp['delauney_neighbors'][self.graph.vertex(j)]:
                         self.graph.vp['delauney_neighbors'][self.graph.vertex(j)].append(i)
 
+    def print_delauney_neighbors(self,vi):
+        print('delauney neighbors: ')
+        for vj in self.graph.vp['delauney_neighbors'][vi]:
+            print(vj)
+
+    def plot_relative_neighbors(self,vi,attracting_vertex,new_added_vertex):
+        fig,ax = plt.subplots(1,2,figsize = (20,20))
+        attracting_vertices = np.array([np.array([self.graph.vp['x'][v],self.graph.vp['y'][v]]) for v in self.graph.vertices() if self.graph.vp['attracting'][v] == True])
+        coords_attracting_vertex = np.array([self.graph.vp['x'][attracting_vertex],self.graph.vp['y'][attracting_vertex]])
+        coordinates_vi = np.array([self.graph.vp['x'][vi],self.graph.vp['y'][vi]])
+        coordinates_new_added_vertex = np.array([self.graph.vp['x'][new_added_vertex],self.graph.vp['y'][new_added_vertex]])  
+        vector_edge = self.graph.vp['pos'][new_added_vertex].a - self.graph.vp['pos'][vi].a   
+        uvector_edge = vector_edge/np.sqrt(np.sum(vector_edge**2))
+        ## plot (attracting vertices, attracting vertex, growing node)
+        ax[0].scatter(self.graph.vp['x'].a,self.graph.vp['y'].a,color = 'black')
+        ax[0].scatter(attracting_vertices[:,0],attracting_vertices[:,1],color = 'blue')
+        ax[0].scatter(coords_attracting_vertex[0],coords_attracting_vertex[1],color = 'yellow')
+        ax[0].scatter(coordinates_vi[0],coordinates_vi[1],color = 'red')
+        ## Plot relative neighbors
+        ax[1].scatter(self.graph.vp['x'].a,self.graph.vp['y'].a,color = 'black')
+        ax[1].scatter(attracting_vertices[:,0],attracting_vertices[:,1],color = 'blue')
+        ax[1].scatter(coords_attracting_vertex[0],coords_attracting_vertex[1],color = 'yellow')
+        ax[1].scatter(coordinates_vi[0],coordinates_vi[1],color = 'red')        
+        ax[1].scatter(coordinates_new_added_vertex[0],coordinates_new_added_vertex[1],color = 'orange')
+        ax[1].plot([coordinates_vi[0],coordinates_new_added_vertex[0]],[coordinates_vi[1],coordinates_new_added_vertex[1]],linestyle = '-',linewidth = 1.5,color = 'black')
+        ax[1].plot(vector_edge[0],vector_edge[1],linestyle = '-',linewidth = 1.5,color = 'violet')
+        ax[1].grid()
+        v_new_added = np.array([coordinates_vi[0]-coordinates_new_added_vertex[0],coordinates_vi[1]-coordinates_new_added_vertex[1]])
+        uv_new_added = v_new_added/np.sqrt(np.sum(v_new_added**2))
+        print('growth line: ',vector_edge)
+        print('new added: ',uv_new_added)
+        print('theta: ',np.arccos(np.dot(uvector_edge,uv_new_added)/np.sqrt(np.sum(vector_edge**2)))/np.pi*180)
+        print('growth line is orthogonal to line (vi,new_node): ',np.dot(uvector_edge,uv_new_added))
+        for vj in self.graph.vp['relative_neighbors'][vi]:
+            coordinates_vj = np.array([self.graph.vp['x'][vj],self.graph.vp['y'][vj]])
+            r = self.distance_matrix_[self.graph.vp['id'][vi]][vj]
+            circle1 = plt.Circle(coordinates_vi, r, color='red', linestyle = '--',fill=True ,alpha = 0.1)
+            circle2 = plt.Circle(coordinates_vj, r, color='green', linestyle = '--',fill=True ,alpha = 0.1)
+            ax[1].add_artist(circle1)
+            ax[1].add_artist(circle2)
+#            intersection = plt.Circle((coordinates_vi + coordinates_vj) / 2, np.sqrt(r ** 2 - (1/(2*r)) ** 2), color='green',alpha = 0.2)
+            # Add the intersection to the axis
+#            ax.add_artist(intersection)            
+            ax[1].scatter(self.graph.vp['x'][self.graph.vertex(vj)],self.graph.vp['y'][self.graph.vertex(vj)],color = 'green')
+            ax[1].plot([self.graph.vp['x'][vi],self.graph.vp['x'][self.graph.vertex(vj)]],[self.graph.vp['y'][vi],self.graph.vp['y'][self.graph.vertex(vj)]],linestyle = '--',color = 'green')
+        ax[0].legend(['any vertex','attracting vertices','responsable attracting vertex','growing node'])
+        ax[1].legend(['any vertex','attracting vertices','responsable attracting vertex','growing node','new added vertex','connection new node','growth line','relative neighbors','circle growing','circle relative neighbor','line relative neighbor'])
+        plt.show()
+
+    def plot_evolving_graph(self):
+        fig,ax = plt.subplots(1,1,figsize = (20,20))
+        for edge in self.graph.edges():
+            if self.graph.vp['important_node'][edge.source()] == True:
+                color_source = 'red'
+                ax.scatter(self.graph.vp['x'][edge.source()],self.graph.vp['y'][edge.source()],color = color_source)
+                ax.plot([self.graph.vp['x'][edge.source()],self.graph.vp['x'][edge.target()]],[self.graph.vp['y'][edge.source()],self.graph.vp['y'][edge.target()]],linestyle = '-',color = 'black')
+        fig.show()
 
     def compute_rng(self): 
+        '''
+            Description:
+                1) update_delauney:
+                    1a) compute the Voronoi diagram for all vertices O(Nlog(N))
+                    1b) compute the delauney triangulation  O(N)
+                2) For each attracting node (vi) and a node from the delauney triangulation (vj)
+                3) Check for if for any node vk in the graph max(d_ix, d_xj) < d_ij
+                4) If it is not the case, then vj is a relative neighbor of vi
+
+        '''
         self.growing_graph  = self.graph.copy()
         self.growing_vertices = [v for v in self.growing_graph.vertices() if self.growing_graph.vp['growing'][v] == True]
 #        print('growing vertices: ',len(self.growing_vertices),self.growing_graph.vp['growing'].a)
@@ -282,14 +349,14 @@ class barthelemy_graph:
                     except KeyError:
                         d_ij = None
                         continue
-                    for vx in self.graph.vp['delauney_neighbors'][vi]: # self.attracting_graph.vertices() 
+                    for vx in self.graph.vertices(): # self.attracting_graph.vertices() 
                         try:
-                            d_ix = self.distance_matrix_[self.graph.vp['id'][vi]][vx]
+                            d_ix = self.distance_matrix_[self.graph.vp['id'][vi]][self.graph.vp['id'][vx]]
                         except KeyError:
                             d_ix = None
                             continue
                         try:
-                            d_xj = self.distance_matrix_[self.graph.vp['id'][vx]][vj]
+                            d_xj = self.distance_matrix_[self.graph.vp['id'][self.graph.vp['id'][vx]]][vj]
                         except KeyError:
                             d_xj = None
                             continue
@@ -306,9 +373,10 @@ class barthelemy_graph:
             Attach the edge if the growing points are close enough to their relative neighbors,
             in this way the relative neighbor becomes a growing point as well
         '''
+        already_existing_edges = [[e.source(),e.target()] for e in self.graph.edges()]
         for v in self.attracting_vertices:
             for u_idx in self.graph.vp['relative_neighbors'][v]:
-                    if self.distance_matrix_[self.graph.vp['id'][v],u_idx] < self.rate_growth:
+                    if self.distance_matrix_[self.graph.vp['id'][v],u_idx] < self.rate_growth and [v,self.graph.vertex(u_idx)] not in already_existing_edges:
                         self.graph.add_edge(self.graph.vertex(u_idx),v)
                         if self.graph.vp['growing'][v] == False:
                             self.graph.vp['growing'][v] = True
@@ -383,7 +451,6 @@ class barthelemy_graph:
         return available_vertices
 
 
-
     def check_available_vertices(self,available_vertices):
         '''
             ---- Growing node function: ----
@@ -429,6 +496,7 @@ class barthelemy_graph:
                     available_vertices = self.choose_available_vertices_to_grow_into(growing_node,list_vert_relative_neighbor_per_growing_vertex)
                     number_relative_neighbors_growing_node = len(available_vertices)
                     print('growing node: ',self.graph.vp['id'][growing_node],' coords: ',self.graph.vp['pos'][growing_node])
+                    self.print_delauney_neighbors(growing_node)
                     print('available attracting vertices: ',[self.graph.vp['id'][v] for v in available_vertices])
                     ## Take if relative neighbor of the growing node is just one  
                     if number_relative_neighbors_growing_node==1:
@@ -441,8 +509,9 @@ class barthelemy_graph:
                         dy = dy/np.sqrt(dx**2+dy**2)*self.rate_growth
                         new_point = np.array([[self.graph.vp['x'][growing_node] +dx,self.graph.vp['y'][growing_node] +dy]])
                         self.update_distance_matrix(old_points,new_point)
-                        added_vertex = self.add_point2graph(self.graph.vp['x'][growing_node],self.graph.vp['x'][growing_node],dx,dy)
+                        added_vertex = self.add_point2graph(self.graph.vp['x'][growing_node],self.graph.vp['y'][growing_node],dx,dy)
                         self.add_edge2graph(self.graph.vertex(growing_node),added_vertex)
+                        self.plot_relative_neighbors(growing_node,attracting_node,added_vertex)
                         print('EVOLVING UNIQUE ATTRACTOR')
                         print('direction: ',self.graph.vp['id'][vertex_relative_neighbor])
                         print(' dx: ',dx,' dy: ',dy) 
@@ -463,6 +532,7 @@ class barthelemy_graph:
                             self.update_distance_matrix(old_points,new_point)
                             added_vertex = self.add_point2graph(self.graph.vp['x'][growing_node],self.graph.vp['y'][growing_node],dx,dy)
                             self.add_edge2graph(self.graph.vertex(growing_node),added_vertex)
+                            self.plot_relative_neighbors(growing_node,attracting_node,added_vertex)                            
                             print('EVOLVING SUM ATTRACTOR')
                             print('direction sum of : ',[self.graph.vp['id'][vertex_relative_neighbor] for vertex_relative_neighbor in available_vertices])
                             print(' dx: ',dx,' dy: ',dy) 
@@ -480,6 +550,7 @@ class barthelemy_graph:
                                 self.update_distance_matrix(old_points,new_point)
                                 added_vertex = self.add_point2graph(self.graph.vp['x'][growing_node],self.graph.vp['y'][growing_node],dx,dy)
                                 self.add_edge2graph(self.graph.vertex(growing_node),added_vertex)                            
+                                self.plot_relative_neighbors(growing_node,attracting_node,added_vertex)
                                 print('direction sum of : ',self.graph.vp['id'][vertex_relative_neighbor])
                                 print(' dx: ',dx,' dy: ',dy) 
                                 print('added vertex: ',self.graph.vp['id'][added_vertex],' coords: ',self.graph.vp['pos'][added_vertex])
@@ -599,7 +670,8 @@ if __name__ == '__main__':
     for r0 in list_r0:
         bg = barthelemy_graph(config,r0)
         bg.initialize_graph()
-        bg.add_initial_points2graph(r0,number_nodes,bg.side_city)
+#        bg.add_initial_points2graph(r0,number_nodes,bg.side_city)
+        bg.add_centers2graph(bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city)
         bg.compute_rng()
         list_number_real_edges = []
         list_time = []
@@ -649,11 +721,14 @@ if __name__ == '__main__':
             print('number of important nodes in graph:',bg.graph.num_vertices())
             bg.graph.set_vertex_filter(None)
             bg.mask_real_edges()
+            bg.plot_evolving_graph()
             print('number of edges: ',bg.graph.num_edges())
             list_number_real_edges.append(bg.graph_real_edges.num_edges())
             list_time.append(t)
             print('number real edges: ',bg.graph_real_edges.num_edges())
-            if t==2:
+            if t==10:
+                for edge in bg.graph.edges():
+                    print(edge)
                 break
         if not os.path.exists(os.path.join(root,'graphs')):
             os.mkdir(os.path.join(root,'graphs'))
