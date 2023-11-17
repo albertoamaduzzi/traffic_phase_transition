@@ -1,0 +1,28 @@
+Algorithm:
+    Phase 0,0:
+        1) Add the centers at random
+        2) compute the distance matrix
+        3) Compute the relative neighborhood of each vertex
+
+
+evolve_street:
+    For each node that is attracting:
+        For each node that is attracted to attracting:
+            1) Take the relative neighbor of the attracted
+            if relative neighbor size = 1:
+                if the attracted point is a source:
+                    1) create a point pointing in direction to the relative neighbor
+                    2) Add point to the graph
+                    3) Add an edge
+                    4) Add a road
+                elif the attracting point is not a source and a growing point:
+                    1) create a point pointing in direction to the relative neighbor
+                    2) Add point to the graph
+                    3) Add an edge
+                    4) Find the point's road:
+                    if the point is an intersection: 
+                        1) Add a new road with all the previous points
+                    else:
+                        1) Add point to the existing road
+
+        
