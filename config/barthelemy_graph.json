@@ -8,6 +8,8 @@
     "initial_number_points":10,
     "ratio_evolving2initial":0.4,
     "total_number_attraction_points":1000,
+    "number_grids": 10,
+    "policentricity":false,
     "degree_policentricity":1,
     "offscreen":false
 

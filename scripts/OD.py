@@ -18,6 +18,8 @@ def Weibull(shape, scale):
     '''
     return np.random.weibull(shape, scale)
 
+    
+
 class OD:
     def __init__(self,config):
         tuple = os.walk('.', topdown=True)

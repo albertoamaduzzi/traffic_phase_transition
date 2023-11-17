@@ -1,3 +1,23 @@
+import sys
+from geometric_features import Grid,road
+from barthelemy_vertex import barthelemy_graph,initial_graph
+    '''
+    Example config:
+    {
+        "path2graph": /workspace/traffic_phase_transition/data/graphs/whatever_specification/,
+        "name_graph": "barthelemy_graph_parameters_specification.gt",
+        "side_city": 10000,
+        "number_grids": 10,
+    "facilities": {
+            "idx": 0,
+            "capacity": 100,
+            "type": "hospital"
+        }
+    }
+    
+    '''
+
+
 class facility:
     '''
     1) To investigate the optimal density(average distance) = d^(2/3)
@@ -11,6 +31,14 @@ class facility:
     U = \mu <G> + <d>
     That has got a maximum when there are a lot of sources and few sinks. (rho = d^0....) and couples of networks are used in similar ways.
     '''
-    def __init__(self, name, capacity, type):
-        self.type = type
+    def __init__(self,config, capacity = sys.maxsize()):
+        self.idx = config["idx"]
+        self.capacity = capacity
+        self.type = config["facilities"][self.idx]["type"]
         self.density: float = 0
+        self.city_blocks = Grid(config["side_city"],config["side_city"]/config["number_grids"])
+
+
+    
+
+    
