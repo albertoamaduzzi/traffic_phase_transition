@@ -3,6 +3,9 @@ import graph-tool as gt
 
 ##g = initial_graph()
 
+def cofactor(matrix,i,j):
+    return (-1)**(i+j)*matrix[i,j]
+
 
 
 

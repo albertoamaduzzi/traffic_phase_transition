@@ -1,8 +1,9 @@
+
 import time
 from collections import defaultdict
 import graph_tool as gt
 from graph_tool.all import label_components
-from scipy.spatial import distance_matrix,Voronoi
+from scipy.spatial import distance_matrix
 import numpy as np
 import os
 import json
@@ -11,7 +12,13 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, GObject, GLib
 import multiprocessing as mp
 from pyhull.delaunay import DelaunayTri
 from scipy.spatial import Delaunay
-from geometric_features import Grid,road
+# FROM PROJECT
+from geometric_features import road
+from grid import Grid
+from edges_functions import *
+from vertices_functions import *
+from growth_functions import *
+from output import *
 from vector_operations import normalize_vector,coordinate_difference,scale
 '''
 1) Generates the first centers [they are all of interest and they are all attracting and are all growing]
@@ -125,7 +132,7 @@ def is_graph_connected(graph):
     return len(set(components.a)) == 1
 
  ## BARTHELEMY GRAPH
-class barthelemy_graph:
+class planar_graph:
     def __init__(self,config:dict,r0):
         self.config = config
         self.starting_phase = True
@@ -166,6 +173,10 @@ class barthelemy_graph:
             self.policentricity = False
             self.number_centers = 1
 
+## ------------------------------------------- FIRST INITIALiZATION ---------------------------------------------
+    def initialize_graph(self):
+        self.graph = initial_graph()
+
 
 ##------------------------------------------- INITIALIZE BASE DIR -----------------------------------------------------------
     def initialize_base_dir(self):
@@ -179,135 +190,8 @@ class barthelemy_graph:
         ifnotexistsmkdir(self.base_dir)
 
         
-##------------------------------------------------------------- PRINTING ----------------------------------------------------------
-    def print_properties_vertex(self,vertex):
-        '''
-            Flushes all the properties of the vertex
-        '''
-        print('vertex: ',self.graph.vp['id'][vertex])
-        print('is_active: ',self.graph.vp['is_active'][vertex])
-        print('important_node: ',self.graph.vp['important_node'][vertex])
-        print('end_point: ',self.graph.vp['end_point'][vertex])
-        print('is_in_graph: ',self.graph.vp['is_in_graph'][vertex])
-        print('newly_added_center: ',self.graph.vp['newly_added_center'][vertex])
-        print('relative neighbors: ',self.graph.vp['relative_neighbors'][vertex])
-        print('x: ',self.graph.vp['x'][vertex])
-        print('y: ',self.graph.vp['y'][vertex])
-        print('pos: ',self.graph.vp['pos'][vertex])
-        print('out neighbor: ',[self.graph.vp['id'][v] for v in vertex.out_neighbours()])
-        print('in neighbor: ',[self.graph.vp['id'][v] for v in vertex.in_neighbours()])
-        for r in self.graph.vp['roads'][vertex]:
-            print('road: ',r.id)
-            print('number_iterations: ',r.number_iterations)
-            print('length: ',r.length)
-            print('list_nodes: ',[self.graph.vp['id'][v] for v in r.list_nodes])
-            print('list_edges: ',[[self.graph.vp['id'][v1],self.graph.vp['id'][v2]] for v1,v2 in r.list_edges])
-            print('end_node: ',self.graph.vp['id'][r.end_node])
-            print('is_closed: ',r.is_closed)
-            print('activated_by: ',[self.graph.vp['id'][v] for v in r.activated_by])
-
-    def print_geometrical_info(self):
-        print('*****************************')
-        print('Side bounding box: {} km'.format(self.side_city))
-#        print('Number square grid: ',len(self.grid))
-#        print('Side single square: {} km'.format(self.side_city/np.sqrt(len(self.grid))))
-        print('----------------------')
-        print('Initial number points: ',self.initial_number_points)
-        print('Total number of POIs expected: ',self.total_number_nodes)
-        print('*******************************')
-
-    def print_not_considered_vertices(self,not_considered):
-        '''
-        Type: Debug
-        '''
-        print('XXXX   vertices whose attracted by is not updated   XXXX')
-        for v in not_considered:
-            print('id: ',self.graph.vp['id'][v])
-            print('important by: ',self.graph.vp['important_node'][v])
-            print('attracting: ',self.graph.vp['attracting'][v])
-            print('growing: ',self.graph.vp['growing'][v])
-            print('end_point: ',self.graph.vp['end_point'][v])
-
-    def print_delauney_neighbors(self,vi):
-        print('old: ')
-        old_dn = [v for v in self.graph.vertices() if len(self.graph.vp['old_attracting_delauney_neighbors'][v])!=0]
-        for vj in old_dn:
-            print(self.graph.vp['id'][vj])
-            print('neighbors: ',self.graph.vp['old_attracting_delauney_neighbors'][vj])
-        print('new: ')
-        new_dn = [v for v in self.graph.vertices() if len(self.graph.vp['new_attracting_delauney_neighbors'][v])!=0]
-        for vj in new_dn:
-            print(self.graph.vp['id'][vj])
-            print('neighbors: ',self.graph.vp['new_attracting_delauney_neighbors'][vj])
 
 
-
-    def ASSERT_PROPERTIES_VERTICES(self,v):
-        '''
-            I here control that:
-                1) If a vertex is an end node -> it must be in the graph
-                2) If a vertex is not in the graph -> it must be active
-        '''
-        if self.graph.vp['end_point'] and not self.graph.vp['is_in_graph']:
-            self.print_properties_vertex(v)
-            raise ValueError('The END NODE vertex {} is not in the graph'.format(self.graph.vp['id'][v]))
-        if not self.graph.vp['is_in_graph'] and not self.graph['is_active']:
-            self.print_properties_vertex(v)
-            raise ValueError('The vertex {} that is NOT in graph must be ACTIVE'.format(self.graph.vp['id'][v]))
-
-
-## ------------------------------------------- FIRST INITIALiZATION ---------------------------------------------
-    def initialize_graph(self):
-        self.graph = initial_graph()
-
-##----------------------------------------  SET FUNCTIONS ------------------------ (ACTING ON SINGLE VERTEX PROPERTY MAPS) -----------------------
-    
-##### "IMPORTANT NODE" FUNCTIONS #####
-
-    def set_id(self,vertex,id_):
-        self.graph.vp['id'][vertex] = id_
-
-    def set_active_vertex(self,vertex,boolean):
-        self.graph.vp['is_active'][vertex] = boolean
-
-    def set_important_node(self,vertex,boolean):
-        self.graph.vp['important_node'][vertex] = boolean
-
-    def set_newly_added(self,vertex,boolean):
-        self.graph.vp['newly_added_center'][vertex] = boolean
-
-    def set_end_point(self,vertex,boolean):
-        self.graph.vp['end_point'][vertex] = boolean
-
-    def set_empty_relative_neighbors(self,vertex):
-        self.graph.vp['relative_neighbors'][vertex] = []
-
-    def set_in_graph(self,vertex,boolean):
-        self.graph.vp['is_in_graph'][vertex] = boolean
-
-    def set_empty_road(self,vertex):
-        self.graph.vp['roads'][vertex] = []
-
-    def set_is_intersection(self,vertex,boolean):
-        self.graph.vp['intersection'][vertex] = boolean
-#### "IN GRAPH NODE" FUNCTIONS #####
-    def set_activate_in_graph(self,vertex):
-        self.graph.vp['is_in_graph'][vertex] = True
-
-    def set_initialize_x_y_pos(self,vertex,x,y,point_idx):
-        self.graph.vp['x'][vertex] = x[point_idx]
-        self.graph.vp['y'][vertex] = y[point_idx]
-        self.graph.vp['pos'][vertex] = np.array([x[point_idx],y[point_idx]])
-
-#### "EDGES" FUNCTIONS #####
-    def set_length(self,edge):
-        self.graph.ep['length'][edge] = self.distance_matrix_[self.graph.vp['id'][edge.source()],self.graph.vp['id'][edge.target()]]
-
-    def set_direction(self,edge):
-        self.graph.ep['direction'][edge] = self.graph.vp['pos'][edge.target].a - self.graph.vp['pos'][edge.source()].a
-
-    def set_real_edge(self,edge,boolean):
-        self.graph.ep['real_edge'][edge] = boolean
 
 
 ##----------------------------------------- ADDING POINTS, EDGES AND ROADS -------------------------------------------- <- SUBSTEPS OF EVOLVE STREETS                            
@@ -449,29 +333,6 @@ class barthelemy_graph:
 #        print('expected conc matrix shape {0},{1}'.format(len(old_points)+1,len(old_points)),np.shape(dm_conc))
         self.distance_matrix_ = np.concatenate((dm_conc,dm_col),axis = 1)
 
-##-------------------------------------- IS STATEMENTS FOR VERTICES ------------------------------------
-    def is_in_graph(self,vertex):
-        return self.graph.vp['is_in_graph'][vertex]
-    
-    def is_end_point(self,vertex):
-        return self.graph.vp['end_point'][vertex]
-
-    def is_active(self,vertex):
-        return self.graph.vp['is_active'][vertex]
-
-    def is_newly_added(self,vertex):    
-        return self.graph.vp['newly_added_center'][vertex]
-
-    def is_important_node(self,vertex):
-        return self.graph.vp['important_node'][vertex]
-
-    def is_intersection(self,vertex):
-        return self.graph.vp['intersection'][vertex]
-    
-##--------------------------------------- SPATIAL GEOMETRY, NEIGHBORHOODS, RELATIVE NEIGHBORS ------------------------------------
-
-    def get_voronoi(self,vertex):
-        self.graph.vp['voronoi'][vertex] = Voronoi(np.array([self.graph.vp['x'][vertex],self.graph.vp['y'][vertex]]).T)
 
 ##---------------------------------------- ROAD OPERATIONS ---------------------------------------------
 
@@ -1455,7 +1316,7 @@ def build_planar_graph(config,r0):
         Runs the creation of the graph
     '''
     ## Initialization parameters (with r0 being the characteristic distance of the probability distribution generation)
-    bg = barthelemy_graph(config,r0)
+    bg = planar_graph(config,r0)
     ## Initializes the properties of graph
     bg.initialize_graph()
     ## Add initial centers and control they are in the bounding box
