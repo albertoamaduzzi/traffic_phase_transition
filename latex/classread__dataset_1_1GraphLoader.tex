@@ -1,0 +1,60 @@
+\hypertarget{classread__dataset_1_1GraphLoader}{}\doxysection{read\+\_\+dataset.\+Graph\+Loader Class Reference}
+\label{classread__dataset_1_1GraphLoader}\index{read\_dataset.GraphLoader@{read\_dataset.GraphLoader}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a3f8192b42aafea7e4040b1f075fa78e9}\label{classread__dataset_1_1GraphLoader_a3f8192b42aafea7e4040b1f075fa78e9}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, city, typegraph, config\+\_\+dict)
+\item 
+def \mbox{\hyperlink{classread__dataset_1_1GraphLoader_a9183e7ea19d6977159d6331d4609c243}{create\+\_\+hexagonal\+\_\+cover}} (self, polygon)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a00cc0a7ce91d13a1360b34cc53eb66d8}\label{classread__dataset_1_1GraphLoader_a00cc0a7ce91d13a1360b34cc53eb66d8}} 
+{\bfseries gdf}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a1b1e567e2c43c24f85ae37ef2765fdf6}\label{classread__dataset_1_1GraphLoader_a1b1e567e2c43c24f85ae37ef2765fdf6}} 
+{\bfseries city}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a14d52ea18138626fb600eea27dca0451}\label{classread__dataset_1_1GraphLoader_a14d52ea18138626fb600eea27dca0451}} 
+{\bfseries base\+\_\+input\+\_\+dir}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_ae210d6bd2217031c1383e3cf46663d0d}\label{classread__dataset_1_1GraphLoader_ae210d6bd2217031c1383e3cf46663d0d}} 
+{\bfseries base\+\_\+output\+\_\+dir}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a4d29c078b0e4cf4783288e2337a5a9b1}\label{classread__dataset_1_1GraphLoader_a4d29c078b0e4cf4783288e2337a5a9b1}} 
+{\bfseries variable\+\_\+initialization}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a292eb0ff37757932d01f9fc172af982a}\label{classread__dataset_1_1GraphLoader_a292eb0ff37757932d01f9fc172af982a}} 
+{\bfseries G}
+\item 
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a6cfce4423da3bc05472747004fdc9f22}\label{classread__dataset_1_1GraphLoader_a6cfce4423da3bc05472747004fdc9f22}} 
+{\bfseries hex\+\_\+gdf}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}    The idea here is to create a class that handles the different possible ways to download the dataset.
+    Essentially in output I would like some graph read from cartography.
+    I want the graph containing informations about the points of interests.
+    Above all the economic features and density features. If these data are available, in principle I have 
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classread__dataset_1_1GraphLoader_a9183e7ea19d6977159d6331d4609c243}\label{classread__dataset_1_1GraphLoader_a9183e7ea19d6977159d6331d4609c243}} 
+\index{read\_dataset.GraphLoader@{read\_dataset.GraphLoader}!create\_hexagonal\_cover@{create\_hexagonal\_cover}}
+\index{create\_hexagonal\_cover@{create\_hexagonal\_cover}!read\_dataset.GraphLoader@{read\_dataset.GraphLoader}}
+\doxysubsubsection{\texorpdfstring{create\_hexagonal\_cover()}{create\_hexagonal\_cover()}}
+{\footnotesize\ttfamily def read\+\_\+dataset.\+Graph\+Loader.\+create\+\_\+hexagonal\+\_\+cover (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{polygon }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Input: shapely.Polygon
+Description: Produces the hexagonal covering of the polygon
+The 13 resolution in polyfill corresponds to 40 m^2 area, similar to HDX data from meta
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+tests/read\+\_\+dataset.\+py\end{DoxyCompactItemize}

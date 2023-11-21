@@ -1,4 +1,3 @@
-from planar_graph import planar_graph
 from geometric_features import road
 
 ####-------------------------------------------- SET FUNCTIONS --------------------------------------------####
@@ -10,6 +9,14 @@ def set_direction(planar_graph,edge):
 
 def set_real_edge(planar_graph,edge,boolean):
     planar_graph.graph.ep['real_edge'][edge] = boolean
+
+##-------------------------------------------- GET FUNCTIONS --------------------------------------------##
+def get_edge(planar_graph,vertex,vertex1):
+    '''
+        Returns the edge between vertex and vertex1
+    '''
+    return planar_graph.graph.edge(vertex,vertex1)
+
 
 
 ##---------------------------------------- ROAD OPERATIONS ---------------------------------------------

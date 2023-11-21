@@ -1,0 +1,153 @@
+\hypertarget{classgrid_1_1Grid}{}\doxysection{grid.\+Grid Class Reference}
+\label{classgrid_1_1Grid}\index{grid.Grid@{grid.Grid}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_a66ea00f1bf4364f3998f9e6d32c8bb19}{\+\_\+\+\_\+init\+\_\+\+\_\+}} (self, \mbox{\hyperlink{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}{side\+\_\+city}}, \mbox{\hyperlink{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}{resolution\+\_\+grid}})
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_a3069363ac5523412a92b58435e121040}{get\+\_\+polygon}} (self)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}{grid\+\_\+bounds}} (self)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_a7ac11a321a4fc4571357d54ae86fba79}{partition}} (self)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}{point2grid}} (self, point)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}{contains\+\_\+vector\+\_\+points}} (self, vector\+\_\+points)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}{side\+\_\+city}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}{resolution\+\_\+grid}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_a2a396c4b073785859a3fcb8dfac35d9a}{minx}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_aa47f404adbbf503a5e9ef8492877772d}{miny}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_a02ee58df91d1df785314e8c747c2ba01}{maxx}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_aa95c9969e060c8d47738e52681512ee8}{maxy}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_a00097225b26bc3982c9940350a4a7b4d}{geom}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_ace0b8b328ce4352cf2e1229e58431fa9}{grid2point}}
+\item 
+\mbox{\hyperlink{classgrid_1_1Grid_a3d3d8219f77a46eb7bc08d50a1a27d3f}{grid}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classgrid_1_1Grid_a66ea00f1bf4364f3998f9e6d32c8bb19}\label{classgrid_1_1Grid_a66ea00f1bf4364f3998f9e6d32c8bb19}} 
+\index{grid.Grid@{grid.Grid}!\_\_init\_\_@{\_\_init\_\_}}
+\index{\_\_init\_\_@{\_\_init\_\_}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{\_\_init\_\_()}{\_\_init\_\_()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+\_\+\+\_\+init\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{side\+\_\+city,  }\item[{}]{resolution\+\_\+grid }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}\label{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}} 
+\index{grid.Grid@{grid.Grid}!contains\_vector\_points@{contains\_vector\_points}}
+\index{contains\_vector\_points@{contains\_vector\_points}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{contains\_vector\_points()}{contains\_vector\_points()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+contains\+\_\+vector\+\_\+points (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{vector\+\_\+points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: np.array([[x1,y1],[x2,y2],...,[xn,yn]])
+    Output:
+        1) Insert points in the grid
+        2) np.array([[x1,y1],[x2,y2],...,[xn,yn]]) with only the points inside the box
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgrid_1_1Grid_a3069363ac5523412a92b58435e121040}\label{classgrid_1_1Grid_a3069363ac5523412a92b58435e121040}} 
+\index{grid.Grid@{grid.Grid}!get\_polygon@{get\_polygon}}
+\index{get\_polygon@{get\_polygon}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{get\_polygon()}{get\_polygon()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+get\+\_\+polygon (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}\label{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}} 
+\index{grid.Grid@{grid.Grid}!grid\_bounds@{grid\_bounds}}
+\index{grid\_bounds@{grid\_bounds}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{grid\_bounds()}{grid\_bounds()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+grid\+\_\+bounds (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Return grid: np.array(),shape = nx,ny -> of polygons
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgrid_1_1Grid_a7ac11a321a4fc4571357d54ae86fba79}\label{classgrid_1_1Grid_a7ac11a321a4fc4571357d54ae86fba79}} 
+\index{grid.Grid@{grid.Grid}!partition@{partition}}
+\index{partition@{partition}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{partition()}{partition()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+partition (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}\label{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}} 
+\index{grid.Grid@{grid.Grid}!point2grid@{point2grid}}
+\index{point2grid@{point2grid}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{point2grid()}{point2grid()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+point2grid (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{point }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: [x,y] coordinates
+    Description: 
+        Associate those coordinates to the grid in the dictionary
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classgrid_1_1Grid_a00097225b26bc3982c9940350a4a7b4d}\label{classgrid_1_1Grid_a00097225b26bc3982c9940350a4a7b4d}} 
+\index{grid.Grid@{grid.Grid}!geom@{geom}}
+\index{geom@{geom}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{geom}{geom}}
+{\footnotesize\ttfamily grid.\+Grid.\+geom}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_a3d3d8219f77a46eb7bc08d50a1a27d3f}\label{classgrid_1_1Grid_a3d3d8219f77a46eb7bc08d50a1a27d3f}} 
+\index{grid.Grid@{grid.Grid}!grid@{grid}}
+\index{grid@{grid}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{grid}{grid}}
+{\footnotesize\ttfamily grid.\+Grid.\+grid}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_ace0b8b328ce4352cf2e1229e58431fa9}\label{classgrid_1_1Grid_ace0b8b328ce4352cf2e1229e58431fa9}} 
+\index{grid.Grid@{grid.Grid}!grid2point@{grid2point}}
+\index{grid2point@{grid2point}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{grid2point}{grid2point}}
+{\footnotesize\ttfamily grid.\+Grid.\+grid2point}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_a02ee58df91d1df785314e8c747c2ba01}\label{classgrid_1_1Grid_a02ee58df91d1df785314e8c747c2ba01}} 
+\index{grid.Grid@{grid.Grid}!maxx@{maxx}}
+\index{maxx@{maxx}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{maxx}{maxx}}
+{\footnotesize\ttfamily grid.\+Grid.\+maxx}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_aa95c9969e060c8d47738e52681512ee8}\label{classgrid_1_1Grid_aa95c9969e060c8d47738e52681512ee8}} 
+\index{grid.Grid@{grid.Grid}!maxy@{maxy}}
+\index{maxy@{maxy}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{maxy}{maxy}}
+{\footnotesize\ttfamily grid.\+Grid.\+maxy}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_a2a396c4b073785859a3fcb8dfac35d9a}\label{classgrid_1_1Grid_a2a396c4b073785859a3fcb8dfac35d9a}} 
+\index{grid.Grid@{grid.Grid}!minx@{minx}}
+\index{minx@{minx}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{minx}{minx}}
+{\footnotesize\ttfamily grid.\+Grid.\+minx}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_aa47f404adbbf503a5e9ef8492877772d}\label{classgrid_1_1Grid_aa47f404adbbf503a5e9ef8492877772d}} 
+\index{grid.Grid@{grid.Grid}!miny@{miny}}
+\index{miny@{miny}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{miny}{miny}}
+{\footnotesize\ttfamily grid.\+Grid.\+miny}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}\label{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}} 
+\index{grid.Grid@{grid.Grid}!resolution\_grid@{resolution\_grid}}
+\index{resolution\_grid@{resolution\_grid}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{resolution\_grid}{resolution\_grid}}
+{\footnotesize\ttfamily grid.\+Grid.\+resolution\+\_\+grid}
+
+\mbox{\Hypertarget{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}\label{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}} 
+\index{grid.Grid@{grid.Grid}!side\_city@{side\_city}}
+\index{side\_city@{side\_city}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{side\_city}{side\_city}}
+{\footnotesize\ttfamily grid.\+Grid.\+side\+\_\+city}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{grid_8py}{grid.\+py}}\end{DoxyCompactItemize}

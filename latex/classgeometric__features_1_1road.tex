@@ -1,0 +1,93 @@
+\hypertarget{classgeometric__features_1_1road}{}\doxysection{geometric\+\_\+features.\+road Class Reference}
+\label{classgeometric__features_1_1road}\index{geometric\_features.road@{geometric\_features.road}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a42945f816acd9f8d964540ce42268cee}\label{classgeometric__features_1_1road_a42945f816acd9f8d964540ce42268cee}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, initial\+\_\+node, global\+\_\+counting\+\_\+roads, activation\+\_\+vertex, type\+\_\+initial\+\_\+node)
+\item 
+def \mbox{\hyperlink{classgeometric__features_1_1road_a1971d11d1a46611809ae27805171375e}{add\+\_\+node\+\_\+in\+\_\+road}} (self, source\+\_\+node, new\+\_\+vertex, distance\+\_\+sn)
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a9866ccf6372de7fc10db305598be749e}\label{classgeometric__features_1_1road_a9866ccf6372de7fc10db305598be749e}} 
+def {\bfseries in\+\_\+road} (self, vertex)
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_af10d6620d392edc4f6a4894028b0822f}\label{classgeometric__features_1_1road_af10d6620d392edc4f6a4894028b0822f}} 
+def {\bfseries activating\+\_\+node} (self)
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_af147888beeb9fce905514f3cd9fe6870}\label{classgeometric__features_1_1road_af147888beeb9fce905514f3cd9fe6870}} 
+def {\bfseries copy\+\_\+road\+\_\+specifics} (self, \mbox{\hyperlink{classgeometric__features_1_1road}{road}})
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a3a22bbd5b8561ecb9ec63c8b958dd172}\label{classgeometric__features_1_1road_a3a22bbd5b8561ecb9ec63c8b958dd172}} 
+{\bfseries id}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a8099145d71a65faed21f041af81c9e5f}\label{classgeometric__features_1_1road_a8099145d71a65faed21f041af81c9e5f}} 
+{\bfseries initial\+\_\+node}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a3480128d2838a5e5b902309fb2309baa}\label{classgeometric__features_1_1road_a3480128d2838a5e5b902309fb2309baa}} 
+{\bfseries number\+\_\+iterations}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a7a8b8d5cd479b337f06595d4a0587a4f}\label{classgeometric__features_1_1road_a7a8b8d5cd479b337f06595d4a0587a4f}} 
+{\bfseries length}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a55f6aabff2ac947714b1e9266bbd984b}\label{classgeometric__features_1_1road_a55f6aabff2ac947714b1e9266bbd984b}} 
+{\bfseries list\+\_\+nodes}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a5cac85ffdceb5145ebb4fedc10a2f7c1}\label{classgeometric__features_1_1road_a5cac85ffdceb5145ebb4fedc10a2f7c1}} 
+{\bfseries type\+\_\+initial\+\_\+node}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a73ac472f9e73edddfaad8c324de1c14e}\label{classgeometric__features_1_1road_a73ac472f9e73edddfaad8c324de1c14e}} 
+{\bfseries list\+\_\+edges}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_abccd3c4e02feacc1d59212c4ffc965fb}\label{classgeometric__features_1_1road_abccd3c4e02feacc1d59212c4ffc965fb}} 
+{\bfseries evolution\+\_\+attractors}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a599d6f5a6865f207c88a51b8821d4d31}\label{classgeometric__features_1_1road_a599d6f5a6865f207c88a51b8821d4d31}} 
+{\bfseries end\+\_\+point}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a728512369fbe7ab5c2a454779cb0e844}\label{classgeometric__features_1_1road_a728512369fbe7ab5c2a454779cb0e844}} 
+{\bfseries is\+\_\+closed}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a0166617f9d1c8341f627bf0e0d1dd608}\label{classgeometric__features_1_1road_a0166617f9d1c8341f627bf0e0d1dd608}} 
+{\bfseries activated\+\_\+by}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1road_a3ec8a22ea24123e968321ade537a61e5}\label{classgeometric__features_1_1road_a3ec8a22ea24123e968321ade537a61e5}} 
+{\bfseries end\+\_\+node}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}    Input:
+        initial_node: vertex 
+        global_counting_roads: int [integer that I am updating every time I create a new road]
+        activation_vertex: [vertex] [list of vertices that starts the attraction of the road]
+        type_initial_node: string ['important_node','intersection']
+    NOTE: 
+        list_nodes: list dtype = vertex
+    Road will become useful when I need to update rng, indeed It is happening that if:
+        Node i and Node j are attracted one another and they grow the first step of the road
+        they stop, as now their relative neighbors are the points that have grown,
+        for this reason I want to avoid the elements of the road in the rng calculation
+    Need to add a condition not to growing element grow back to the starting point  
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classgeometric__features_1_1road_a1971d11d1a46611809ae27805171375e}\label{classgeometric__features_1_1road_a1971d11d1a46611809ae27805171375e}} 
+\index{geometric\_features.road@{geometric\_features.road}!add\_node\_in\_road@{add\_node\_in\_road}}
+\index{add\_node\_in\_road@{add\_node\_in\_road}!geometric\_features.road@{geometric\_features.road}}
+\doxysubsubsection{\texorpdfstring{add\_node\_in\_road()}{add\_node\_in\_road()}}
+{\footnotesize\ttfamily def geometric\+\_\+features.\+road.\+add\+\_\+node\+\_\+in\+\_\+road (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{source\+\_\+node,  }\item[{}]{new\+\_\+vertex,  }\item[{}]{distance\+\_\+sn }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input:
+        new_vertex: vertex
+    Description:
+        Use to add point in the road
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+scripts/geometric\+\_\+features.\+py\end{DoxyCompactItemize}

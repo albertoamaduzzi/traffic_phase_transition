@@ -1,0 +1,87 @@
+\hypertarget{classgeometric__features_1_1Grid}{}\doxysection{geometric\+\_\+features.\+Grid Class Reference}
+\label{classgeometric__features_1_1Grid}\index{geometric\_features.Grid@{geometric\_features.Grid}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_a968325ea99351a8bebfdb61dde872a9f}\label{classgeometric__features_1_1Grid_a968325ea99351a8bebfdb61dde872a9f}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, side\+\_\+city, resolution\+\_\+grid)
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_ac83e2179583801c97ffd1fe54690b442}\label{classgeometric__features_1_1Grid_ac83e2179583801c97ffd1fe54690b442}} 
+def {\bfseries get\+\_\+polygon} (self)
+\item 
+def \mbox{\hyperlink{classgeometric__features_1_1Grid_a9dddf5436cbdb5f4957cda8f541e148c}{grid\+\_\+bounds}} (self)
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_aa59b1cbc535a848e5b3e3e4db9ae4ed8}\label{classgeometric__features_1_1Grid_aa59b1cbc535a848e5b3e3e4db9ae4ed8}} 
+def {\bfseries partition} (self)
+\item 
+def \mbox{\hyperlink{classgeometric__features_1_1Grid_a01a7c1455795f46fec187eddc8676d53}{point2grid}} (self, point)
+\item 
+def \mbox{\hyperlink{classgeometric__features_1_1Grid_af4174806291085d82407c6c99e97835b}{contains\+\_\+vector\+\_\+points}} (self, vector\+\_\+points)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_acf5d4e8bb1c819d96916b2a712698650}\label{classgeometric__features_1_1Grid_acf5d4e8bb1c819d96916b2a712698650}} 
+{\bfseries side\+\_\+city}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_ab59f06e85b3c25ab8e158e5fe640d27c}\label{classgeometric__features_1_1Grid_ab59f06e85b3c25ab8e158e5fe640d27c}} 
+{\bfseries resolution\+\_\+grid}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_a48dd7d0c3c365144e0a2ccf0b355b9b0}\label{classgeometric__features_1_1Grid_a48dd7d0c3c365144e0a2ccf0b355b9b0}} 
+{\bfseries minx}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_a12deeae8723f745c67d63a3c6e55c907}\label{classgeometric__features_1_1Grid_a12deeae8723f745c67d63a3c6e55c907}} 
+{\bfseries miny}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_ae5113572bd9aaee1d1771c77e031e0a1}\label{classgeometric__features_1_1Grid_ae5113572bd9aaee1d1771c77e031e0a1}} 
+{\bfseries maxx}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_a9bc25158778b345e014f7293d52e9ba2}\label{classgeometric__features_1_1Grid_a9bc25158778b345e014f7293d52e9ba2}} 
+{\bfseries maxy}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_a4a1b599d918360a89edf3d7f347d8162}\label{classgeometric__features_1_1Grid_a4a1b599d918360a89edf3d7f347d8162}} 
+{\bfseries geom}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_af106dab4440fc45446c7c7457ee34ee9}\label{classgeometric__features_1_1Grid_af106dab4440fc45446c7c7457ee34ee9}} 
+{\bfseries grid2point}
+\item 
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_ac9cd0711dc51231ab955365e3e11c139}\label{classgeometric__features_1_1Grid_ac9cd0711dc51231ab955365e3e11c139}} 
+{\bfseries grid}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classgeometric__features_1_1Grid_af4174806291085d82407c6c99e97835b}\label{classgeometric__features_1_1Grid_af4174806291085d82407c6c99e97835b}} 
+\index{geometric\_features.Grid@{geometric\_features.Grid}!contains\_vector\_points@{contains\_vector\_points}}
+\index{contains\_vector\_points@{contains\_vector\_points}!geometric\_features.Grid@{geometric\_features.Grid}}
+\doxysubsubsection{\texorpdfstring{contains\_vector\_points()}{contains\_vector\_points()}}
+{\footnotesize\ttfamily def geometric\+\_\+features.\+Grid.\+contains\+\_\+vector\+\_\+points (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{vector\+\_\+points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: np.array([[x1,y1],[x2,y2],...,[xn,yn]])
+    Output:
+        1) Insert points in the grid
+        2) np.array([[x1,y1],[x2,y2],...,[xn,yn]]) with only the points inside the box
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgeometric__features_1_1Grid_a9dddf5436cbdb5f4957cda8f541e148c}\label{classgeometric__features_1_1Grid_a9dddf5436cbdb5f4957cda8f541e148c}} 
+\index{geometric\_features.Grid@{geometric\_features.Grid}!grid\_bounds@{grid\_bounds}}
+\index{grid\_bounds@{grid\_bounds}!geometric\_features.Grid@{geometric\_features.Grid}}
+\doxysubsubsection{\texorpdfstring{grid\_bounds()}{grid\_bounds()}}
+{\footnotesize\ttfamily def geometric\+\_\+features.\+Grid.\+grid\+\_\+bounds (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Return grid: np.array(),shape = nx,ny -> of polygons
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgeometric__features_1_1Grid_a01a7c1455795f46fec187eddc8676d53}\label{classgeometric__features_1_1Grid_a01a7c1455795f46fec187eddc8676d53}} 
+\index{geometric\_features.Grid@{geometric\_features.Grid}!point2grid@{point2grid}}
+\index{point2grid@{point2grid}!geometric\_features.Grid@{geometric\_features.Grid}}
+\doxysubsubsection{\texorpdfstring{point2grid()}{point2grid()}}
+{\footnotesize\ttfamily def geometric\+\_\+features.\+Grid.\+point2grid (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{point }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: [x,y] coordinates
+    Description: 
+        Associate those coordinates to the grid in the dictionary
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+scripts/geometric\+\_\+features.\+py\end{DoxyCompactItemize}

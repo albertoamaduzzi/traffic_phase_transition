@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['capacity_0',['capacity',['../classfacilities_1_1facility.html#a4471be913e5c21d64b9d73cfb3e50bdc',1,'facilities::facility']]],
+  ['city_5fblocks_1',['city_blocks',['../classfacilities_1_1facility.html#a76bd034ed6a03a666bb66766a20442d0',1,'facilities::facility']]],
+  ['city_5fbox_2',['city_box',['../namespaceplanar__graph.html#ad514d66bf4d58d7d64d5e18a46cd3e21',1,'planar_graph.city_box()'],['../namespacegeometric__features.html#ade6db571b0d6a45b60c3841602dd2fac',1,'geometric_features.city_box()']]],
+  ['close_5froad_3',['close_road',['../namespacegrowth__functions.html#a53bdcec6b46b191918f751a805f83245',1,'growth_functions']]],
+  ['cofactor_4',['cofactor',['../namespacewighted__graph.html#a56ae98c0bd34a720dc6d79d52bcbaff3',1,'wighted_graph']]],
+  ['color_5',['color',['../namespacegeometric__features.html#a8fe824bd77863d182918019e33663476',1,'geometric_features']]],
+  ['compute_5frng_5fnewly_5fadded_5fcenters_6',['compute_rng_newly_added_centers',['../namespacerelative__neighbors.html#a1785f192cc1527a3000284a72f845d00',1,'relative_neighbors']]],
+  ['compute_5frng_5fold_5fcenters_7',['compute_rng_old_centers',['../namespacerelative__neighbors.html#abadfee303a12d74b8c909a34dc1ea228',1,'relative_neighbors']]],
+  ['compute_5ftotal_5flength_8',['compute_total_length',['../namespaceplanar__graph.html#a5c6194fc08db83b0e726b8ced2ed383e',1,'planar_graph']]],
+  ['config_9',['config',['../classOD_1_1OD.html#ab73add76b52dae1e045fa6c6223bd790',1,'OD.OD.config()'],['../classplanar__graph_1_1planar__graph.html#a747f0a41a9bfd71d076af0afdd3edf0f',1,'planar_graph.planar_graph.config()'],['../namespaceplanar__graph.html#a9957a3e871a9881e754fae505d482826',1,'planar_graph.config()']]],
+  ['config_5fdir_10',['config_dir',['../namespaceplanar__graph.html#a52271043b7c46ea93548feba836f9d4c',1,'planar_graph.config_dir()'],['../classOD_1_1OD.html#a973991771bacb086b5ed93f8b2bd3653',1,'OD.OD.config_dir()']]],
+  ['config_5fname_11',['config_name',['../classOD_1_1OD.html#a46bd97fd23711ca4deb63d0cdbeaa408',1,'OD.OD.config_name()'],['../namespaceplanar__graph.html#abc93549404d85892893971d729d5f07c',1,'planar_graph.config_name()']]],
+  ['contains_5fvector_5fpoints_12',['contains_vector_points',['../classgrid_1_1Grid.html#ae520dd8ee91fb7c6187a413f3df9fe2d',1,'grid::Grid']]],
+  ['coordinate_5fdifference_13',['coordinate_difference',['../namespacevector__operations.html#a76367314ccf1eb9cf0d2be25c0cd43b5',1,'vector_operations']]],
+  ['copy_5froad_5fspecifics_14',['copy_road_specifics',['../classgeometric__features_1_1road.html#af147888beeb9fce905514f3cd9fe6870',1,'geometric_features::road']]],
+  ['count_5froads_15',['count_roads',['../classplanar__graph_1_1planar__graph.html#a258d8b753e4592695c33a51ce871ba21',1,'planar_graph::planar_graph']]],
+  ['create_5fgraph_16',['create_graph',['../classOD_1_1OD.html#a57ff10667517040ccdcb5b73882ec450',1,'OD::OD']]],
+  ['create_5fplanar_5fgraph_17',['create_planar_graph',['../namespacecreate__planar__graph.html',1,'']]],
+  ['create_5fplanar_5fgraph_2epy_18',['create_planar_graph.py',['../create__planar__graph_8py.html',1,'']]],
+  ['create_5froad_19',['create_road',['../namespaceedges__functions.html#a4bb76411586334914ab99971d94e3a80',1,'edges_functions']]],
+  ['cube_20',['cube',['../classwighted__graph_1_1analyzer__structure.html#a3d934f541298110080f8d2b23b8efc5e',1,'wighted_graph::analyzer_structure']]]
+];
