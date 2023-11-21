@@ -1,0 +1,71 @@
+\hypertarget{namespaceglobal__functions}{}\doxysection{global\+\_\+functions Namespace Reference}
+\label{namespaceglobal__functions}\index{global\_functions@{global\_functions}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespaceglobal__functions_ac5cfedbd2f75dc99d268af38d8207297}{ifnotexistsmkdir}} (path)
+\item 
+def \mbox{\hyperlink{namespaceglobal__functions_a8408b27a5432515c760da82af21494a7}{initial\+\_\+graph}} ()
+\begin{DoxyCompactList}\small\item\em GLOBAL. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespaceglobal__functions_a9cc5caa5bddde1055bffd5362332a839}{generate\+\_\+exponential\+\_\+distribution\+\_\+nodes\+\_\+in\+\_\+space\+\_\+square}} (r0, number\+\_\+nodes, side\+\_\+city)
+\item 
+def \mbox{\hyperlink{namespaceglobal__functions_ad08f3ef1e712b02503c99927d9d54d3d}{is\+\_\+graph\+\_\+connected}} (graph)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespaceglobal__functions_a9cc5caa5bddde1055bffd5362332a839}\label{namespaceglobal__functions_a9cc5caa5bddde1055bffd5362332a839}} 
+\index{global\_functions@{global\_functions}!generate\_exponential\_distribution\_nodes\_in\_space\_square@{generate\_exponential\_distribution\_nodes\_in\_space\_square}}
+\index{generate\_exponential\_distribution\_nodes\_in\_space\_square@{generate\_exponential\_distribution\_nodes\_in\_space\_square}!global\_functions@{global\_functions}}
+\doxysubsubsection{\texorpdfstring{generate\_exponential\_distribution\_nodes\_in\_space\_square()}{generate\_exponential\_distribution\_nodes\_in\_space\_square()}}
+{\footnotesize\ttfamily def global\+\_\+functions.\+generate\+\_\+exponential\+\_\+distribution\+\_\+nodes\+\_\+in\+\_\+space\+\_\+square (\begin{DoxyParamCaption}\item[{}]{r0,  }\item[{}]{number\+\_\+nodes,  }\item[{}]{side\+\_\+city }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Citation:
+        The spatial structure of networks: Michael T. Gastner and M. E. J. Newman
+    Description:
+        Generate a uniform distribution of points in a circle of radius radius_city
+        Initialize postiions and distance matrix
+        ALL in one step:        
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespaceglobal__functions_ac5cfedbd2f75dc99d268af38d8207297}\label{namespaceglobal__functions_ac5cfedbd2f75dc99d268af38d8207297}} 
+\index{global\_functions@{global\_functions}!ifnotexistsmkdir@{ifnotexistsmkdir}}
+\index{ifnotexistsmkdir@{ifnotexistsmkdir}!global\_functions@{global\_functions}}
+\doxysubsubsection{\texorpdfstring{ifnotexistsmkdir()}{ifnotexistsmkdir()}}
+{\footnotesize\ttfamily def global\+\_\+functions.\+ifnotexistsmkdir (\begin{DoxyParamCaption}\item[{}]{path }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceglobal__functions_a8408b27a5432515c760da82af21494a7}\label{namespaceglobal__functions_a8408b27a5432515c760da82af21494a7}} 
+\index{global\_functions@{global\_functions}!initial\_graph@{initial\_graph}}
+\index{initial\_graph@{initial\_graph}!global\_functions@{global\_functions}}
+\doxysubsubsection{\texorpdfstring{initial\_graph()}{initial\_graph()}}
+{\footnotesize\ttfamily def global\+\_\+functions.\+initial\+\_\+graph (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+GLOBAL. 
+
+\begin{DoxyVerb}graph whose vertex properties are:
+    id: int
+    x: double
+    y: double
+    relative_neighbors: vector<int>
+    important_node: bool (if the node is a node True, else is a point)
+    connected: bool (if the node needs to be attached to the net True,
+                once the road is completed, the point is added to the net)
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespaceglobal__functions_ad08f3ef1e712b02503c99927d9d54d3d}\label{namespaceglobal__functions_ad08f3ef1e712b02503c99927d9d54d3d}} 
+\index{global\_functions@{global\_functions}!is\_graph\_connected@{is\_graph\_connected}}
+\index{is\_graph\_connected@{is\_graph\_connected}!global\_functions@{global\_functions}}
+\doxysubsubsection{\texorpdfstring{is\_graph\_connected()}{is\_graph\_connected()}}
+{\footnotesize\ttfamily def global\+\_\+functions.\+is\+\_\+graph\+\_\+connected (\begin{DoxyParamCaption}\item[{}]{graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Check if a graph is connected using graph-tool.
+
+Parameters:
+- graph: graph_tool.Graph
+    The input graph.
+
+Returns:
+- bool
+    True if the graph is connected, False otherwise.
+\end{DoxyVerb}
+ 

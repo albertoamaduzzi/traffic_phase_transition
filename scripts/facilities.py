@@ -1,6 +1,5 @@
 import sys
-from geometric_features import Grid,road
-from barthelemy_vertex import barthelemy_graph,initial_graph
+from geometric_features import road
     '''
     Example config:
     {

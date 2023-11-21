@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['id_0',['id',['../classgeometric__features_1_1road.html#a3a22bbd5b8561ecb9ec63c8b958dd172',1,'geometric_features::road']]],
+  ['idx_1',['idx',['../classfacilities_1_1facility.html#a69299195bff2601bc3c6e4ee1f62fd84',1,'facilities::facility']]],
+  ['ifnotexistsmkdir_2',['ifnotexistsmkdir',['../namespaceglobal__functions.html#ac5cfedbd2f75dc99d268af38d8207297',1,'global_functions']]],
+  ['important_5fvertices_3',['important_vertices',['../classplanar__graph_1_1planar__graph.html#a3cc6e15a36b9e6e7a958d2556b624adf',1,'planar_graph::planar_graph']]],
+  ['in_5froad_4',['in_road',['../classgeometric__features_1_1road.html#a9866ccf6372de7fc10db305598be749e',1,'geometric_features::road']]],
+  ['initial_5fgraph_5',['initial_graph',['../namespaceglobal__functions.html#a8408b27a5432515c760da82af21494a7',1,'global_functions']]],
+  ['initial_5fnode_6',['initial_node',['../classgeometric__features_1_1road.html#a8099145d71a65faed21f041af81c9e5f',1,'geometric_features.road.initial_node()'],['../classgeometric__features_1_1node.html#ab0f978da6fc3c8b0abfe962600b7db69',1,'geometric_features.node.initial_node()']]],
+  ['initial_5fnumber_5fpoints_7',['initial_number_points',['../classplanar__graph_1_1planar__graph.html#ac1d358cdc479842ba0268e5610fae221',1,'planar_graph::planar_graph']]],
+  ['initialize_5fbase_5fdir_8',['initialize_base_dir',['../namespaceplanar__graph.html#a3eccd172f94beab8e73a83c8a87fcae0',1,'planar_graph']]],
+  ['initialize_5fdistance_5fmatrix_9',['initialize_distance_matrix',['../namespacegrowth__functions.html#a8f5b7551f486d51a59326820119dbce9',1,'growth_functions']]],
+  ['initialize_5fgraph_10',['initialize_graph',['../namespaceplanar__graph.html#aa9e6cd3785e841c1a527ac8856093f07',1,'planar_graph']]],
+  ['intersection_5fvertices_11',['intersection_vertices',['../classplanar__graph_1_1planar__graph.html#a673dfcda609c28b65b5ee01edf49a642',1,'planar_graph::planar_graph']]],
+  ['is_5factive_12',['is_active',['../namespacevertices__functions.html#a7ce1b62b500a83daa7694d14b823bbda',1,'vertices_functions']]],
+  ['is_5fclosed_13',['is_closed',['../classgeometric__features_1_1road.html#a728512369fbe7ab5c2a454779cb0e844',1,'geometric_features::road']]],
+  ['is_5fend_5fpoint_14',['is_end_point',['../namespacevertices__functions.html#a097a4affeb6ac3144d508b2278e054a9',1,'vertices_functions']]],
+  ['is_5fgraph_5fconnected_15',['is_graph_connected',['../namespaceglobal__functions.html#ad08f3ef1e712b02503c99927d9d54d3d',1,'global_functions']]],
+  ['is_5fimportant_5fnode_16',['is_important_node',['../namespacevertices__functions.html#a556c5062d5a5f48f184667ec959d8db0',1,'vertices_functions']]],
+  ['is_5fin_5fgraph_17',['is_in_graph',['../namespacevertices__functions.html#a51e149a4cfb4919606a5e6726181413e',1,'vertices_functions']]],
+  ['is_5fin_5fgraph_5fvertices_18',['is_in_graph_vertices',['../classplanar__graph_1_1planar__graph.html#ae99205436d91c84c18c1870ff0ad3b86',1,'planar_graph::planar_graph']]],
+  ['is_5fintersection_19',['is_intersection',['../namespacevertices__functions.html#a70b13b528fabda08334b281f50402bbd',1,'vertices_functions']]],
+  ['is_5fnewly_5fadded_20',['is_newly_added',['../namespacevertices__functions.html#adb3edfdb0e7472fa3150b7062bf8e34d',1,'vertices_functions']]]
+];

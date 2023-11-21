@@ -1,0 +1,281 @@
+\hypertarget{namespacegrowth__functions}{}\doxysection{growth\+\_\+functions Namespace Reference}
+\label{namespacegrowth__functions}\index{growth\_functions@{growth\_functions}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_af2510cd6a4b7809f44918a3a882dcf6e}{add\+\_\+initial\+\_\+points2graph}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}}, r0, number\+\_\+nodes, side\+\_\+city)
+\begin{DoxyCompactList}\small\item\em -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- ADDING POINTS, EDGES AND ROADS -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- \texorpdfstring{$<$}{<}-\/ SUBSTEPS OF EVOLVE STREETS ~\newline
+ STARTS WITH CONNECTED POINTS (DEPRECATED) \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_af0dee4dc0d28fc99f3b042e816dfbbae}{add\+\_\+centers2graph}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}}, r0, number\+\_\+nodes, side\+\_\+city)
+\begin{DoxyCompactList}\small\item\em STARTS WITH DETACHED CENTERS. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a1b03fb71edbd8bd1211c2d949bc0283a}{add\+\_\+point2graph}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}}, source\+\_\+vertex, dx, dy)
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a8f5b7551f486d51a59326820119dbce9}{initialize\+\_\+distance\+\_\+matrix}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}}, x, y)
+\begin{DoxyCompactList}\small\item\em -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- DISTANCE MATRIX -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_aa42dafef04b32c87dd00fe10ed4754a5}{update\+\_\+distance\+\_\+matrix}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}}, old\+\_\+points, new\+\_\+point)
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a53bdcec6b46b191918f751a805f83245}{close\+\_\+road}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em UPDATE. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_ae9d24381c222fec0fcd8faba512ac85f}{update\+\_\+list\+\_\+important\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- UPDATES -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE DELAUNEY TRIANGULATION (new added,old) attracting vertices ~\newline
+ LISTS \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a20f0948b2a3af734772f42378323f852}{update\+\_\+list\+\_\+in\+\_\+graph\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_ae6058777ac8c9caa857ed999e5bb0801}{update\+\_\+list\+\_\+end\+\_\+points}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a04b0473f5961060797fc1770a55149fb}{update\+\_\+list\+\_\+old\+\_\+attracting\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em ACTIVE VERTICES ~\newline
+ \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_aac2c59e4e526835398c474f44edede80}{update\+\_\+list\+\_\+newly\+\_\+added\+\_\+attracting\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a3bda955b079bb0e509d3d2fe20cbb57b}{update\+\_\+list\+\_\+intersection\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_af574a78b8e0a6e0a77b5cfd11ac70b92}{update\+\_\+list\+\_\+plausible\+\_\+starting\+\_\+point\+\_\+of\+\_\+roads}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a1f445493561d300ae0c9a77696cff926}{update\+\_\+list\+\_\+roads}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em ROADS. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a17311197d442f350228bb3869eb553ce}{update\+\_\+list\+\_\+active\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em LIST ACTIVATING POINT. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a94fc6bbcb9f44031744d2f0ea9dd5103}{update\+\_\+active\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em Single property. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_aee14ab94c02e38bc3ca424a2f7d9be7e}{update\+\_\+attracted\+\_\+by}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a1e45f2cf46d165ca6d8e5d4e50e86440}{update\+\_\+intersections}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacegrowth__functions_a9e3a0d118a013f5182c18a219ea22543}{evolve\+\_\+street\+\_\+old\+\_\+attractors}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- EVOLUTION -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/---\#\# \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacegrowth__functions_ab72a380d8a95e1a1a4f388552eab3a4c}{evolve\+\_\+street\+\_\+newly\+\_\+added\+\_\+attractors}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacegrowth__functions_af0dee4dc0d28fc99f3b042e816dfbbae}\label{namespacegrowth__functions_af0dee4dc0d28fc99f3b042e816dfbbae}} 
+\index{growth\_functions@{growth\_functions}!add\_centers2graph@{add\_centers2graph}}
+\index{add\_centers2graph@{add\_centers2graph}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{add\_centers2graph()}{add\_centers2graph()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+add\+\_\+centers2graph (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph,  }\item[{}]{r0,  }\item[{}]{number\+\_\+nodes,  }\item[{}]{side\+\_\+city }\end{DoxyParamCaption})}
+
+
+
+STARTS WITH DETACHED CENTERS. 
+
+\begin{DoxyVerb}    For each center generated:
+        1) Add to graph
+        2) Give it a name
+        3) Initialize position
+        4) Set it as important node (each important node attracts points in graph)
+        5) Set it as active (It will deactivate just when all the attracted road reach it)\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_af2510cd6a4b7809f44918a3a882dcf6e}\label{namespacegrowth__functions_af2510cd6a4b7809f44918a3a882dcf6e}} 
+\index{growth\_functions@{growth\_functions}!add\_initial\_points2graph@{add\_initial\_points2graph}}
+\index{add\_initial\_points2graph@{add\_initial\_points2graph}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{add\_initial\_points2graph()}{add\_initial\_points2graph()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+add\+\_\+initial\+\_\+points2graph (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph,  }\item[{}]{r0,  }\item[{}]{number\+\_\+nodes,  }\item[{}]{side\+\_\+city }\end{DoxyParamCaption})}
+
+
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- ADDING POINTS, EDGES AND ROADS -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- \texorpdfstring{$<$}{<}-\/ SUBSTEPS OF EVOLVE STREETS ~\newline
+ STARTS WITH CONNECTED POINTS (DEPRECATED) 
+
+\begin{DoxyVerb}    This functions constructs an initially connected graph -> I am leaving it, but it is deprecated
+    NOTE: Once I add points I need to set new point to end_point, the previous point not anymore end_points,
+    1) Check if important point is still active
+    2) Add road
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a1b03fb71edbd8bd1211c2d949bc0283a}\label{namespacegrowth__functions_a1b03fb71edbd8bd1211c2d949bc0283a}} 
+\index{growth\_functions@{growth\_functions}!add\_point2graph@{add\_point2graph}}
+\index{add\_point2graph@{add\_point2graph}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{add\_point2graph()}{add\_point2graph()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+add\+\_\+point2graph (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph,  }\item[{}]{source\+\_\+vertex,  }\item[{}]{dx,  }\item[{}]{dy }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Adds a point from the graph and initializes x,y with the vector dx,dy
+    The added node is:
+        1) Not important
+        2) Not active
+        3) End point
+        4) With an empty set of relative neighbors
+        5) In graph
+        6) Added to a road
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a53bdcec6b46b191918f751a805f83245}\label{namespacegrowth__functions_a53bdcec6b46b191918f751a805f83245}} 
+\index{growth\_functions@{growth\_functions}!close\_road@{close\_road}}
+\index{close\_road@{close\_road}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{close\_road()}{close\_road()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+close\+\_\+road (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+UPDATE. 
+
+\begin{DoxyVerb}    Attach the edge if the growing points are close enough to their relative neighbors,
+    in this way the relative neighbor becomes a growing point as well
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_ab72a380d8a95e1a1a4f388552eab3a4c}\label{namespacegrowth__functions_ab72a380d8a95e1a1a4f388552eab3a4c}} 
+\index{growth\_functions@{growth\_functions}!evolve\_street\_newly\_added\_attractors@{evolve\_street\_newly\_added\_attractors}}
+\index{evolve\_street\_newly\_added\_attractors@{evolve\_street\_newly\_added\_attractors}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{evolve\_street\_newly\_added\_attractors()}{evolve\_street\_newly\_added\_attractors()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+evolve\+\_\+street\+\_\+newly\+\_\+added\+\_\+attractors (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Needed prior steps:
+        1) update_list_newly_added_attracting_vertices
+        2) update_list_growing_vertices
+        3) compute_rng\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a9e3a0d118a013f5182c18a219ea22543}\label{namespacegrowth__functions_a9e3a0d118a013f5182c18a219ea22543}} 
+\index{growth\_functions@{growth\_functions}!evolve\_street\_old\_attractors@{evolve\_street\_old\_attractors}}
+\index{evolve\_street\_old\_attractors@{evolve\_street\_old\_attractors}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{evolve\_street\_old\_attractors()}{evolve\_street\_old\_attractors()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+evolve\+\_\+street\+\_\+old\+\_\+attractors (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- EVOLUTION -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/---\#\# 
+
+\begin{DoxyVerb}    Evolve street for the old attractors
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a8f5b7551f486d51a59326820119dbce9}\label{namespacegrowth__functions_a8f5b7551f486d51a59326820119dbce9}} 
+\index{growth\_functions@{growth\_functions}!initialize\_distance\_matrix@{initialize\_distance\_matrix}}
+\index{initialize\_distance\_matrix@{initialize\_distance\_matrix}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{initialize\_distance\_matrix()}{initialize\_distance\_matrix()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+initialize\+\_\+distance\+\_\+matrix (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph,  }\item[{}]{x,  }\item[{}]{y }\end{DoxyParamCaption})}
+
+
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- DISTANCE MATRIX -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- 
+
+\mbox{\Hypertarget{namespacegrowth__functions_a94fc6bbcb9f44031744d2f0ea9dd5103}\label{namespacegrowth__functions_a94fc6bbcb9f44031744d2f0ea9dd5103}} 
+\index{growth\_functions@{growth\_functions}!update\_active\_vertices@{update\_active\_vertices}}
+\index{update\_active\_vertices@{update\_active\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_active\_vertices()}{update\_active\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+active\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+Single property. 
+
+\begin{DoxyVerb}    An important node is either:
+        1) Active: 
+                Is attracting some road that is not closed
+        2) Passive: 
+                Is attracting some road that is closed 
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_aee14ab94c02e38bc3ca424a2f7d9be7e}\label{namespacegrowth__functions_aee14ab94c02e38bc3ca424a2f7d9be7e}} 
+\index{growth\_functions@{growth\_functions}!update\_attracted\_by@{update\_attracted\_by}}
+\index{update\_attracted\_by@{update\_attracted\_by}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_attracted\_by()}{update\_attracted\_by()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+attracted\+\_\+by (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    For each vertex update the attraction:
+        1) The end_points are attracted by the relative neighbors that are not in the graph
+        2) The growing points are attracted by new added vertices (stop)
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_aa42dafef04b32c87dd00fe10ed4754a5}\label{namespacegrowth__functions_aa42dafef04b32c87dd00fe10ed4754a5}} 
+\index{growth\_functions@{growth\_functions}!update\_distance\_matrix@{update\_distance\_matrix}}
+\index{update\_distance\_matrix@{update\_distance\_matrix}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_distance\_matrix()}{update\_distance\_matrix()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+distance\+\_\+matrix (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph,  }\item[{}]{old\+\_\+points,  }\item[{}]{new\+\_\+point }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Description:
+        For each new point added in the graph, adds the distance of this point to all the other points.
+        In this way I do have a reduction of calculation from N_nodes*N_nodes to N_nodes
+    new_point is a vector of dimension (1,2) -> the bottleneck of this function resides in np.vstack as I am adding the 0 of the 
+    concatenation of the column and the row one after the other
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a1e45f2cf46d165ca6d8e5d4e50e86440}\label{namespacegrowth__functions_a1e45f2cf46d165ca6d8e5d4e50e86440}} 
+\index{growth\_functions@{growth\_functions}!update\_intersections@{update\_intersections}}
+\index{update\_intersections@{update\_intersections}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_intersections()}{update\_intersections()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+intersections (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Description:
+        newly attracted vertices can attract points that are growing:
+        2 cases:
+            1) Node attracted: growing, not end_point
+            2) Node attracted: growing, end_point
+    In case 1 the node gets attracted and becomes intersection
+    NOTE:
+        This function is called after:
+            1) adding new attracting vertices
+            2) compute_newly_added_centers_rng
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_a17311197d442f350228bb3869eb553ce}\label{namespacegrowth__functions_a17311197d442f350228bb3869eb553ce}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_active\_vertices@{update\_list\_active\_vertices}}
+\index{update\_list\_active\_vertices@{update\_list\_active\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_active\_vertices()}{update\_list\_active\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+active\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+LIST ACTIVATING POINT. 
+
+\begin{DoxyVerb}    For each road in the network, if the road is not closed, add the points that are activating it, given they are not already in the list
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_ae6058777ac8c9caa857ed999e5bb0801}\label{namespacegrowth__functions_ae6058777ac8c9caa857ed999e5bb0801}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_end\_points@{update\_list\_end\_points}}
+\index{update\_list\_end\_points@{update\_list\_end\_points}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_end\_points()}{update\_list\_end\_points()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+end\+\_\+points (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    List of points to consider when deciding old attracting vertices relative neighbor
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_ae9d24381c222fec0fcd8faba512ac85f}\label{namespacegrowth__functions_ae9d24381c222fec0fcd8faba512ac85f}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_important\_vertices@{update\_list\_important\_vertices}}
+\index{update\_list\_important\_vertices@{update\_list\_important\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_important\_vertices()}{update\_list\_important\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+important\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- UPDATES -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/--- NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE DELAUNEY TRIANGULATION (new added,old) attracting vertices ~\newline
+ LISTS 
+
+\mbox{\Hypertarget{namespacegrowth__functions_a20f0948b2a3af734772f42378323f852}\label{namespacegrowth__functions_a20f0948b2a3af734772f42378323f852}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_in\_graph\_vertices@{update\_list\_in\_graph\_vertices}}
+\index{update\_list\_in\_graph\_vertices@{update\_list\_in\_graph\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_in\_graph\_vertices()}{update\_list\_in\_graph\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+in\+\_\+graph\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacegrowth__functions_a3bda955b079bb0e509d3d2fe20cbb57b}\label{namespacegrowth__functions_a3bda955b079bb0e509d3d2fe20cbb57b}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_intersection\_vertices@{update\_list\_intersection\_vertices}}
+\index{update\_list\_intersection\_vertices@{update\_list\_intersection\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_intersection\_vertices()}{update\_list\_intersection\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+intersection\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacegrowth__functions_aac2c59e4e526835398c474f44edede80}\label{namespacegrowth__functions_aac2c59e4e526835398c474f44edede80}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_newly\_added\_attracting\_vertices@{update\_list\_newly\_added\_attracting\_vertices}}
+\index{update\_list\_newly\_added\_attracting\_vertices@{update\_list\_newly\_added\_attracting\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_newly\_added\_attracting\_vertices()}{update\_list\_newly\_added\_attracting\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+newly\+\_\+added\+\_\+attracting\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacegrowth__functions_a04b0473f5961060797fc1770a55149fb}\label{namespacegrowth__functions_a04b0473f5961060797fc1770a55149fb}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_old\_attracting\_vertices@{update\_list\_old\_attracting\_vertices}}
+\index{update\_list\_old\_attracting\_vertices@{update\_list\_old\_attracting\_vertices}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_old\_attracting\_vertices()}{update\_list\_old\_attracting\_vertices()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+old\+\_\+attracting\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+ACTIVE VERTICES ~\newline
+ 
+
+\begin{DoxyVerb}    These are the vertices that attract just end points. 
+        -Delauney triangulation just among these and the end points in graph
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacegrowth__functions_af574a78b8e0a6e0a77b5cfd11ac70b92}\label{namespacegrowth__functions_af574a78b8e0a6e0a77b5cfd11ac70b92}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_plausible\_starting\_point\_of\_roads@{update\_list\_plausible\_starting\_point\_of\_roads}}
+\index{update\_list\_plausible\_starting\_point\_of\_roads@{update\_list\_plausible\_starting\_point\_of\_roads}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_plausible\_starting\_point\_of\_roads()}{update\_list\_plausible\_starting\_point\_of\_roads()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+plausible\+\_\+starting\+\_\+point\+\_\+of\+\_\+roads (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacegrowth__functions_a1f445493561d300ae0c9a77696cff926}\label{namespacegrowth__functions_a1f445493561d300ae0c9a77696cff926}} 
+\index{growth\_functions@{growth\_functions}!update\_list\_roads@{update\_list\_roads}}
+\index{update\_list\_roads@{update\_list\_roads}!growth\_functions@{growth\_functions}}
+\doxysubsubsection{\texorpdfstring{update\_list\_roads()}{update\_list\_roads()}}
+{\footnotesize\ttfamily def growth\+\_\+functions.\+update\+\_\+list\+\_\+roads (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+ROADS. 
+
+\begin{DoxyVerb}    Updates the list of roads in the graph:
+    NOTE: call update_list_active_vertices after -> as each road is activated by an active vertex
+\end{DoxyVerb}
+ 

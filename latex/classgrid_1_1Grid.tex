@@ -1,0 +1,87 @@
+\hypertarget{classgrid_1_1Grid}{}\doxysection{grid.\+Grid Class Reference}
+\label{classgrid_1_1Grid}\index{grid.Grid@{grid.Grid}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a66ea00f1bf4364f3998f9e6d32c8bb19}\label{classgrid_1_1Grid_a66ea00f1bf4364f3998f9e6d32c8bb19}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, side\+\_\+city, resolution\+\_\+grid)
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a3069363ac5523412a92b58435e121040}\label{classgrid_1_1Grid_a3069363ac5523412a92b58435e121040}} 
+def {\bfseries get\+\_\+polygon} (self)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}{grid\+\_\+bounds}} (self)
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a7ac11a321a4fc4571357d54ae86fba79}\label{classgrid_1_1Grid_a7ac11a321a4fc4571357d54ae86fba79}} 
+def {\bfseries partition} (self)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}{point2grid}} (self, point)
+\item 
+def \mbox{\hyperlink{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}{contains\+\_\+vector\+\_\+points}} (self, vector\+\_\+points)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}\label{classgrid_1_1Grid_aec49f6f61bf9f6129bc645281af61b61}} 
+{\bfseries side\+\_\+city}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}\label{classgrid_1_1Grid_a74b293971c454e8051225a2dc4e0b8cf}} 
+{\bfseries resolution\+\_\+grid}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a2a396c4b073785859a3fcb8dfac35d9a}\label{classgrid_1_1Grid_a2a396c4b073785859a3fcb8dfac35d9a}} 
+{\bfseries minx}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_aa47f404adbbf503a5e9ef8492877772d}\label{classgrid_1_1Grid_aa47f404adbbf503a5e9ef8492877772d}} 
+{\bfseries miny}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a02ee58df91d1df785314e8c747c2ba01}\label{classgrid_1_1Grid_a02ee58df91d1df785314e8c747c2ba01}} 
+{\bfseries maxx}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_aa95c9969e060c8d47738e52681512ee8}\label{classgrid_1_1Grid_aa95c9969e060c8d47738e52681512ee8}} 
+{\bfseries maxy}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a00097225b26bc3982c9940350a4a7b4d}\label{classgrid_1_1Grid_a00097225b26bc3982c9940350a4a7b4d}} 
+{\bfseries geom}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_ace0b8b328ce4352cf2e1229e58431fa9}\label{classgrid_1_1Grid_ace0b8b328ce4352cf2e1229e58431fa9}} 
+{\bfseries grid2point}
+\item 
+\mbox{\Hypertarget{classgrid_1_1Grid_a3d3d8219f77a46eb7bc08d50a1a27d3f}\label{classgrid_1_1Grid_a3d3d8219f77a46eb7bc08d50a1a27d3f}} 
+{\bfseries grid}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}\label{classgrid_1_1Grid_ae520dd8ee91fb7c6187a413f3df9fe2d}} 
+\index{grid.Grid@{grid.Grid}!contains\_vector\_points@{contains\_vector\_points}}
+\index{contains\_vector\_points@{contains\_vector\_points}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{contains\_vector\_points()}{contains\_vector\_points()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+contains\+\_\+vector\+\_\+points (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{vector\+\_\+points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: np.array([[x1,y1],[x2,y2],...,[xn,yn]])
+    Output:
+        1) Insert points in the grid
+        2) np.array([[x1,y1],[x2,y2],...,[xn,yn]]) with only the points inside the box
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}\label{classgrid_1_1Grid_a214487d7c10957d9a44a11045bae74d8}} 
+\index{grid.Grid@{grid.Grid}!grid\_bounds@{grid\_bounds}}
+\index{grid\_bounds@{grid\_bounds}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{grid\_bounds()}{grid\_bounds()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+grid\+\_\+bounds (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Return grid: np.array(),shape = nx,ny -> of polygons
+\end{DoxyVerb}
+ \mbox{\Hypertarget{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}\label{classgrid_1_1Grid_addc6996f6fc5b50398a8171bacbb310f}} 
+\index{grid.Grid@{grid.Grid}!point2grid@{point2grid}}
+\index{point2grid@{point2grid}!grid.Grid@{grid.Grid}}
+\doxysubsubsection{\texorpdfstring{point2grid()}{point2grid()}}
+{\footnotesize\ttfamily def grid.\+Grid.\+point2grid (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{point }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Input: [x,y] coordinates
+    Description: 
+        Associate those coordinates to the grid in the dictionary
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+scripts/grid.\+py\end{DoxyCompactItemize}

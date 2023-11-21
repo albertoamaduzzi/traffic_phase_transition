@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['parameters_0',['parameters',['../namespaceparameters.html',1,'']]],
+  ['parameters_2epy_1',['parameters.py',['../parameters_8py.html',1,'']]],
+  ['partition_2',['partition',['../classgrid_1_1Grid.html#a7ac11a321a4fc4571357d54ae86fba79',1,'grid::Grid']]],
+  ['planar_5fgraph_3',['planar_graph',['../namespaceplanar__graph.html',1,'planar_graph'],['../classplanar__graph_1_1planar__graph.html',1,'planar_graph.planar_graph']]],
+  ['planar_5fgraph_2epy_4',['planar_graph.py',['../planar__graph_8py.html',1,'']]],
+  ['plausible_5fstarting_5froad_5fvertices_5',['plausible_starting_road_vertices',['../classplanar__graph_1_1planar__graph.html#a38b08f66b8503efe89c140b54672ef50',1,'planar_graph::planar_graph']]],
+  ['plot_5fevolving_5fgraph_6',['plot_evolving_graph',['../namespaceplots.html#a7023667c2588a911dcc3a9dff6448d27',1,'plots']]],
+  ['plot_5fgrowing_5froads_7',['plot_growing_roads',['../namespaceplots.html#a68d5d1f68b414e2b90f70ccbab2a6646',1,'plots']]],
+  ['plot_5fnumber_5froads_5ftime_8',['plot_number_roads_time',['../namespaceplots.html#ab0e6f3d39aff31eb68643f4855a1049d',1,'plots']]],
+  ['plot_5frelative_5fneighbors_9',['plot_relative_neighbors',['../namespaceplots.html#ad486fc258dd6ec00a36381e0f98d500a',1,'plots']]],
+  ['plot_5ftotal_5flength_5froads_5ftime_10',['plot_total_length_roads_time',['../namespaceplots.html#afc11e602e9d94aeb34d88932bb2e36ff',1,'plots']]],
+  ['plots_11',['plots',['../namespaceplots.html',1,'']]],
+  ['plots_2epy_12',['plots.py',['../plots_8py.html',1,'']]],
+  ['point2grid_13',['point2grid',['../classgrid_1_1Grid.html#addc6996f6fc5b50398a8171bacbb310f',1,'grid::Grid']]],
+  ['policentricity_14',['policentricity',['../classplanar__graph_1_1planar__graph.html#ac35a4a0d5dcfc165ca795d7b9e6bbe63',1,'planar_graph::planar_graph']]],
+  ['print_5fdelauney_5fneighbors_15',['print_delauney_neighbors',['../namespaceoutput.html#a03216d0dc344837315808a7ef4b2c0f3',1,'output']]],
+  ['print_5fgeometrical_5finfo_16',['print_geometrical_info',['../namespaceoutput.html#aad701c51fbd3c63dae8a01489f622e0d',1,'output']]],
+  ['print_5fnot_5fconsidered_5fvertices_17',['print_not_considered_vertices',['../namespaceoutput.html#aef4104e222c918e73b523046f13f4d46',1,'output']]],
+  ['print_5fproperties_5fvertex_18',['print_properties_vertex',['../namespaceoutput.html#a5dbbd2664417f4abbfef24f4b1daceeb',1,'output']]]
+];

@@ -1,0 +1,102 @@
+\hypertarget{namespacerelative__neighbors}{}\doxysection{relative\+\_\+neighbors Namespace Reference}
+\label{namespacerelative__neighbors}\index{relative\_neighbors@{relative\_neighbors}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacerelative__neighbors_ad6d519d8cb90f34f013ec1541d726857}{update\+\_\+delauney\+\_\+newly\+\_\+attracting\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em UPDATE DELAUNEY TRIANGULATION\+: NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE RNG (new added,old) attracting vertices ~\newline
+ \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacerelative__neighbors_a2db4a2ae23cc56ee71a6a9368a811829}{update\+\_\+delauney\+\_\+old\+\_\+attracting\+\_\+vertices}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\item 
+def \mbox{\hyperlink{namespacerelative__neighbors_ae2c3f23c3101e44ce9a3d0347e57e5f8}{update\+\_\+lists\+\_\+next\+\_\+rng}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em CALLING ALL UPDATES\+: NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE RNG (new added,old) attracting vertices. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacerelative__neighbors_a1785f192cc1527a3000284a72f845d00}{compute\+\_\+rng\+\_\+newly\+\_\+added\+\_\+centers}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\begin{DoxyCompactList}\small\item\em COMPUTE RNG for NEWLY ADDED CENTERS\+: NEXT STEP -\/\texorpdfstring{$>$}{>} EVOLVE STREET for (new,old) attracting vertices. \end{DoxyCompactList}\item 
+def \mbox{\hyperlink{namespacerelative__neighbors_abadfee303a12d74b8c909a34dc1ea228}{compute\+\_\+rng\+\_\+old\+\_\+centers}} (\mbox{\hyperlink{classplanar__graph_1_1planar__graph}{planar\+\_\+graph}})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacerelative__neighbors_a1785f192cc1527a3000284a72f845d00}\label{namespacerelative__neighbors_a1785f192cc1527a3000284a72f845d00}} 
+\index{relative\_neighbors@{relative\_neighbors}!compute\_rng\_newly\_added\_centers@{compute\_rng\_newly\_added\_centers}}
+\index{compute\_rng\_newly\_added\_centers@{compute\_rng\_newly\_added\_centers}!relative\_neighbors@{relative\_neighbors}}
+\doxysubsubsection{\texorpdfstring{compute\_rng\_newly\_added\_centers()}{compute\_rng\_newly\_added\_centers()}}
+{\footnotesize\ttfamily def relative\+\_\+neighbors.\+compute\+\_\+rng\+\_\+newly\+\_\+added\+\_\+centers (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+COMPUTE RNG for NEWLY ADDED CENTERS\+: NEXT STEP -\/\texorpdfstring{$>$}{>} EVOLVE STREET for (new,old) attracting vertices. 
+
+\begin{DoxyVerb}    Description:
+        1) update_delauney:
+            1a) compute the Voronoi diagram for all vertices O(Nlog(N))
+            1b) compute the delauney triangulation  O(N)
+        2) For each attracting node (vi) and a node from the delauney triangulation (vj)
+        3) Check for if for any node vk in the graph max(d_ix, d_xj) < d_ij
+        4) If it is not the case, then vj is a relative neighbor of vi\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacerelative__neighbors_abadfee303a12d74b8c909a34dc1ea228}\label{namespacerelative__neighbors_abadfee303a12d74b8c909a34dc1ea228}} 
+\index{relative\_neighbors@{relative\_neighbors}!compute\_rng\_old\_centers@{compute\_rng\_old\_centers}}
+\index{compute\_rng\_old\_centers@{compute\_rng\_old\_centers}!relative\_neighbors@{relative\_neighbors}}
+\doxysubsubsection{\texorpdfstring{compute\_rng\_old\_centers()}{compute\_rng\_old\_centers()}}
+{\footnotesize\ttfamily def relative\+\_\+neighbors.\+compute\+\_\+rng\+\_\+old\+\_\+centers (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Description:
+        1) compute the delauney triangulation with just:
+            1a) End points
+            1b) old attracting vertices
+        2) Compare them with just the nodes that are end points and are not in the road starting 
+            from the vertex vi I am considering.
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacerelative__neighbors_ad6d519d8cb90f34f013ec1541d726857}\label{namespacerelative__neighbors_ad6d519d8cb90f34f013ec1541d726857}} 
+\index{relative\_neighbors@{relative\_neighbors}!update\_delauney\_newly\_attracting\_vertices@{update\_delauney\_newly\_attracting\_vertices}}
+\index{update\_delauney\_newly\_attracting\_vertices@{update\_delauney\_newly\_attracting\_vertices}!relative\_neighbors@{relative\_neighbors}}
+\doxysubsubsection{\texorpdfstring{update\_delauney\_newly\_attracting\_vertices()}{update\_delauney\_newly\_attracting\_vertices()}}
+{\footnotesize\ttfamily def relative\+\_\+neighbors.\+update\+\_\+delauney\+\_\+newly\+\_\+attracting\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+UPDATE DELAUNEY TRIANGULATION\+: NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE RNG (new added,old) attracting vertices ~\newline
+ 
+
+\begin{DoxyVerb}    The dalueney graph will contain:
+        1) The newly added attracting vertices
+        2) All the in graph vertices in the graph
+    NOTE: 
+        "IN GRAPH" vertices can be attracted by new inserted vertices -> create new roads.
+        I MAY CHANGE IT IF IN THE CENTER THE ROADS ARE TOO DENSE -> 
+        [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if planar_graph.is_newly_added(v) or (planar_graph.is_in_graph(v) and not planar_graph.is_active(v))]\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacerelative__neighbors_a2db4a2ae23cc56ee71a6a9368a811829}\label{namespacerelative__neighbors_a2db4a2ae23cc56ee71a6a9368a811829}} 
+\index{relative\_neighbors@{relative\_neighbors}!update\_delauney\_old\_attracting\_vertices@{update\_delauney\_old\_attracting\_vertices}}
+\index{update\_delauney\_old\_attracting\_vertices@{update\_delauney\_old\_attracting\_vertices}!relative\_neighbors@{relative\_neighbors}}
+\doxysubsubsection{\texorpdfstring{update\_delauney\_old\_attracting\_vertices()}{update\_delauney\_old\_attracting\_vertices()}}
+{\footnotesize\ttfamily def relative\+\_\+neighbors.\+update\+\_\+delauney\+\_\+old\+\_\+attracting\+\_\+vertices (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}    Consider just "important" vertices that are 
+        1) Still active
+        2) Not newly added
+    Consider just "not important" vertices:
+        1) Still active
+        2) Not newly added
+    2) Compute the delauney triangulation for this subsets of points
+    3) Save it on old_attracting_delauney_neighbor for each vertex
+    NOTE: not in graph -> active  NOT active -> not in graph
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacerelative__neighbors_ae2c3f23c3101e44ce9a3d0347e57e5f8}\label{namespacerelative__neighbors_ae2c3f23c3101e44ce9a3d0347e57e5f8}} 
+\index{relative\_neighbors@{relative\_neighbors}!update\_lists\_next\_rng@{update\_lists\_next\_rng}}
+\index{update\_lists\_next\_rng@{update\_lists\_next\_rng}!relative\_neighbors@{relative\_neighbors}}
+\doxysubsubsection{\texorpdfstring{update\_lists\_next\_rng()}{update\_lists\_next\_rng()}}
+{\footnotesize\ttfamily def relative\+\_\+neighbors.\+update\+\_\+lists\+\_\+next\+\_\+rng (\begin{DoxyParamCaption}\item[{}]{planar\+\_\+graph }\end{DoxyParamCaption})}
+
+
+
+CALLING ALL UPDATES\+: NEXT STEP -\/\texorpdfstring{$>$}{>} COMPUTE RNG (new added,old) attracting vertices. 
+
+\begin{DoxyVerb}    Recompute:
+        1) growing_graph
+        2) growing_vertices -> are the vertices to search from the newly added centers
+        3) end_points -> are the vertices for which the old added points must look for in their relative neighborhood
+        4) attracting_vertices
+        5) newly_added_attracting_vertices
+        6) old_attracting_vertices
+\end{DoxyVerb}
+ 
