@@ -95,7 +95,7 @@ def update_lists_next_rng(planar_graph):
     update_list_in_graph_vertices(planar_graph)
     update_list_intersection_vertices(planar_graph)
     update_list_plausible_starting_point_of_roads(planar_graph)
-
+    update_list_active_roads(planar_graph)
 ## COMPUTE RNG for NEWLY ADDED CENTERS: NEXT STEP -> EVOLVE STREET for (new,old) attracting vertices
 def compute_rng_newly_added_centers(planar_graph):
     '''

@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 # FROM PROJECT
 from geometric_features import road
 from grid import Grid
-from edges_functions import *
 from vertices_functions import *
 from relative_neighbors import *
 from growth_functions import *
@@ -71,6 +70,85 @@ class planar_graph:
         self.time = []
         self.length_total_roads = []
         self.count_roads = []
+        self.initial_graph()
+
+## ------------------------------------------- FIRST INITIALiZATION ---------------------------------------------
+
+    def initial_graph(self):
+        '''
+        graph whose vertex properties are:
+            id: int
+            x: double
+            y: double
+            relative_neighbors: vector<int>
+            important_node: bool (if the node is a node True, else is a point)
+            connected: bool (if the node needs to be attached to the net True,
+                        once the road is completed, the point is added to the net)
+        '''
+        self.graph = gt.Graph(directed=True)
+        ## NODES
+        ## ID: int
+        id_ = self.graph.new_vertex_property('int')
+        self.graph.vp['id'] = id_
+        ## IMPORTANT: bool (These are the points of interest)
+        important_node = self.graph.new_vertex_property('bool')
+        self.graph.vp['important_node'] = important_node
+        is_active = self.graph.new_vertex_property('bool')
+        self.graph.vp['is_active'] = is_active
+        newly_added_center = self.graph.new_vertex_property('bool')
+        self.graph.vp['newly_added_center'] = newly_added_center
+        ## GROWING VERTICES 
+        end_point = self.graph.new_vertex_property('bool')
+        self.graph.vp['end_point'] = end_point
+        is_in_graph = self.graph.new_vertex_property('bool')   
+        self.graph.vp['is_in_graph'] = is_in_graph
+        ## ATTRACTED: list attracted (Is the set of indices of vertices that are attracted by the node)
+        list_nodes_attracted = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['list_nodes_attracted'] = list_nodes_attracted
+        ## INTERSECTION: bool
+        ## role: for growing not important nodes, when addnewcenter: compute_rng, if the vertex in rng is attracted by it, the open intersection
+        intersection = self.graph.new_vertex_property('bool')
+        self.graph.vp['intersection'] = intersection
+        attracted_by = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['attracted_by'] = attracted_by
+        ## RELATIVE NEIGHBORS: list (Is the set of indices of vertices that are relative neighbors of the attracting node)
+        relative_neighbors = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['relative_neighbors'] = relative_neighbors
+        ## positions of the vertices
+        x = self.graph.new_vertex_property('double')
+        self.graph.vp['x'] = x
+        y = self.graph.new_vertex_property('double')
+        self.graph.vp['y'] = y
+        pos = self.graph.new_vertex_property('vector<double>')
+        self.graph.vp['pos'] = pos
+        
+        ## VORONOI diagram of the vertices 
+        voronoi = self.graph.new_vertex_property('object')
+        self.graph.vp['voronoi'] = voronoi
+        new_attracting_delauney_neighbors = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['new_attracting_delauney_neighbors'] = new_attracting_delauney_neighbors
+        old_attracting_delauney_neighbors = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['old_attracting_delauney_neighbors'] = old_attracting_delauney_neighbors
+        ## Set of roads starting at the node
+        roads_belonging_to = self.graph.new_vertex_property('vector<int>')
+        self.graph.vp['roads_belonging_to'] = roads_belonging_to # used to new nodes to the right road.
+        roads = self.graph.new_vertex_property('object') # is a list of roads
+        self.graph.vp['roads'] = roads    
+        ## EDGES
+        growth_unit_vect = self.graph.new_edge_property('double')
+        self.graph.ep['distance'] = growth_unit_vect
+        growth_unit_vect = self.graph.new_edge_property('vector<double>')
+        self.graph.ep['direction'] = growth_unit_vect
+        real_edges = self.graph.new_edge_property('bool')
+        self.graph.ep['real_edge'] = real_edges
+        capacity = self.graph.new_edge_property('double')    
+        self.graph.ep['capacity'] = capacity
+        ## Animation
+        state = self.graph.new_vertex_property('vector<double>')
+        self.graph.vp['state'] = state
+
+        return self.graph
+
 
     def set_policentricity(self):
         if 'degree_policentricity' in self.config.keys() and 'policentricity' in self.config.keys() and self.config['policentricity'] == True:
@@ -80,9 +158,6 @@ class planar_graph:
             self.policentricity = False
             self.number_centers = 1
 
-## ------------------------------------------- FIRST INITIALiZATION ---------------------------------------------
-    def initialize_graph(self):
-        self.graph = initial_graph()
 
 ##------------------------------------------- INITIALIZE BASE DIR -----------------------------------------------------------
     def initialize_base_dir(self):
@@ -183,13 +258,38 @@ def build_planar_graph(config,r0):
     t0 = time.time()
     bg = planar_graph(config,r0)
     ## Initializes the properties of graph    
-    bg.initialize_graph()
     t1  = time.time()
     print('0) INITIALIZATION: ',t1-t0)
     ## Add initial centers and control they are in the bounding box 
-    for t in range(100): #bg.number_iterations
+    t0 = time.time()
+    add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city)
+    t1 = time.time()
+    print('1) ADD CENTERS: ',t1-t0)
+    t0 = time.time()
+    update_lists_next_rng(bg)
+    t1 = time.time()
+    print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
+    t0 = time.time()
+    update_delauney_newly_attracting_vertices(bg)
+    t1 = time.time()
+    print('3) UPDATE DELAUNEY NEW CENTERS: ',t1-t0)
+    t0 = time.time()
+    compute_rng_newly_added_centers(bg)
+    t1 = time.time()
+    print('4) COMPUTE RELATIVE NEIGHBORS NEWLY ADDED CENTERS: ',t1-t0)      
+    t0 = time.time()
+    evolve_street_newly_added_attractors(bg)
+    t1 = time.time()
+    print('5) EVOLVE STREET FOR NEW CENTERS: ',t1-t0)
+    t = 0
+    bg.update_total_length_road()
+    bg.update_count_roads()
+    bg.update_time(t)
+    update_lists_next_rng(bg)
+
+    while(len(bg.list_active_roads)!=0): #bg.number_iterations
         print('iteration: ',t)
-        if t%bg.tau_c == 0:
+        if t%bg.tau_c == 0 and t!=0:
             # add nodes
             print('*********************************************')
             t0 = time.time()
@@ -244,7 +344,7 @@ def build_planar_graph(config,r0):
             plot_growing_roads(bg)
         if bg.starting_phase:
             bg.starting_phase = False
-
+        t+=1
     if not os.path.exists(os.path.join(root,'graphs')):
         os.mkdir(os.path.join(root,'graphs'))
     bg.save_custom_graph(os.path.join(root,'graphs','graph_r0_{0}.gt'.format(round(r0,2))))

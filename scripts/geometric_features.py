@@ -5,6 +5,8 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
+## FROM PROJECT
+
 '''
     For each t:
         Add a set of nodes
@@ -46,22 +48,25 @@ class road:
         Need to add a condition not to growing element grow back to the starting point  
     '''
     # TODO: need to block the growing nodes to grow back to their starting point
-    def __init__(self,initial_node,global_counting_roads,activation_vertex,type_initial_node):
+    def __init__(self,initial_node,global_counting_roads,activation_vertex):
         self.id = global_counting_roads
         self.initial_node = initial_node
         self.number_iterations = 0
         self.length = 0
         self.list_nodes = [initial_node] # Vertex
-        self.type_initial_node = type_initial_node
 #        self.linestring = LineString(self.list_nodes)
         self.list_edges = []
         self.evolution_attractors = defaultdict()#{t:[] for t in range()}
-        self.end_point = None    
+        self.end_point = initial_node    
         self.is_closed = False
         if type(activation_vertex) == list or type(activation_vertex) == np.array:
             self.activated_by = activation_vertex
         else:
             self.activated_by = [activation_vertex]
+        ## TYPE ROAD
+        self.type = 0
+        self.capacity_level = 0
+        ## 
 
     def add_node_in_road(self,source_node,new_vertex,distance_sn):
         '''
@@ -94,7 +99,13 @@ class road:
     def get_type_initial_node(self):
         return self.type_initial_node
 
-    
+##------------------------------------- IS FUNCTIONS -------------------------------------##
+    def is_closed(self):
+        return self.is_closed
+
+
+
+
 if __name__ == '__main__':
     SIDE_CITY = 2
     RESOLUTION_GRID = 0.1
