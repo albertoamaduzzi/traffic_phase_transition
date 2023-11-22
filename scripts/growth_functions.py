@@ -6,7 +6,6 @@ import numpy as np
 import time
 # FROM PROJECT
 from vertices_functions import *
-from edges_functions import *
 from geometric_features import road
 from vector_operations import *
 from output import *
@@ -31,6 +30,7 @@ def add_initial_points2graph(planar_graph,r0,number_nodes,side_city):
         add_vertex(planar_graph)
         vertex = get_last_vertex(planar_graph)
         id_ = get_id_last_vertex(planar_graph)
+        set_id(planar_graph,vertex,id_)
         set_initialize_x_y_pos(planar_graph,vertex,x,y,point_idx)
         set_important_node(planar_graph,vertex,True)
         set_active_vertex(planar_graph,vertex,True)
@@ -64,13 +64,11 @@ def add_centers2graph(planar_graph,r0,number_nodes,side_city):
     if planar_graph.distance_matrix_ is None:
         initialize_distance_matrix(planar_graph,x,y)
         for point_idx in range(len(x)):
-            print(x[point_idx],y[point_idx])
             add_vertex(planar_graph)
             id_ = get_id_last_vertex(planar_graph)
             vertex = get_last_vertex(planar_graph)
-            print('where planar_graph: ',id(planar_graph.graph))
-            print('where vertex: ',id(vertex),' where vertex in graph: ',id(planar_graph.graph.vp['id'][vertex]))
-            print('vertex : ',vertex,'\t number: ',id_)
+            set_id(planar_graph,vertex,id_)
+            set_newly_added(planar_graph,vertex,True)
             set_initialize_x_y_pos(planar_graph,vertex,x,y,point_idx)
             set_important_node(planar_graph,vertex,True)
             set_active_vertex(planar_graph,vertex,True)
@@ -79,10 +77,9 @@ def add_centers2graph(planar_graph,r0,number_nodes,side_city):
             set_end_point(planar_graph,vertex,True)
             ## RELATIVE NEIGHBOR, ROADS starting from it.                
             set_relative_neighbors(planar_graph,vertex,[])
-            set_empty_road(planar_graph,vertex)
+            set_road(planar_graph,vertex,[])
             ## Intersection
             set_is_intersection(planar_graph,vertex,False)
-            print('where function: ',id(print_properties_vertex(planar_graph,vertex)))
             print_properties_vertex(planar_graph,vertex)            
     else:
         for point_idx in range(len(x)):
@@ -91,6 +88,7 @@ def add_centers2graph(planar_graph,r0,number_nodes,side_city):
             vertex = get_last_vertex(planar_graph)
             id_ = get_id_last_vertex(planar_graph)
             set_id(planar_graph,vertex,id_)
+            set_newly_added(planar_graph,vertex,True)
             set_initialize_x_y_pos(planar_graph,vertex,x,y,point_idx)
             set_important_node(planar_graph,vertex,True)
             set_active_vertex(planar_graph,vertex,True)
@@ -99,7 +97,7 @@ def add_centers2graph(planar_graph,r0,number_nodes,side_city):
             set_end_point(planar_graph,vertex,False)
             ## RELATIVE NEIGHBOR, ROADS starting from it.
             set_relative_neighbors(planar_graph,vertex,[])
-            set_empty_road(planar_graph,vertex)
+            set_road(planar_graph,vertex,[])
             ## Intersection
             set_is_intersection(planar_graph,vertex,False)
             print_properties_vertex(planar_graph,vertex)            
@@ -130,6 +128,7 @@ def add_point2graph(planar_graph,source_vertex,dx,dy):
     set_end_point(planar_graph,vertex,True)
     set_in_graph(planar_graph,vertex,True)
     add_road(planar_graph,source_vertex,vertex)
+    set_road(planar_graph,vertex,[])
     ## CHANGE INFO SOURCE VERTEX
     set_end_point(planar_graph,source_vertex,False)
     return get_last_vertex(planar_graph)
@@ -201,10 +200,10 @@ def evolve_uniquely_attracted_vertex(planar_graph,growing_node,available_vertice
     dx,dy = scale(dx,dy,planar_graph.rate_growth)
     new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
     update_distance_matrix(planar_graph,old_points,new_point)
-    added_vertex = add_point2graph(planar_graph,planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node],dx,dy)
-    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex)
+    added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
+    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor)
     ## Find the road where the points belongs to (looking at the starting vertex it is generated from)
-    add_point2road(planar_graph,growing_node,added_vertex)
+    add_point2road(planar_graph,growing_node,added_vertex,attracting_node)
     plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)
     print('EVOLVING UNIQUE ATTRACTOR')
     print('direction: ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
@@ -230,9 +229,9 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
         dx,dy = scale(dx,dy,planar_graph.rate_growth)
         new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
         update_distance_matrix(planar_graph,old_points,new_point)
-        added_vertex = add_point2graph(planar_graph,planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node],dx,dy)
-        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex)
-        add_point2road(planar_graph,growing_node,added_vertex)
+        added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
+        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,available_vertices)
+        add_point2road(planar_graph,growing_node,added_vertex,attracting_node)
         plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)                            
         print('EVOLVING SUM ATTRACTOR')
         print('direction sum of : ',[planar_graph.graph.vp['id'][vertex_relative_neighbor] for vertex_relative_neighbor in available_vertices])
@@ -241,6 +240,7 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
     else:
         print('EVOLVING IN ALL DIRECTIONS DUE TO DEGENERACY')
         for neighbor_attracting_vertex in range(len(available_vertices)):
+            intersection = True
             vertex_relative_neighbor = available_vertices[neighbor_attracting_vertex]#planar_graph.graph.vertex(int_idx_relative_neighbor)
 #                            vertex_relative_neighbor = planar_graph.graph.vertex(int_idx_relative_neighbor)
             dx,dy = coordinate_difference(planar_graph.graph.vp['x'][vertex_relative_neighbor],planar_graph.graph.vp['y'][vertex_relative_neighbor],planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node])
@@ -248,9 +248,9 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
             dx,dy = scale(dx,dy,planar_graph.rate_growth)
             new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
             update_distance_matrix(planar_graph,old_points,new_point)
-            added_vertex = add_point2graph(planar_graph,planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node],dx,dy)
-            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex)  
-            add_point2road(planar_graph,growing_node,added_vertex)
+            added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
+            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,neighbor_attracting_vertex)  
+            add_point2road(planar_graph,growing_node,added_vertex,attracting_node,intersection)
             plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)
             print('direction sum of : ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
             print(' dx: ',dx,' dy: ',dy) 
@@ -262,6 +262,7 @@ def evolve_street_old_attractors(planar_graph):
     '''
         Evolve street for the old attractors
     '''
+    ## TODO: differentiate between intersections,important nodes and normal nodes
     already_grown_vertices = []
     for attracting_node in planar_graph.old_attracting_vertices:
         print('------------------------')

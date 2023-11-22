@@ -18,8 +18,6 @@ def print_properties_vertex(planar_graph,vertex):
     '''
         Flushes all the properties of the vertex
     '''
-    print('function, where planar_graph: ',id(planar_graph.graph))
-    print('function, where vertex: ',id(vertex),'in graph: ',id(planar_graph.graph.vp['id'][vertex]))
     print('vertex: ',planar_graph.graph.vp['id'][vertex])
     print('is_active: ',planar_graph.graph.vp['is_active'][vertex])
     print('important_node: ',planar_graph.graph.vp['important_node'][vertex])
@@ -77,7 +75,7 @@ def print_property_road(r):
     print('length: ',r.length)
     print('list_nodes: ',[v for v in r.list_nodes])
     print('list_edges: ',[[v1,v2] for v1,v2 in r.list_edges])
-    print('end_node: ',r.end_node)
+    print('end_node: ',r.end_point)
     print('is_closed: ',r.is_closed)
     print('activated_by: ',[v for v in r.activated_by])
 

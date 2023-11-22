@@ -7,8 +7,8 @@ import os
 def plot_relative_neighbors(planar_graph,vi,attracting_vertex,new_added_vertex,available_vertices):
     fig,ax = plt.subplots(1,2,figsize = (20,20))
     ## All attracting vertices
-    attracting_vertices = np.array([np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.graph.vertices() if planar_graph.graph.vp['attracting'][v] == True])
-    attracting_vertices_indices = np.array([planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if planar_graph.graph.vp['attracting'][v] == True])
+    attracting_vertices = np.array([np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
+    attracting_vertices_indices = np.array([planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
     ## Attracting vertex whose growing relative neighbors are updated
     coords_attracting_vertex = np.array([planar_graph.graph.vp['x'][attracting_vertex],planar_graph.graph.vp['y'][attracting_vertex]])
     ## Growing node v
@@ -118,7 +118,7 @@ def animate_growth(planar_graph):
         win = gt.GraphWindow(planar_graph.graph, pos, geometry=(500, 400),
                         edge_color=[0.6, 0.6, 0.6, 1],
                         vertex_fill_color=planar_graph.graph.vp['important_node'],
-                        vertex_halo=planar_graph.graph.vp['attracting'],
+                        vertex_halo=planar_graph.graph.vp['is_active'],
                         vertex_halo_color=[0.8, 0, 0, 0.6])
     else:
         win = Gtk.OffscreenWindow()
@@ -126,7 +126,7 @@ def animate_growth(planar_graph):
         win.graph = gt.GraphWidget(planar_graph.graph, pos,
                             edge_color=[0.6, 0.6, 0.6, 1],
                             vertex_fill_color=planar_graph.graph.vp['state'],
-                            vertex_halo=planar_graph.graph.vp['attracting'],
+                            vertex_halo=planar_graph.graph.vp['is_active'],
                             vertex_halo_color=[0.8, 0, 0, 0.6])
         win.add(win.graph)
     # Bind the function above as an 'idle' callback.
@@ -139,7 +139,7 @@ def animate_growth(planar_graph):
 
 def update_state(planar_graph,win):
     # Filter out the recovered vertices
-    planar_graph.graph.set_vertex_filter(planar_graph.graph.vp['attracting'], inverted=True)
+    planar_graph.graph.set_vertex_filter(planar_graph.graph.vp['is_active'], inverted=True)
     # The following will force the re-drawing of the graph, and issue a
 
     # re-drawing of the GTK window.

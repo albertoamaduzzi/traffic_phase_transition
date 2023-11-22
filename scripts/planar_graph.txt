@@ -1,4 +1,17 @@
 Algorithm:
+    General description:
+        Given the set of nodes that are present in the plane, we make a first distinction:
+            1) In the graph
+            2) Out of graph
+        We could have, in the case of multiple centers, different graphs, so, In graph of someone, could be out of the other one.
+        If two vertices belong to the same class:
+            C(v_i) = C(v_j), then we have the same properties.
+            P_l(v_i) = P_l(v_j) (these are copies of the function C)
+        However, these copies, are copies just for the starting part of the algorithm, indeed, for them to have any use, they must have a different 
+        dynamic with respect of C. 
+        In particular, each of the P_l can be a function that maps into any set, if bool -> Z_2, if vector<int> in N^n and so on.
+        If I do not insert in the description the space of these function, they are, once initialized essentially the same objects, just copies,
+        nothing could suggest me that they are different. The evolution of the system allows me to do that. 
     Phase 0,0:
         1) Add the centers at random
         2) compute the distance matrix

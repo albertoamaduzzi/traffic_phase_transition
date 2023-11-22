@@ -71,3 +71,8 @@ class Grid:
         points_inside_box = np.array(points_inside_box)
         print(points_inside_box,np.shape(points_inside_box))
         return points_inside_box[:][0],points_inside_box[:][1]
+
+
+
+        
+        
