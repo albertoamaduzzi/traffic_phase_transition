@@ -22,6 +22,11 @@ def update_delauney_newly_attracting_vertices(planar_graph):
     y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices() if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]   
     idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]  
     planar_graph.delauneyid2idx_new_vertices = {i:planar_graph.graph.vp['id'][planar_graph.graph.vertex(idx_xy[i])] for i in range(len(idx_xy))} 
+#    print('Delauney: ')
+#    print('x: ',x)
+#    print('y: ',y)
+#    print('idx_xy: ',idx_xy)
+#    print('dictionary: ',planar_graph.delauneyid2idx_new_vertices)
     if len(x)>3:
         tri = Delaunay(np.array([x,y]).T)
         # Iterate over all triangles in the Delaunay triangulation
@@ -33,8 +38,12 @@ def update_delauney_newly_attracting_vertices(planar_graph):
                     vertex_i_idx = planar_graph.delauneyid2idx_new_vertices[i]
                     if not j in planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_i]:
                         planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_i].append(vertex_j_idx)
+#                        print('vertex_i: ',vertex_i)
+#                        print(planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_i])
                     if not i in planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_j]:
                         planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_j].append(vertex_i_idx)
+#                        print('vertex_i: ',vertex_j)
+#                        print(planar_graph.graph.vp['new_attracting_delauney_neighbors'][vertex_j])
     else:
         print('Do not have enough points for Delauney triangulation')
         raise ValueError
@@ -58,21 +67,31 @@ def update_delauney_old_attracting_vertices(planar_graph):
     idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if (planar_graph.graph.vp['is_active'][v] == True and planar_graph.graph.vp['newly_added_center'][v] == False) or (planar_graph.graph.vp['end_point'][v] == True)]
     ## Save the map of indices that I will use to retrieve the id of the vertex
     planar_graph.delauneyid2idx_old_attracting_vertices = {i:planar_graph.graph.vp['id'][planar_graph.graph.vertex(idx_xy[i])] for i in range(len(idx_xy))} 
+#    print('Delauney: ')
+#    print('x: ',x)
+#    print('y: ',y)
+#    print('idx_xy: ',idx_xy)
+#    print('dictionary: ',planar_graph.delauneyid2idx_old_attracting_vertices)
     ## Compute delauney
-    tri = Delaunay(np.array([x,y]).T)
-    # Iterate over all triangles in the Delaunay triangulation
-    planar_graph.edges_delauney_for_old_attracting_vertices = []
-    for simplex in tri.simplices:
-        for i, j in [(simplex[0], simplex[1]), (simplex[1], simplex[2]), (simplex[2], simplex[0])]:
-            ## Initialize the neighborhood
-            vertex_i = planar_graph.graph.vertex(planar_graph.delauneyid2idx_old_attracting_vertices[i])   
-            vertex_j = planar_graph.graph.vertex(planar_graph.delauneyid2idx_old_attracting_vertices[i])   
-            vertex_j_idx = planar_graph.delauneyid2idx_old_attracting_vertices[j]
-            vertex_i_idx = planar_graph.delauneyid2idx_old_attracting_vertices[j]
-            if not j in planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_i]:   
-                planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_i].append(vertex_j_idx)
-            if not i in planar_graph.graph.vp['old_attracting_delauney_neighbors'][planar_graph.delauneyid2idx_old_attracting_vertices[j]]:
-                planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_j].append(vertex_i_idx)
+    if len(x)>3:
+        tri = Delaunay(np.array([x,y]).T)
+        # Iterate over all triangles in the Delaunay triangulation
+        planar_graph.edges_delauney_for_old_attracting_vertices = []
+        for simplex in tri.simplices:
+            for i, j in [(simplex[0], simplex[1]), (simplex[1], simplex[2]), (simplex[2], simplex[0])]:
+                ## Initialize the neighborhood
+                vertex_i = planar_graph.graph.vertex(planar_graph.delauneyid2idx_old_attracting_vertices[i])   
+                vertex_j = planar_graph.graph.vertex(planar_graph.delauneyid2idx_old_attracting_vertices[i])   
+                vertex_j_idx = planar_graph.delauneyid2idx_old_attracting_vertices[j]
+                vertex_i_idx = planar_graph.delauneyid2idx_old_attracting_vertices[j]
+                if not j in planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_i]:   
+                    planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_i].append(vertex_j_idx)
+                    print('vertex_i: ',vertex_i)
+                    print(planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_i])
+                if not i in planar_graph.graph.vp['old_attracting_delauney_neighbors'][planar_graph.delauneyid2idx_old_attracting_vertices[j]]:
+                    planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_j].append(vertex_i_idx)
+                    print('vertex_j: ',vertex_j)
+                    print(planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_j])
 
 
 ## CALLING ALL UPDATES: NEXT STEP -> COMPUTE RNG (new added,old) attracting vertices
@@ -96,6 +115,8 @@ def update_lists_next_rng(planar_graph):
     update_list_intersection_vertices(planar_graph)
     update_list_plausible_starting_point_of_roads(planar_graph)
     update_list_active_roads(planar_graph)
+    update_list_active_vertices(planar_graph)   
+
 ## COMPUTE RNG for NEWLY ADDED CENTERS: NEXT STEP -> EVOLVE STREET for (new,old) attracting vertices
 def compute_rng_newly_added_centers(planar_graph):
     '''

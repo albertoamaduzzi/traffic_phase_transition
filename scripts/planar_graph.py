@@ -267,6 +267,7 @@ def build_planar_graph(config,r0):
     print('1) ADD CENTERS: ',t1-t0)
     t0 = time.time()
     update_lists_next_rng(bg)
+    print_all_lists(bg)
     t1 = time.time()
     print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
     t0 = time.time()
@@ -285,8 +286,10 @@ def build_planar_graph(config,r0):
     bg.update_total_length_road()
     bg.update_count_roads()
     bg.update_time(t)
+    ## UPDATING LISTS AFTER UPDAtING GRAPH
+    print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
     update_lists_next_rng(bg)
-
+    print_all_lists(bg)
     while(len(bg.list_active_roads)!=0): #bg.number_iterations
         print('iteration: ',t)
         if t%bg.tau_c == 0 and t!=0:
@@ -312,6 +315,10 @@ def build_planar_graph(config,r0):
             evolve_street_newly_added_attractors(bg)
             t1 = time.time()
             print('5) EVOLVE STREET FOR NEW CENTERS: ',t1-t0)
+            print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
+            update_lists_next_rng(bg)
+            print_all_lists(bg)
+
         if t%bg.tau_c != 0 and t!=0:
             t0 = time.time()
             update_lists_next_rng(bg)
@@ -338,7 +345,9 @@ def build_planar_graph(config,r0):
             bg.update_total_length_road()
             bg.update_count_roads()
             bg.update_time(t)
+            print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
             update_lists_next_rng(bg)
+            print_all_lists(bg)
         if False or t==10:
             plot_evolving_graph(bg)
             plot_growing_roads(bg)
