@@ -127,7 +127,6 @@ def add_point2graph(planar_graph,source_vertex,dx,dy):
     set_relative_neighbors(planar_graph,vertex,[])
     set_end_point(planar_graph,vertex,True)
     set_in_graph(planar_graph,vertex,True)
-    add_road(planar_graph,source_vertex,vertex)
     set_road(planar_graph,vertex,[])
     ## CHANGE INFO SOURCE VERTEX
     set_end_point(planar_graph,source_vertex,False)
@@ -191,6 +190,10 @@ def evolve_uniquely_attracted_vertex(planar_graph,growing_node,available_vertice
     '''
         Evolve street from (in graph) points that have a unique attracting vertex 
     '''
+    if growing_node not in planar_graph.end_points:
+        intersection = True
+    else:
+        intersection = False
     print_delauney_neighbors(planar_graph,growing_node)
     print('available attracting vertices: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vp['relative_neighbors'][growing_node]])
     old_points = np.array([planar_graph.graph.vp['x'].a,planar_graph.graph.vp['y'].a]).T
@@ -201,9 +204,8 @@ def evolve_uniquely_attracted_vertex(planar_graph,growing_node,available_vertice
     new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
     update_distance_matrix(planar_graph,old_points,new_point)
     added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
-    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor)
+    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor,intersection)
     ## Find the road where the points belongs to (looking at the starting vertex it is generated from)
-    add_point2road(planar_graph,growing_node,added_vertex,attracting_node)
     plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)
     print('EVOLVING UNIQUE ATTRACTOR')
     print('direction: ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
@@ -214,24 +216,27 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
     '''
         Evolve street from (in graph) points that have a multiple attracting vertices
     '''
+    if growing_node not in planar_graph.end_points:
+        intersection = True
+    else:
+        intersection = False
     print_delauney_neighbors(planar_graph,growing_node)
     print('available attracting vertices: ',[planar_graph.graph.vp['id'][v] for v in available_vertices])
     dx = 0
     dy = 0
-    for neighbor_attracting_vertex in range(len(available_vertices)):
+    for neighbor_attracting_vertex_idx in available_vertices:
+        vertex_relative_neighbor = planar_graph.graph.vertex(neighbor_attracting_vertex_idx)
         old_points = np.array([planar_graph.graph.vp['x'].a,planar_graph.graph.vp['y'].a]).T
-        vertex_relative_neighbor = available_vertices[neighbor_attracting_vertex]#planar_graph.graph.vertex(int_idx_relative_neighbor)
         x,y = coordinate_difference(planar_graph.graph.vp['x'][vertex_relative_neighbor],planar_graph.graph.vp['y'][vertex_relative_neighbor],planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node])
         dx += x 
         dy += y
     if np.sqrt(dx**2+dy**2)!=0: 
         dx,dy = normalize_vector(dx,dy)
         dx,dy = scale(dx,dy,planar_graph.rate_growth)
-        new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
+        new_point = np.array([[planar_graph.graph.vp['x'][growing_node] + dx,planar_graph.graph.vp['y'][growing_node] + dy]])
         update_distance_matrix(planar_graph,old_points,new_point)
         added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
-        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,available_vertices)
-        add_point2road(planar_graph,growing_node,added_vertex,attracting_node)
+        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,available_vertices,intersection)
         plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)                            
         print('EVOLVING SUM ATTRACTOR')
         print('direction sum of : ',[planar_graph.graph.vp['id'][vertex_relative_neighbor] for vertex_relative_neighbor in available_vertices])
@@ -239,9 +244,9 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
         print('added vertex: ',planar_graph.graph.vp['id'][added_vertex],' coords: ',planar_graph.graph.vp['pos'][added_vertex])
     else:
         print('EVOLVING IN ALL DIRECTIONS DUE TO DEGENERACY')
-        for neighbor_attracting_vertex in range(len(available_vertices)):
+        for neighbor_attracting_vertex_idx in available_vertices:
+            vertex_relative_neighbor = planar_graph.graph.vertex(neighbor_attracting_vertex_idx)
             intersection = True
-            vertex_relative_neighbor = available_vertices[neighbor_attracting_vertex]#planar_graph.graph.vertex(int_idx_relative_neighbor)
 #                            vertex_relative_neighbor = planar_graph.graph.vertex(int_idx_relative_neighbor)
             dx,dy = coordinate_difference(planar_graph.graph.vp['x'][vertex_relative_neighbor],planar_graph.graph.vp['y'][vertex_relative_neighbor],planar_graph.graph.vp['x'][growing_node],planar_graph.graph.vp['y'][growing_node])
             dx,dy = normalize_vector(dx,dy)
@@ -249,8 +254,7 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
             new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
             update_distance_matrix(planar_graph,old_points,new_point)
             added_vertex = add_point2graph(planar_graph,growing_node,dx,dy)
-            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,neighbor_attracting_vertex)  
-            add_point2road(planar_graph,growing_node,added_vertex,attracting_node,intersection)
+            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,intersection)  
             plot_relative_neighbors(planar_graph,growing_node,attracting_node,added_vertex,available_vertices)
             print('direction sum of : ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
             print(' dx: ',dx,' dy: ',dy) 
@@ -273,8 +277,8 @@ def evolve_street_old_attractors(planar_graph):
         for growing_node in planar_graph.graph.vp['relative_neighbors'][attracting_node]:
 
             if growing_node not in already_grown_vertices:
-                available_vertices = planar_graph.graph.vp['relative_neighbors'][attracting_node]
-                number_relative_neighbors_growing_node = len(planar_graph.graph.vp['relative_neighbors'][attracting_node])
+                available_vertices = planar_graph.graph.vp['relative_neighbors'][growing_node]
+                number_relative_neighbors_growing_node = len(planar_graph.graph.vp['relative_neighbors'][growing_node])
                 print('growing node: ',planar_graph.graph.vp['id'][growing_node],' coords: ',planar_graph.graph.vp['pos'][growing_node])
                 ## Take if relative neighbor of the growing node is just one  
                 if number_relative_neighbors_growing_node==1:
@@ -306,8 +310,8 @@ def evolve_street_newly_added_attractors(planar_graph):
         ## if the relative neighbor is just one
         for growing_node in planar_graph.graph.vp['relative_neighbors'][attracting_node]:
             if growing_node not in already_grown_vertices:
-                available_vertices = planar_graph.graph.vp['relative_neighbors'][attracting_node]
-                number_relative_neighbors_growing_node = len(planar_graph.graph.vp['relative_neighbors'][attracting_node])
+                available_vertices = planar_graph.graph.vp['relative_neighbors'][growing_node]
+                number_relative_neighbors_growing_node = len(planar_graph.graph.vp['relative_neighbors'][growing_node])
                 print('growing node: ',planar_graph.graph.vp['id'][growing_node],' coords: ',planar_graph.graph.vp['pos'][growing_node])
                 ## Take if relative neighbor of the growing node is just one  
                 if number_relative_neighbors_growing_node==1:

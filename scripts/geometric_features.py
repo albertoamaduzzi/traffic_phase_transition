@@ -48,16 +48,16 @@ class road:
         Need to add a condition not to growing element grow back to the starting point  
     '''
     # TODO: need to block the growing nodes to grow back to their starting point
-    def __init__(self,initial_node,global_counting_roads,activation_vertex):
+    def __init__(self,initial_node,second_node,global_counting_roads,activation_vertex):
         self.id = global_counting_roads
         self.initial_node = initial_node
         self.number_iterations = 0
         self.length = 0
-        self.list_nodes = [initial_node] # Vertex
+        self.list_nodes = [initial_node,second_node] # Vertex
 #        self.linestring = LineString(self.list_nodes)
         self.list_edges = []
         self.evolution_attractors = defaultdict()#{t:[] for t in range()}
-        self.end_point = initial_node    
+        self.end_point = second_node    
         self.is_closed = False
         if type(activation_vertex) == list or type(activation_vertex) == np.array:
             self.activated_by = activation_vertex

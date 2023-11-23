@@ -53,16 +53,14 @@ def print_not_considered_vertices(planar_graph,not_considered):
         print('end_point: ',planar_graph.graph.vp['end_point'][v])
 
 def print_delauney_neighbors(planar_graph,vi):
-    print('old: ')
-    old_dn = [v for v in planar_graph.graph.vertices() if len(planar_graph.graph.vp['old_attracting_delauney_neighbors'][v])!=0]
-    for vj in old_dn:
-        print(planar_graph.graph.vp['id'][vj])
-        print('neighbors: ',planar_graph.graph.vp['old_attracting_delauney_neighbors'][vj])
-    print('new: ')
-    new_dn = [v for v in planar_graph.graph.vertices() if len(planar_graph.graph.vp['new_attracting_delauney_neighbors'][v])!=0]
-    for vj in new_dn:
-        print(planar_graph.graph.vp['id'][vj])
-        print('neighbors: ',planar_graph.graph.vp['new_attracting_delauney_neighbors'][vj])
+    if vi in planar_graph.old_attracting_vertices:
+        print('old: ')
+        print('vertex: ',planar_graph.graph.vp['id'][vi])
+        print('daluney',planar_graph.graph.vp['old_attracting_delauney_neighbors'][vi])
+    elif vi in planar_graph.newly_added_attracting_vertices:
+        print('new: ')
+        print('vertex: ',planar_graph.graph.vp['id'][vi])
+        print('daluney',planar_graph.graph.vp['new_attracting_delauney_neighbors'][vi])
 
 ## ------------------------------------- EDGES -------------------------------------
 
@@ -84,12 +82,12 @@ def print_property_road(r):
 def print_all_lists(planar_graph):
     print('----------------------')
     print('List of all vertices: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices()])
-    print('List of all active vertices: ',[r.id for r in planar_graph.active_vertices])
+    print('List of all active vertices: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.active_vertices])
     print('List end points', [planar_graph.graph.vp['id'][v] for v in planar_graph.end_points])
     print('List of all important nodes: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.important_vertices])
     print('List in graph: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.is_in_graph_vertices])
     print('List old attracting: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.old_attracting_vertices])
-    print('List new attracting: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.new_attracting_vertices])
+    print('List new attracting: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.newly_added_attracting_vertices])
     print('List of all roads: ',[r.id for r in planar_graph.list_roads])
 
 

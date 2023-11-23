@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from gi.repository import Gtk, Gdk, GdkPixbuf, GObject, GLib
+#from gi.repository import Gtk, Gdk, GdkPixbuf, GObject, GLib
 import numpy as np
 import os
 # FROM PROJECT
@@ -7,6 +7,7 @@ import os
 def plot_relative_neighbors(planar_graph,vi,attracting_vertex,new_added_vertex,available_vertices):
     fig,ax = plt.subplots(1,2,figsize = (20,20))
     ## All attracting vertices
+    print('available vertices inside function: ',available_vertices)
     attracting_vertices = np.array([np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
     attracting_vertices_indices = np.array([planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
     ## Attracting vertex whose growing relative neighbors are updated
@@ -15,7 +16,7 @@ def plot_relative_neighbors(planar_graph,vi,attracting_vertex,new_added_vertex,a
     coordinates_vi = np.array([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi]])
     coordinates_new_added_vertex = np.array([planar_graph.graph.vp['x'][new_added_vertex],planar_graph.graph.vp['y'][new_added_vertex]])  
     ## vector toward attracting vertices
-    coords_available_vertices = np.array([np.array([planar_graph.graph.vp['x'][vj],planar_graph.graph.vp['y'][vj]]) for vj in available_vertices])
+    coords_available_vertices = np.array([np.array([planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)]]) for vj in available_vertices])
     toward_attr_vertices = coords_available_vertices - coordinates_vi
     ua_plus_ub = np.sum(toward_attr_vertices,axis = 0)
     utoward_attr_vertices = ua_plus_ub/np.sqrt(np.sum(ua_plus_ub**2))
@@ -101,7 +102,7 @@ def plot_total_length_roads_time(planar_graph):
     plt.plot() 
 
 ## ANIMATION (DEPRECATED)
-
+'''
 def animate_growth(planar_graph):        
     # Setting general parameters
     black = [0, 0, 0, 1]           # Black color (attracting nodes)
@@ -157,3 +158,4 @@ def update_state(planar_graph,win):
     # We need to return True so that the main loop will call this function more
     # than once.
     return True
+'''
