@@ -19,11 +19,13 @@ def generate_exponential_distribution_nodes_in_space_square(r0,number_nodes,side
             Initialize postiions and distance matrix
             ALL in one step:        
     '''
-    
     r = np.random.default_rng().exponential(scale = r0,size = int(number_nodes))*side_city
     theta = np.random.random(int(number_nodes))*side_city    
     x = r*np.cos(theta)
     y = r*np.sin(theta)
+    if int(number_nodes) == 1:
+        x = np.array(x).reshape(1)
+        y = np.array(y).reshape(1)        
     return x,y
 
 

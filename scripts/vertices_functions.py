@@ -95,6 +95,7 @@ def set_road(planar_graph,vertex,road):
         planar_graph.graph.vp['roads'][vertex] = []
     else:
         planar_graph.graph.vp['roads'][vertex].append(road)
+
 def set_is_intersection(planar_graph,vertex,boolean):
     planar_graph.graph.vp['intersection'][vertex] = boolean
 
@@ -232,20 +233,21 @@ def find_road_vertex(planar_graph,vertex):
         Complexity:
             O(number_vertices)
     '''
-    local_idx_road = 0
     found = False
     for starting_vertex in planar_graph.important_vertices:
         for r in planar_graph.graph.vp['roads'][starting_vertex]:
-            local_idx_road += 1
+            local_idx_road = 0
             if r.in_road(vertex):
                 found = True
                 return starting_vertex,local_idx_road,found,r.id
             else:
                 print(planar_graph.graph.vp['id'][vertex],' not in road')
+            local_idx_road += 1
     return starting_vertex,None,found,None
 
 def create_road(planar_graph,source_vertex,target_vertex,activation_vertices):
     new_road = road(source_vertex,target_vertex,planar_graph.global_counting_roads,activation_vertices)
+    new_road.list_edges.append([source_vertex,target_vertex])
     planar_graph.graph.vp['roads'][source_vertex].append(new_road)
     planar_graph.global_counting_roads += 1
     return planar_graph.graph.vp['roads'][source_vertex][-1]
@@ -272,7 +274,7 @@ def update_intersections(planar_graph):
             attracted_vertex = planar_graph.graph.vertex(attracted_vertex_idx)
             ## If the attracted vertex (belonging to the relative neighbor) is not an end point, and is not an important node (then It can be just growing)
             if not is_end_point(planar_graph,attracted_vertex) and not is_important_node(planar_graph,attracted_vertex):
-                starting_vertex,local_idx,found = planar_graph.find_road_vertex(attracted_vertex)
+                starting_vertex,local_idx,found,id_ = find_road_vertex(planar_graph,attracted_vertex)
                 if found:
                     planar_graph.graph.vp['roads'][starting_vertex].append(road(starting_vertex,planar_graph.global_counting_roads,n_attracting_vertex))
                     planar_graph.graph.vp['roads'][starting_vertex][-1].copy_road_specifics(planar_graph,planar_graph.graph.vp['roads'][starting_vertex][local_idx])
@@ -367,6 +369,7 @@ def update_list_roads(planar_graph):
         Updates the list of roads in the graph:
         NOTE: call update_list_active_vertices after -> as each road is activated by an active vertex
     '''
+    planar_graph.list_roads = []
     for v in planar_graph.graph.vertices():
         for r in planar_graph.graph.vp['roads'][v]:
             planar_graph.list_roads.append(r)    
@@ -374,10 +377,12 @@ def update_list_roads(planar_graph):
 
 def update_list_active_roads(planar_graph):
     '''
-        Updates the list of active roads in the graph
+        Updates the list of active roads in the graph,
+        These are the roads that are not closed.
+        Among these I need to check the end points such that close_road 
     '''
     planar_graph.list_active_roads = []
     for v in planar_graph.important_vertices:
         for r in planar_graph.graph.vp['roads'][v]:
-            if r.is_closed == False:
+            if r.is_closed_ == False:
                 planar_graph.list_active_roads.append(r)

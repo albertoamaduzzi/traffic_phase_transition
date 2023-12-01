@@ -14,23 +14,6 @@ from collections import defaultdict
                 1a) 
 '''
 
-class node:
-    def __init__(self,int_idx_vertex,type,global_counting_roads,initial_node=False):
-        self.final_node = False
-        self.list_roads_belong = []
-        if initial_node:
-            self.initial_node = initial_node
-            self.list_roads_belong.append(global_counting_roads)
-        self.type = type
-        self.id_attractor: int_idx_vertex # s
-        self.current_attracted_vertices: list # V(s)
-        self.current_attracted_roads: list # [starting_vertex,...,ending_vertex]
-
-    def get_index_roads(self):
-        '''
-            Returns the road.id the node belongs to
-        '''
-        return self.list_roads_belong
 
 class road:
     '''
@@ -58,7 +41,7 @@ class road:
         self.list_edges = []
         self.evolution_attractors = defaultdict()#{t:[] for t in range()}
         self.end_point = second_node    
-        self.is_closed = False
+        self.is_closed_ = False
         if type(activation_vertex) == list or type(activation_vertex) == np.array:
             self.activated_by = activation_vertex
         else:
@@ -101,7 +84,7 @@ class road:
 
 ##------------------------------------- IS FUNCTIONS -------------------------------------##
     def is_closed(self):
-        return self.is_closed
+        return self.is_closed_
 
 
 

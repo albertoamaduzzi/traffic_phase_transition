@@ -1,31 +1,32 @@
+import sys
+sys.path.append('/home/aamad/')
 
 import time
 from collections import defaultdict
 import graph_tool as gt
-from scipy.spatial import distance_matrix
 import numpy as np
 import os
 import json
-import matplotlib.pyplot as plt
+import logging
+#import matplotlib.pyplot as plt
 # FROM PROJECT
-from geometric_features import road
 from grid import Grid
 from vertices_functions import *
 from relative_neighbors import *
 from growth_functions import *
 #from output import *    
 from global_functions import *
-from vector_operations import normalize_vector,coordinate_difference,scale
 from plots import *
 '''
 1) Generates the first centers [they are all of interest and they are all attracting and are all growing]
 2) For each growing I compute the relative neighbor (if it is growing iself and not a center, then I give up, otherwise I continue)
 '''
-
+logger = logging.getLogger('planar_graph.py')
 
  ## BARTHELEMY GRAPH
 class planar_graph:
     def __init__(self,config:dict,r0):
+        logger.info('Creating planar graph r0: {0}'.format(r0))
         self.config = config
         self.starting_phase = True
         ## Geometrical parameters
@@ -161,9 +162,8 @@ class planar_graph:
 
 ##------------------------------------------- INITIALIZE BASE DIR -----------------------------------------------------------
     def initialize_base_dir(self):
-        for root,_,_ in os.walk('.', topdown=True):
-            pass
-        self.base_dir = os.path.join(root,'output')
+        self.dir_proj = os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
+        self.base_dir = os.path.join(self.dir_proj,'output')
         ifnotexistsmkdir(self.base_dir)
         self.base_dir = os.path.join(self.base_dir,'n_tot_pts_{}'.format(self.total_number_attraction_points))
         ifnotexistsmkdir(self.base_dir)
@@ -288,6 +288,7 @@ def build_planar_graph(config,r0):
     bg.update_time(t)
     ## UPDATING LISTS AFTER UPDAtING GRAPH
     print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
+    new2old(bg)     
     update_lists_next_rng(bg)
     print_all_lists(bg)
     while(len(bg.list_active_roads)!=0): #bg.number_iterations
@@ -316,14 +317,14 @@ def build_planar_graph(config,r0):
             t1 = time.time()
             print('5) EVOLVE STREET FOR NEW CENTERS: ',t1-t0)
             print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
+            new2old(bg)
             update_lists_next_rng(bg)
             print_all_lists(bg)
-
         if t%bg.tau_c != 0 and t!=0:
             t0 = time.time()
             update_lists_next_rng(bg)
             t1 = time.time()
-            print('1) UPDATE LISTS OF VERTICES: ',t1-t0)
+            print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
         if bg.starting_phase == False:
             t0 = time.time()
             update_delauney_old_attracting_vertices(bg)
@@ -339,13 +340,14 @@ def build_planar_graph(config,r0):
             print('5) EVOLVE STREET FOR OLD CENTERS: ',t1-t0)
             print_all_lists(bg)
             ## ROAD SECTION
-            update_attracted_by(bg)
+            ## 
             close_roads(bg)
             print('number of edges: ',bg.graph.num_edges())
             bg.update_total_length_road()
             bg.update_count_roads()
             bg.update_time(t)
             print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
+            new2old(bg)
             update_lists_next_rng(bg)
             print_all_lists(bg)
         if False or t==10:
@@ -370,8 +372,8 @@ if __name__ == '__main__':
     config_name = os.listdir(config_dir)[0]
     with open(os.path.join(config_dir,config_name),'r') as f:
         config = json.load(f)
-    number_nodes = 4
+    number_nodes = 3
     for r0 in list_r0:
         bg = build_planar_graph(config,r0)
-        plot_number_roads_time(bg)
-        plot_total_length_roads_time(bg)
+#        plot_number_roads_time(bg,ax)
+#        plot_total_length_roads_time(bg)

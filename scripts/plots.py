@@ -1,66 +1,161 @@
+import matplotlib
+matplotlib.use('Agg')#.use('TkAgg')#.use('GTK3Agg')
+#import gi
+#gi.require_version('Gtk', '3.0')
+#from gi.repository import Gtk
+#Gtk.init()
+#Gtk.Window()
+
 import matplotlib.pyplot as plt
+import matplotlib.lines as lines
 #from gi.repository import Gtk, Gdk, GdkPixbuf, GObject, GLib
 import numpy as np
 import os
+from global_functions import ifnotexistsmkdir
+#os.environ['DISPLAY'] = 'localhost:0.0'
 # FROM PROJECT
 
-def plot_relative_neighbors(planar_graph,vi,attracting_vertex,new_added_vertex,available_vertices):
-    fig,ax = plt.subplots(1,2,figsize = (20,20))
-    ## All attracting vertices
-    print('available vertices inside function: ',available_vertices)
-    attracting_vertices = np.array([np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
-    attracting_vertices_indices = np.array([planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if planar_graph.graph.vp['is_active'][v] == True])
-    ## Attracting vertex whose growing relative neighbors are updated
-    coords_attracting_vertex = np.array([planar_graph.graph.vp['x'][attracting_vertex],planar_graph.graph.vp['y'][attracting_vertex]])
-    ## Growing node v
+def plot_old_attractors(planar_graph,ax):
+    ids = [planar_graph.graph.vp['id'][v] for v in planar_graph.old_attracting_vertices]
+    coords = [np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.old_attracting_vertices]
+    if len(coords)!=0:
+        ax.scatter(coords[:][0],coords[:][1],color = 'white')
+        for av in range(len(coords)):
+            ax.text(coords[av][0],coords[av][1], f'({ids[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)
+        ax.set_title('old attracting vertices')
+    else:
+        pass       
+    return ax         
+def plot_new_attractors(planar_graph,ax):
+    ids = [planar_graph.graph.vp['id'][v] for v in planar_graph.newly_added_attracting_vertices]
+    coords = [np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.newly_added_attracting_vertices]
+    if len(coords)!=0:
+        ax.scatter(coords[:][0],coords[:][1],color = 'white')
+        for av in range(len(coords)):
+            ax.text(coords[av][0],coords[av][1], f'({ids[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)
+        ax.set_title('newly attracting vertices')
+    else:
+        ax.set_title('newly attracting vertices')
+        pass
+    return ax
+
+def plot_active_vertices(planar_graph,ax):
+    ids = [planar_graph.graph.vp['id'][v] for v in planar_graph.active_vertices]
+    coords = [np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.active_vertices]
+    if len(coords)!=0:
+        ax.scatter(coords[:][0],coords[:][1],color = 'white')
+        for av in range(len(coords)):
+            ax.text(coords[av][0],coords[av][1], f'({ids[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)
+        ax.set_title('active vertices')
+    else:
+        ax.set_title('active vertices')
+        pass
+    return ax
+def plot_graph(planar_graph,ax):  
+    for v in planar_graph.important_vertices:
+        ax.scatter(planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v],color = 'red')   
+        for r in planar_graph.graph.vp['roads'][v]:
+            for edge in r.list_edges:
+                ax.add_artist(lines.Line2D([planar_graph.graph.vp['x'][edge[0]],planar_graph.graph.vp['x'][edge[1]]],[planar_graph.graph.vp['y'][edge[0]],planar_graph.graph.vp['y'][edge[1]]]))
+    return ax
+def plot_rn(planar_graph,vi,ax):
+    '''
+        Plots: 
+            1) growing node
+            2) Circle of attraction
+            3) Relative neighbors
+            4) All the other nodes
+    '''
+    coordinates_all = np.array([planar_graph.graph.vp['x'].a ,planar_graph.graph.vp['y'].a]).T
     coordinates_vi = np.array([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi]])
-    coordinates_new_added_vertex = np.array([planar_graph.graph.vp['x'][new_added_vertex],planar_graph.graph.vp['y'][new_added_vertex]])  
-    ## vector toward attracting vertices
-    coords_available_vertices = np.array([np.array([planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)]]) for vj in available_vertices])
-    toward_attr_vertices = coords_available_vertices - coordinates_vi
-    ua_plus_ub = np.sum(toward_attr_vertices,axis = 0)
-    utoward_attr_vertices = ua_plus_ub/np.sqrt(np.sum(ua_plus_ub**2))
-    print(np.shape(utoward_attr_vertices))
-    vector_edge = planar_graph.graph.vp['pos'][new_added_vertex].a - planar_graph.graph.vp['pos'][vi].a   
-    uvector_edge = vector_edge/np.sqrt(np.sum(vector_edge**2))
-    ## plot (attracting vertices, attracting vertex, growing node)
-    ax[0].scatter(planar_graph.graph.vp['x'].a,planar_graph.graph.vp['y'].a,color = 'black')
-    ax[0].scatter(attracting_vertices[:,0],attracting_vertices[:,1],color = 'blue')
-    for av in range(len(attracting_vertices_indices)):
-        ax[0].text(attracting_vertices[av,0],attracting_vertices[av,1], f'({attracting_vertices_indices[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)                
-    ax[0].scatter(coords_attracting_vertex[0],coords_attracting_vertex[1],color = 'yellow')
-    ax[0].scatter(coordinates_vi[0],coordinates_vi[1],color = 'red')
-    ## Plot relative neighbors
-    ax[1].scatter(planar_graph.graph.vp['x'].a,planar_graph.graph.vp['y'].a,color = 'black')
-    ax[1].scatter(attracting_vertices[:,0],attracting_vertices[:,1],color = 'white')
-    for av in range(len(attracting_vertices_indices)):
-        ax[1].text(attracting_vertices[av,0],attracting_vertices[av,1], f'({attracting_vertices_indices[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)                
-    ax[1].scatter(coords_attracting_vertex[0],coords_attracting_vertex[1],color = 'yellow')
-    ax[1].scatter(coordinates_vi[0],coordinates_vi[1],color = 'red')        
-    ax[1].scatter(coordinates_new_added_vertex[0],coordinates_new_added_vertex[1],color = 'orange')
-    ax[1].plot([coordinates_vi[0],coordinates_new_added_vertex[0]],[coordinates_vi[1],coordinates_new_added_vertex[1]],linestyle = '-',linewidth = 1.5,color = 'black')
-    ax[1].plot(vector_edge[0],vector_edge[1],linestyle = '-',linewidth = 1.5,color = 'violet')
-    ax[1].grid()
-    print('growth line: ',uvector_edge)
-    print('new added: ',utoward_attr_vertices)
-    print('theta: ',np.arccos(np.dot(uvector_edge,utoward_attr_vertices)/np.sqrt(np.sum(vector_edge**2)))/np.pi*180)
-    print('growth line is orthogonal to line (vi,new_node): ',np.dot(uvector_edge,utoward_attr_vertices))
+    ax.scatter(coordinates_all[:,0],coordinates_all[:,1])
+    ax.scatter(planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi],color = 'red')
     for vj in planar_graph.graph.vp['relative_neighbors'][vi]:
-        coordinates_vj = np.array([planar_graph.graph.vp['x'][vj],planar_graph.graph.vp['y'][vj]])
+        vertex_vj = planar_graph.graph.vertex(vj)
+        coordinates_vj = np.array([planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj]])
         r = planar_graph.distance_matrix_[planar_graph.graph.vp['id'][vi]][vj]
         circle1 = plt.Circle(coordinates_vi, r, color='red', linestyle = '--',fill=True ,alpha = 0.1)
         circle2 = plt.Circle(coordinates_vj, r, color='green', linestyle = '--',fill=True ,alpha = 0.1)
-        ax[1].add_artist(circle1)
-        ax[1].add_artist(circle2)
-#            intersection = plt.Circle((coordinates_vi + coordinates_vj) / 2, np.sqrt(r ** 2 - (1/(2*r)) ** 2), color='green',alpha = 0.2)
-        # Add the intersection to the axis
-#            ax.add_artist(intersection)            
-        ax[1].scatter(planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)],color = 'green')
-        ax[1].plot([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)]],[planar_graph.graph.vp['y'][vi],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)]],linestyle = '--',color = 'green')
-    ax[0].legend(['any vertex','attracting vertices','responsable attracting vertex','growing node'])
-    ax[1].legend(['any vertex','attracting vertices','responsable attracting vertex','growing node','new added vertex','connection new node','growth line','relative neighbors','circle growing','circle relative neighbor','line relative neighbor'])
-    plt.title('attracting {0}, growing {1} '.format(planar_graph.graph.vp['id'][attracting_vertex],planar_graph.graph.vp['id'][vi]))
-    plt.show()
+        ax.add_artist(circle1)
+        ax.add_artist(circle2)
+        ax.scatter(planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)],color = 'green')
+#        ax.plot([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)]],[planar_graph.graph.vp['y'][vi],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)]],linestyle = '--',color = 'green')
+    rel_neighbor = [planar_graph.graph.vertex(vj) in planar_graph.graph.vp['relative_neighbors'][vi]]
+    other_vertices = np.array([planar_graph.graph.vp['pos'][v] for v in planar_graph.is_in_graph_vertices if v !=vi and v not in rel_neighbor])
+    if len(other_vertices)!=0:
+        ax.scatter(other_vertices[:,0],other_vertices[:,1])
+    else:
+        pass
+    ax.legend(['red = growing','green = relative neighbors'])
+    ax.set_title('relative neighbors')
+    return ax
+def plot_old_delauney(planar_graph,ax):
+    '''
+        Delauney graph of the old attracting vertices
+    '''
+    if len(planar_graph.old_attracting_vertices)!=0:
+        x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if v in planar_graph.end_points or v in planar_graph.old_attracting_vertices]
+        y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices() if v in planar_graph.end_points or v in planar_graph.old_attracting_vertices]
+        ax.triplot(np.array([x,y]).T[:,0],np.array([x,y]).T[:,1])    
+        ax.set_title('delauny triangle old important nodes')
+        ax.legend(['old added '])
+    else:
+        ax.set_title('delauny triangle old important nodes')
+    return ax
+
+def plot_new_delauney(planar_graph,ax): 
+    '''
+        Delauney graph of the new attracting vertices
+    '''
+    if len(planar_graph.newly_added_attracting_vertices)!=0:
+        x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices()]
+        y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices()]
+        ax.triplot(np.array([x,y]).T[:,0],np.array([x,y]).T[:,1])    
+        ax.set_title('delauny triangle new important nodes')
+        ax.legend(['newly added '])
+    else:
+        ax.set_title('delauny triangle new important nodes')
+    return ax
+
+
+def plot_relative_neighbors(planar_graph,vi,new_added_vertex,available_vertices):
+    '''
+        Plots:
+            1) Vertices that can attract just the end points of the graph (upper-left)
+            2) Vertices that can attract any in graph point (upper-right)
+            3) Relative neighbors of the attracted vertex (middle-left)
+            4) Added vertices (middle-right)
+            5) active vertices (lower-left)
+            6) graph (lower-right)
+            7) Number of roads (lower-left)
+            8) Total lenght streets (lower-right)
+    '''
+    fig,ax = plt.subplots(3,2,figsize = (20,20),sharex = True,sharey = True)
+    print('plot old attractors')
+    ax[0][0] = plot_old_attractors(planar_graph,ax[0][0])
+    print('plot new attractors')
+    ax[0][1] = plot_new_attractors(planar_graph,ax[0][1])
+    print('plot relative neighbors')
+    ax[1][0] = plot_rn(planar_graph,vi,ax[1][0])
+    print('plot new delauney')
+    ax[1][1] = plot_new_delauney(planar_graph,ax[1][1])
+    print('plot old delauney')
+    ax[2][0] = plot_old_delauney(planar_graph,ax[2][0])
+#    ax[2][0] = plot_active_vertices(planar_graph,ax[2][0])
+    print('plot graph')
+    ax[2][1] = plot_graph(planar_graph,ax[2][1]) 
+#    plot_number_roads_time(planar_graph,ax[2][0])
+#    plot_total_length_roads_time(planar_graph,ax[2][1])
+    ## All attracting vertices
+    print('available vertices inside function: ',available_vertices)
+    ifnotexistsmkdir(os.path.join(planar_graph.base_dir,'relative_neighbor'))
+#    print(planar_graph.time)
+    if len(planar_graph.time)!=0:
+        time = planar_graph.time[-1] + 1
+    else:
+        time = 0
+    id_added = planar_graph.graph.vp['id'][new_added_vertex]
+    plt.savefig(os.path.join(planar_graph.base_dir,'relative_neighbor','iter_{0}_growing_{1}_added_{2}'.format(time,planar_graph.graph.vp['id'][vi],id_added)))
 
 def plot_growing_roads(planar_graph):
     fig,ax = plt.subplots(1,1,figsize = (20,20))
@@ -84,22 +179,24 @@ def plot_evolving_graph(planar_graph):
             ax.plot([planar_graph.graph.vp['x'][edge.source()],planar_graph.graph.vp['x'][edge.target()]],[planar_graph.graph.vp['y'][edge.source()],planar_graph.graph.vp['y'][edge.target()]],linestyle = '-',color = 'black')
     fig.show()
 
-def plot_number_roads_time(planar_graph):
-    plt.scatter(planar_graph.time,planar_graph.count_roads)
-    plt.plot(planar_graph.time,np.array(planar_graph.time) + planar_graph.count_roads[0])
-    plt.plot(planar_graph.time,2*np.array(planar_graph.time) + planar_graph.count_roads[0])
-    plt.xlabel('time')
-    plt.ylabel('number of roads')
-    plt.legend(['graph','tree','lattice'])
-    plt.plot() 
+def plot_number_roads_time(planar_graph,ax):
+    if len(planar_graph.count_roads)!=0:
+        ax.scatter(planar_graph.time,planar_graph.count_roads)
+        ax.plot(planar_graph.time,np.array(planar_graph.time) + planar_graph.count_roads[0])
+        ax.plot(planar_graph.time,2*np.array(planar_graph.time) + planar_graph.count_roads[0])
+        ax.xlabel('time')
+        ax.ylabel('number of roads')
+        ax.legend(['graph','tree','lattice'])
+        ax.set_title('number roads in nodes') 
 
-def plot_total_length_roads_time(planar_graph):
-    plt.scatter(planar_graph.time,planar_graph.length_total_roads)
-    plt.plot(planar_graph.time,np.sqrt(np.array(planar_graph.time))*planar_graph.length_total_roads[0])
-    plt.xlabel('time')
-    plt.ylabel('total length (m)')
-    plt.legend(['graph','square root'])
-    plt.plot() 
+def plot_total_length_roads_time(planar_graph,ax):
+    if len(planar_graph.time)!=0:
+        ax.scatter(planar_graph.time,planar_graph.length_total_roads)
+        ax.plot(planar_graph.time,np.sqrt(np.array(planar_graph.time))*planar_graph.length_total_roads[0])
+        ax.set_xlabel('time')
+        ax.set_ylabel('total length (m)')
+        ax.legend(['graph','square root'])
+        ax.set_title('total length network in time') 
 
 ## ANIMATION (DEPRECATED)
 '''
