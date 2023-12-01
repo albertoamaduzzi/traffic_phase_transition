@@ -37,7 +37,7 @@ def print_properties_vertex(planar_graph,vertex):
         print('list_nodes: ',[planar_graph.graph.vp['id'][v] for v in r.list_nodes])
         print('list_edges: ',[[planar_graph.graph.vp['id'][v1],planar_graph.graph.vp['id'][v2]] for v1,v2 in r.list_edges])
         print('end_node: ',planar_graph.graph.vp['id'][r.end_node])
-        print('is_closed: ',r.is_closed)
+        print('is_closed: ',r.is_closed_)
         print('activated_by: ',[planar_graph.graph.vp['id'][v] for v in r.activated_by])
 
 def print_not_considered_vertices(planar_graph,not_considered):
@@ -74,7 +74,7 @@ def print_property_road(r):
     print('list_nodes: ',[v for v in r.list_nodes])
     print('list_edges: ',[[v1,v2] for v1,v2 in r.list_edges])
     print('end_node: ',r.end_point)
-    print('is_closed: ',r.is_closed)
+    print('is_closed: ',r.is_closed_)
     print('activated_by: ',[v for v in r.activated_by])
 
 
