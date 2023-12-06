@@ -4,3 +4,5 @@ citations/
 output/
 #data
 data/
+cache/
+tests/cache/
