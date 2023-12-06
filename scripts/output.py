@@ -1,16 +1,18 @@
-
+from termcolor import cprint
+import numpy as np
+import graph_tool
 ##------------------------------------------------------------- PRINTING ----------------------------------------------------------
 
 ## ------------------------------------- GEOMETRY -------------------------------------
 def print_geometrical_info(planar_graph):
-    print('*****************************')
-    print('Side bounding box: {} km'.format(planar_graph.side_city))
-#        print('Number square grid: ',len(planar_graph.grid))
-#        print('Side single square: {} km'.format(planar_graph.side_city/np.sqrt(len(planar_graph.grid))))
-    print('----------------------')
-    print('Initial number points: ',planar_graph.initial_number_points)
-    print('Total number of POIs expected: ',planar_graph.total_number_nodes)
-    print('*******************************')
+    cprint('*****************************')
+    cprint('Side bounding box: '+ str(planar_graph.side_city) +'km','green')
+#        cprint('Number square grid: ',len(planar_graph.grid))
+#        cprint('Side single square: {} km'.format(planar_graph.side_city/np.sqrt(len(planar_graph.grid))))
+    cprint('----------------------')
+    cprint('Initial number points: '+str(planar_graph.initial_number_points),'green')
+    cprint('Total number of POIs expected: '+str(planar_graph.total_number_nodes),'green')
+    cprint('*******************************')
 
 ## ------------------------------------- VERTICES -------------------------------------
 
@@ -18,78 +20,96 @@ def print_properties_vertex(planar_graph,vertex):
     '''
         Flushes all the properties of the vertex
     '''
-    print('vertex: ',planar_graph.graph.vp['id'][vertex])
-    print('is_active: ',planar_graph.graph.vp['is_active'][vertex])
-    print('important_node: ',planar_graph.graph.vp['important_node'][vertex])
-    print('end_point: ',planar_graph.graph.vp['end_point'][vertex])
-    print('is_in_graph: ',planar_graph.graph.vp['is_in_graph'][vertex])
-    print('newly_added_center: ',planar_graph.graph.vp['newly_added_center'][vertex])
-    print('relative neighbors: ',planar_graph.graph.vp['relative_neighbors'][vertex])
-    print('x: ',planar_graph.graph.vp['x'][vertex])
-    print('y: ',planar_graph.graph.vp['y'][vertex])
-    print('pos: ',planar_graph.graph.vp['pos'][vertex])
-    print('out neighbor: ',[planar_graph.graph.vp['id'][v] for v in vertex.out_neighbours()])
-    print('in neighbor: ',[planar_graph.graph.vp['id'][v] for v in vertex.in_neighbours()])
-    for r in planar_graph.graph.vp['roads'][vertex]:
-        print('road: ',r.id)
-        print('number_iterations: ',r.number_iterations)
-        print('length: ',r.length)
-        print('list_nodes: ',[planar_graph.graph.vp['id'][v] for v in r.list_nodes])
-        print('list_edges: ',[[planar_graph.graph.vp['id'][v1],planar_graph.graph.vp['id'][v2]] for v1,v2 in r.list_edges])
-        print('end_node: ',planar_graph.graph.vp['id'][r.end_node])
-        print('is_closed: ',r.is_closed_)
-        print('activated_by: ',[planar_graph.graph.vp['id'][v] for v in r.activated_by])
+    
+    cprint('PRINT PROPERTIES VERTEX','magenta')
+    cprint('vertex: ' + str(planar_graph.graph.vp['id'][vertex]),'magenta')
+    cprint('is_active: ' + str(planar_graph.graph.vp['is_active'][vertex]),'magenta')
+    cprint('important_node: ' + str(planar_graph.graph.vp['important_node'][vertex]),'magenta')
+    cprint('end_point: ' + str(planar_graph.graph.vp['end_point'][vertex]),'magenta')
+    cprint('is_in_graph: ' + str(planar_graph.graph.vp['is_in_graph'][vertex]),'magenta')
+    cprint('newly_added_center: ' + str(planar_graph.graph.vp['newly_added_center'][vertex]),'magenta')
+    cprint('relative neighbors: ' + str(planar_graph.graph.vp['relative_neighbors'][vertex]),'magenta')
+    cprint('x: ' + str(planar_graph.graph.vp['x'][vertex]),'magenta')
+    cprint('y: ' + str(planar_graph.graph.vp['y'][vertex]),'magenta')
+    cprint('pos: ' + str(planar_graph.graph.vp['pos'][vertex]),'magenta')
+    cprint('ROADS ASSOCIATED TO VERTEX','magenta')
 
 def print_not_considered_vertices(planar_graph,not_considered):
     '''
     Type: Debug
     '''
-    print('XXXX   vertices whose attracted by is not updated   XXXX')
+    cprint('XXXX   vertices whose attracted by is not updated   XXXX')
     for v in not_considered:
-        print('id: ',planar_graph.graph.vp['id'][v])
-        print('important by: ',planar_graph.graph.vp['important_node'][v])
-        print('attracting: ',planar_graph.graph.vp['attracting'][v])
-        print('growing: ',planar_graph.graph.vp['growing'][v])
-        print('end_point: ',planar_graph.graph.vp['end_point'][v])
+        cprint('id: ',planar_graph.graph.vp['id'][v])
+        cprint('important by: ',planar_graph.graph.vp['important_node'][v])
+        cprint('attracting: ',planar_graph.graph.vp['attracting'][v])
+        cprint('growing: ',planar_graph.graph.vp['growing'][v])
+        cprint('end_point: ',planar_graph.graph.vp['end_point'][v])
 
 def print_delauney_neighbors(planar_graph,vi):
     if vi in planar_graph.old_attracting_vertices:
-        print('old: ')
-        print('vertex: ',planar_graph.graph.vp['id'][vi])
-        print('daluney',planar_graph.graph.vp['old_attracting_delauney_neighbors'][vi])
+        cprint('old: ')
+        cprint('vertex: ',planar_graph.graph.vp['id'][vi])
+        cprint('daluney',planar_graph.graph.vp['old_attracting_delauney_neighbors'][vi])
     elif vi in planar_graph.newly_added_attracting_vertices:
-        print('new: ')
-        print('vertex: ',planar_graph.graph.vp['id'][vi])
-        print('daluney',planar_graph.graph.vp['new_attracting_delauney_neighbors'][vi])
+        cprint('new: ')
+        cprint('vertex: ',planar_graph.graph.vp['id'][vi])
+        cprint('daluney',planar_graph.graph.vp['new_attracting_delauney_neighbors'][vi])
 
 ## ------------------------------------- EDGES -------------------------------------
 
-def print_property_road(r):
+def print_property_road(planar_graph,r):
     '''
         Print all the attributes of the road
     '''
-    print('road: ',r.id)
-    print('number_iterations: ',r.number_iterations)
-    print('length: ',r.length)
-    print('list_nodes: ',[v for v in r.list_nodes])
-    print('list_edges: ',[[v1,v2] for v1,v2 in r.list_edges])
-    print('end_node: ',r.end_point)
-    print('is_closed: ',r.is_closed_)
-    print('activated_by: ',[v for v in r.activated_by])
+
+    cprint('PRINT PROPERTY ROAD','red')
+    cprint('road: '+ str(r.id),'red')
+    cprint('number_iterations: '+ str(r.number_iterations),'red')
+    cprint('length: '+ str(r.length),'red')
+    cprint('list_nodes: ','red')
+    for v in r.list_nodes:
+        cprint(str(planar_graph.graph.vp['id'][v]),'red')
+    cprint('list_edges: ','red')
+    for v1,v2 in r.list_edges:
+        cprint('('+ str(planar_graph.graph.vp['id'][v1]) + ',' + str(planar_graph.graph.vp['id'][v2])+')','red')
+    cprint('end_point: ' + str(planar_graph.graph.vp['id'][r.end_point]),'red')
+    cprint('is_closed: ' + str(r.is_closed_),'red')
+    cprint('activated_by: ','red')
+    for ab in r.activated_by:
+        cprint(str(planar_graph.graph.vp['id'][ab]),'red')
+    cprint('type: '+ str(r.type_),'red')
+    cprint('capacity_level: '+ str(r.capacity_level),'red')
+
 
 
 ##------------------------------------ ALL LISTS ------------------------------------
 def print_all_lists(planar_graph):
-    print('----------------------')
-    print('List of all vertices: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices()])
-    print('List of all active vertices: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.active_vertices])
-    print('List end points', [planar_graph.graph.vp['id'][v] for v in planar_graph.end_points])
-    print('List of all important nodes: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.important_vertices])
-    print('List in graph: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.is_in_graph_vertices])
-    print('List old attracting: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.old_attracting_vertices])
-    print('List new attracting: ',[planar_graph.graph.vp['id'][v] for v in planar_graph.newly_added_attracting_vertices])
-    print('List of all roads: ',[r.id for r in planar_graph.list_roads])
-
+    cprint('PRINT ALL LISTS')
+    cprint('List of all vertices: ')
+    for v in planar_graph.graph.vertices():
+        cprint(str(planar_graph.graph.vp['id'][v]),'blue')
+    cprint('List of all active vertices: ')
+    for v in planar_graph.active_vertices:
+        cprint(planar_graph.graph.vp['id'][v],'blue')
+    cprint('List end points')
+    for v in planar_graph.end_points:
+        cprint(planar_graph.graph.vp['id'][v],'blue')
+    cprint('List of all important nodes: ')
+    for v in planar_graph.important_vertices:
+        cprint(planar_graph.graph.vp['id'][v],'blue')
+    cprint('List in graph: ')
+    for v in planar_graph.is_in_graph_vertices:
+        cprint(planar_graph.graph.vp['id'][v],'blue')
+    cprint('List old attracting: ')
+    for v in planar_graph.old_attracting_vertices:
+        cprint(planar_graph.graph.vp['id'][v],'blue')
+    cprint('List new attracting: ')
+    for v in planar_graph.newly_added_attracting_vertices:
+        cprint(planar_graph.graph.vp['id'][v],'blue') 
+    cprint('List of all roads: ')
+    for r in planar_graph.list_roads:
+        cprint(str(r.id ),'blue')
 
 ##------------------------------------------------------------- ASSERTIONS ----------------------------------------------------------
 
@@ -100,9 +120,10 @@ def ASSERT_PROPERTIES_VERTICES(planar_graph,v):
             2) If a vertex is not in the graph -> it must be active
     '''
     if planar_graph.graph.vp['end_point'] and not planar_graph.graph.vp['is_in_graph']:
-        planar_graph.print_properties_vertex(v)
+        print_properties_vertex(planar_graph,v)
         raise ValueError('The END NODE vertex {} is not in the graph'.format(planar_graph.graph.vp['id'][v]))
     if not planar_graph.graph.vp['is_in_graph'] and not planar_graph.graph['is_active']:
-        planar_graph.print_properties_vertex(v)
+        print_properties_vertex(planar_graph,v)
         raise ValueError('The vertex {} that is NOT in graph must be ACTIVE'.format(planar_graph.graph.vp['id'][v]))
+
 
