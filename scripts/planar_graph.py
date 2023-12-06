@@ -1,6 +1,6 @@
 import sys
 sys.path.append('/home/aamad/')
-
+from termcolor import cprint
 import time
 from collections import defaultdict
 import graph_tool as gt
@@ -17,16 +17,15 @@ from growth_functions import *
 #from output import *    
 from global_functions import *
 from plots import *
+from output import *
 '''
 1) Generates the first centers [they are all of interest and they are all attracting and are all growing]
 2) For each growing I compute the relative neighbor (if it is growing iself and not a center, then I give up, otherwise I continue)
 '''
-logger = logging.getLogger('planar_graph.py')
 
  ## BARTHELEMY GRAPH
 class planar_graph:
     def __init__(self,config:dict,r0):
-        logger.info('Creating planar graph r0: {0}'.format(r0))
         self.config = config
         self.starting_phase = True
         ## Geometrical parameters
@@ -191,7 +190,7 @@ class planar_graph:
         for node in self.graph.vertices():
             in_edges = list(node.in_edges())
             out_edges = list(node.out_edges())
-            print('node {} '.format(self.graph.vp['id'][node]),'in edges: ',len(in_edges),' out edges: ',len(out_edges))
+            cprint('node {} '.format(self.graph.vp['id'][node]),'in edges: ',len(in_edges),' out edges: ',len(out_edges))
             total_edge_count = len(in_edges) + len(out_edges)
             if total_edge_count > 2:
                 for edge in self.graph.edges():
@@ -223,7 +222,7 @@ class planar_graph:
     def save_custom_graph(self,filename):
         # Save the graph to the specified filename
         self.graph.save(filename)
-        print(f"Graph saved to {filename}")
+        cprint(f"Graph saved to {filename}")
 
 
     ## PLOTTING PROCEDURES
@@ -253,108 +252,142 @@ def build_planar_graph(config,r0):
                 4) Define: Capacity of a node
                 5) Define: Distribution of areas in the city
     '''
-
     ## Initialization parameters (with r0 being the characteristic distance of the probability distribution generation)
+    debugt = True
+    debugf = True
     t0 = time.time()
+    cprint('0) INITIALIZATION: ','yellow')
     bg = planar_graph(config,r0)
     ## Initializes the properties of graph    
     t1  = time.time()
-    print('0) INITIALIZATION: ',t1-t0)
+    cprint(str(t1-t0),'yellow')
+    print_geometrical_info(bg)    
     ## Add initial centers and control they are in the bounding box 
     t0 = time.time()
-    add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city)
+    cprint('1) ADD CENTERS: ','yellow')
+    add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city,debug = debugt)
     t1 = time.time()
-    print('1) ADD CENTERS: ',t1-t0)
+    cprint(str(t1-t0),'yellow')
     t0 = time.time()
-    update_lists_next_rng(bg)
-    print_all_lists(bg)
+    cprint('2) UPDATE LISTS OF VERTICES: ','yellow')
+    update_lists_next_rng(bg,debug = debugt)
+#    cprint('\t2a) Print all lists:')
+#    print_all_lists(bg)
     t1 = time.time()
-    print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
+    cprint(str(t1-t0),'yellow')
     t0 = time.time()
-    update_delauney_newly_attracting_vertices(bg)
+    cprint('3) UPDATE DELAUNEY NEW CENTERS: ','yellow')
+    update_delauney_newly_attracting_vertices(bg,debug=debugf)
     t1 = time.time()
-    print('3) UPDATE DELAUNEY NEW CENTERS: ',t1-t0)
+    cprint(str(t1-t0),'yellow')
     t0 = time.time()
-    compute_rng_newly_added_centers(bg)
+    cprint('4) COMPUTE RELATIVE NEIGHBORS NEWLY ADDED CENTERS: ','yellow')      
+    compute_rng_newly_added_centers(bg,debug=debugf)
     t1 = time.time()
-    print('4) COMPUTE RELATIVE NEIGHBORS NEWLY ADDED CENTERS: ',t1-t0)      
+    cprint(str(t1-t0),'yellow')      
     t0 = time.time()
-    evolve_street_newly_added_attractors(bg)
+    cprint('5) EVOLVE STREET FOR NEW CENTERS: ','yellow')
+    evolve_street_newly_added_attractors(bg,debug=debugt)
     t1 = time.time()
-    print('5) EVOLVE STREET FOR NEW CENTERS: ',t1-t0)
+    cprint(str(t1-t0),'yellow')
     t = 0
+    cprint('\t5a) Update total length road:','yellow')
     bg.update_total_length_road()
+    cprint('\t5b) Update count roads:','yellow')
     bg.update_count_roads()
+    cprint('\t5c) Update time:','yellow')
     bg.update_time(t)
     ## UPDATING LISTS AFTER UPDAtING GRAPH
-    print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
-    new2old(bg)     
-    update_lists_next_rng(bg)
-    print_all_lists(bg)
+    cprint('6) UPDATING LISTS AFTER UPDATING GRAPH:','yellow')
+    cprint('\t6a) New to old:','yellow')
+    new2old(bg,debug=debugf)     
+    cprint('\t6b) Update lists next rng:','yellow')
+    update_lists_next_rng(bg,debug = debugt)
+#    cprint('\t6c) Print all lists:')
+#    print_all_lists(bg)
+    cprint('******************** END INITIALIZATION *************************','yellow')
     while(len(bg.list_active_roads)!=0): #bg.number_iterations
-        print('iteration: ',t)
+        cprint('iteration: '+str(t),'light_blue','on_yellow')
         if t%bg.tau_c == 0 and t!=0:
+            cprint('xxxxxxxxxxxxx ADDING NEW CENTERS xxxxxxxxxxxxxxxxx','grey','on_green')
             # add nodes
-            print('*********************************************')
             t0 = time.time()
-            add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city)
+            cprint('1) ADD CENTERS: ','grey','on_green')
+            add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city,debug = debugt)
             t1 = time.time()
-            print('1) ADD CENTERS: ',t1-t0)
+            cprint(str(t1-t0),'grey','on_green')
             t0 = time.time()
-            update_lists_next_rng(bg)
+            cprint('2) UPDATE LISTS OF VERTICES: ','grey','on_green')
+            update_lists_next_rng(bg,debug = debugt)
             t1 = time.time()
-            print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
+            cprint(str(t1-t0),'grey','on_green')
             t0 = time.time()
-            update_delauney_newly_attracting_vertices(bg)
+            cprint('3a) UPDATE DELAUNEY NEW CENTERS: ','grey','on_green')
+            update_delauney_newly_attracting_vertices(bg,debug=debugf)
             t1 = time.time()
-            print('3) UPDATE DELAUNEY NEW CENTERS: ',t1-t0)
+            cprint(str(t1-t0),'grey','on_green')
             t0 = time.time()
-            compute_rng_newly_added_centers(bg)
+            cprint('3b) UPDATE DELAUNEY OLD CENTERS: ','green')
+            update_delauney_old_attracting_vertices(bg,debug=debugf)
             t1 = time.time()
-            print('4) COMPUTE RELATIVE NEIGHBORS NEWLY ADDED CENTERS: ',t1-t0)      
+            cprint(str(t1-t0),'green')
             t0 = time.time()
-            evolve_street_newly_added_attractors(bg)
+            cprint('4s) COMPUTE RELATIVE NEIGHBORS NEWLY ADDED CENTERS: ','grey','on_green')      
+            compute_rng_newly_added_centers(bg,debug=debugf)
             t1 = time.time()
-            print('5) EVOLVE STREET FOR NEW CENTERS: ',t1-t0)
-            print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
-            new2old(bg)
-            update_lists_next_rng(bg)
-            print_all_lists(bg)
-        if t%bg.tau_c != 0 and t!=0:
+            cprint(str(t1-t0),'grey','on_green')      
             t0 = time.time()
-            update_lists_next_rng(bg)
+            cprint('4b) COMPUTE RELATIVE NEIGHBORS OLD ADDED CENTERS: ','green')      
+            compute_rng_old_centers(bg,debug=debugf)
             t1 = time.time()
-            print('2) UPDATE LISTS OF VERTICES: ',t1-t0)
-        if bg.starting_phase == False:
+            cprint(str(t1-t0),'green')      
             t0 = time.time()
-            update_delauney_old_attracting_vertices(bg)
+            cprint('5a) EVOLVE STREET FOR NEW CENTERS: ','grey','on_green')
+            evolve_street_newly_added_attractors(bg,debug=debugt)
             t1 = time.time()
-            print('3) UPDATE DELAUNEY OLD CENTERS: ',t1-t0)
+            cprint(str(t1-t0),'grey','on_green')
             t0 = time.time()
-            compute_rng_old_centers(bg)
+            cprint('5b) EVOLVE STREET FOR OLD CENTERS: ','green')
+            evolve_street_old_attractors(bg,debug=debugt)
             t1 = time.time()
-            print('4) COMPUTE RELATIVE NEIGHBORS OLD ADDED CENTERS: ',t1-t0)      
+            cprint(str(t1-t0),'green')
+#            cprint('\t7c) Print all lists:')
+#            print_all_lists(bg)
+        elif t%bg.tau_c != 0 and bg.starting_phase == False:
+            cprint('------------------- UPDATING OLD CENTERS -----------------------','green')
             t0 = time.time()
-            evolve_street_old_attractors(bg)
+            cprint('3) UPDATE DELAUNEY OLD CENTERS: ','green')
+            update_delauney_old_attracting_vertices(bg,debug=debugf)
             t1 = time.time()
-            print('5) EVOLVE STREET FOR OLD CENTERS: ',t1-t0)
-            print_all_lists(bg)
-            ## ROAD SECTION
-            ## 
-            close_roads(bg)
-            print('number of edges: ',bg.graph.num_edges())
-            bg.update_total_length_road()
-            bg.update_count_roads()
-            bg.update_time(t)
-            print('6) UPDATING LISTS AFTER UPDATING GRAPH:')
-            new2old(bg)
-            update_lists_next_rng(bg)
-            print_all_lists(bg)
-        if False or t==10:
-            plot_evolving_graph(bg)
-            plot_growing_roads(bg)
+            cprint(str(t1-t0),'green')
+            t0 = time.time()
+            cprint('4) COMPUTE RELATIVE NEIGHBORS OLD ADDED CENTERS: ','green')      
+            compute_rng_old_centers(bg,debug=debugf)
+            t1 = time.time()
+            cprint(str(t1-t0),'green')      
+            t0 = time.time()
+            cprint('5) EVOLVE STREET FOR OLD CENTERS: ','green')
+            evolve_street_old_attractors(bg,debug=debugt)
+            t1 = time.time()
+            cprint(str(t1-t0),'green')
         if bg.starting_phase:
             bg.starting_phase = False
+        cprint('\t5a) Update total length road:','cyan')
+        bg.update_total_length_road()
+        cprint('\t5b) Update count roads:','cyan')
+        bg.update_count_roads()
+        cprint('\t5c) Update time:','cyan')
+        bg.update_time(t)
+        t0 = time.time()
+        cprint('6) CLOSING ROADS: ','cyan')
+        close_roads(bg)
+        t1 = time.time()
+        cprint('7) UPDATING LISTS AFTER UPDATING GRAPH:','cyan')
+        cprint('\t7a) New to old:','cyan')
+        new2old(bg,debug=debugf)
+        cprint('\t7b) Update lists next rng:','cyan')
+        update_lists_next_rng(bg,debug = debugt)
+
         t+=1
     if not os.path.exists(os.path.join(root,'graphs')):
         os.mkdir(os.path.join(root,'graphs'))
@@ -367,7 +400,7 @@ if __name__ == '__main__':
     list_r0 = [0.1]#np.linspace(1,10,100) # r0 takes values with a frequency of 100 meter from 0 to 10 km
     tuple = os.walk('.', topdown=True)
     root = tuple.__next__()[0]
-    print('root: ',root)
+    cprint('root: {}'.format(root),'black','on_green')
     config_dir = os.path.join('/home/aamad/Desktop/phd/berkeley/traffic_phase_transition','config')
     config_name = os.listdir(config_dir)[0]
     with open(os.path.join(config_dir,config_name),'r') as f:

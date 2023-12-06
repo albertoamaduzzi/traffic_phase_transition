@@ -7,7 +7,7 @@ from vertices_functions import *
 from output import *
 ## UPDATE DELAUNEY TRIANGULATION: NEXT STEP -> COMPUTE RNG (new added,old) attracting vertices      
 
-def update_delauney_newly_attracting_vertices(planar_graph):
+def update_delauney_newly_attracting_vertices(planar_graph,debug = False):
     '''
         The dalueney graph will contain:
             1) The newly added attracting vertices
@@ -18,16 +18,11 @@ def update_delauney_newly_attracting_vertices(planar_graph):
             [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if planar_graph.is_newly_added(v) or (planar_graph.is_in_graph(v) and not planar_graph.is_active(v))]
 
     '''
-    x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]
-    y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices() if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]   
-    idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]  
-    print('considered subgraph: ',idx_xy)
+    ##NOTE: I take all the points as there may exist the case where a newly added is shielded by oldly added
+    x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices()]# if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]
+    y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices()]# if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]   
+    idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices()]# if is_newly_added(planar_graph,v) or (is_in_graph(planar_graph,v))]  
     planar_graph.delauneyid2idx_new_vertices = {i:planar_graph.graph.vp['id'][planar_graph.graph.vertex(idx_xy[i])] for i in range(len(idx_xy))} 
-#    print('Delauney: ')
-#    print('x: ',x)
-#    print('y: ',y)
-#    print('idx_xy: ',idx_xy)
-#    print('dictionary: ',planar_graph.delauneyid2idx_new_vertices)
     if len(x)==3:
         tri = Delaunay(np.array([x,y]).T)
         simplex = tri.simplices[0]
@@ -62,8 +57,15 @@ def update_delauney_newly_attracting_vertices(planar_graph):
     else:
         print('Do not have enough points for Delauney triangulation')
         raise ValueError
-                        
-def update_delauney_old_attracting_vertices(planar_graph):
+    if debug:
+        print('\tCompute delauney for newly added vertices')
+        print('\tconsidered subgraph:\n',idx_xy)                            
+        print('\tx:\n',x)
+        print('\ty:\n',y)
+        print('\tidx_xy:\n',idx_xy)
+        print('\tdictionary:\n',planar_graph.delauneyid2idx_new_vertices)
+    
+def update_delauney_old_attracting_vertices(planar_graph,debug = False):
     '''
         Consider just "important" vertices that are 
             1) Still active
@@ -75,19 +77,13 @@ def update_delauney_old_attracting_vertices(planar_graph):
         3) Save it on old_attracting_delauney_neighbor for each vertex
         NOTE: not in graph -> active  NOT active -> not in graph
     '''
-    ## Filter vertices of the wanted graph
-    x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if (not is_newly_added(planar_graph,v) and is_active(planar_graph,v)) or is_end_point(planar_graph,v)]
-    y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices() if (not is_newly_added(planar_graph,v) and is_active(planar_graph,v)) or is_end_point(planar_graph,v)]         
+    ##NOTE: I consider all end points and active vertices: (I may need to add that they are not in the graph)
+    x = [planar_graph.graph.vp['x'][v] for v in planar_graph.graph.vertices() if (is_active(planar_graph,v)) or is_end_point(planar_graph,v)]#not is_newly_added(planar_graph,v) and is_active(planar_graph,v)
+    y = [planar_graph.graph.vp['y'][v] for v in planar_graph.graph.vertices() if (is_active(planar_graph,v)) or is_end_point(planar_graph,v)]#not is_newly_added(planar_graph,v) and is_active(planar_graph,v)         
     ## Take their indices
-    idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if (not is_newly_added(planar_graph,v) and is_active(planar_graph,v)) or is_end_point(planar_graph,v)]
-    print('old considered subgraph: ',idx_xy)
+    idx_xy = [planar_graph.graph.vp['id'][v] for v in planar_graph.graph.vertices() if (is_active(planar_graph,v)) or is_end_point(planar_graph,v)]#not is_newly_added(planar_graph,v) and is_active(planar_graph,v)
     ## Save the map of indices that I will use to retrieve the id of the vertex
     planar_graph.delauneyid2idx_old_attracting_vertices = {i:planar_graph.graph.vp['id'][planar_graph.graph.vertex(idx_xy[i])] for i in range(len(idx_xy))} 
-#    print('Delauney: ')
-#    print('x: ',x)
-#    print('y: ',y)
-#    print('idx_xy: ',idx_xy)
-#    print('dictionary: ',planar_graph.delauneyid2idx_old_attracting_vertices)
     ## Compute delauney
     if len(x)==3:
         tri = Delaunay(np.array([x,y]).T)
@@ -120,10 +116,15 @@ def update_delauney_old_attracting_vertices(planar_graph):
                     planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_j].append(vertex_i_idx)
 #                    print('vertex_j: ',vertex_j)
 #                    print(planar_graph.graph.vp['old_attracting_delauney_neighbors'][vertex_j])
-
-    print('old dictionary ',planar_graph.delauneyid2idx_old_attracting_vertices)
+    if debug:
+        print('\tCompute delauney for newly added vertices')
+        print('\tconsidered subgraph:\n',idx_xy)                            
+        print('\tx:\n',x)
+        print('\ty:\n',y)
+        print('\tidx_xy:\n',idx_xy)
+        print('\tdictionary:\n',planar_graph.delauneyid2idx_old_attracting_vertices)
 ## CALLING ALL UPDATES: NEXT STEP -> COMPUTE RNG (new added,old) attracting vertices
-def update_lists_next_rng(planar_graph):
+def update_lists_next_rng(planar_graph,debug = False):
     '''
         Recompute:
             1) growing_graph
@@ -135,19 +136,36 @@ def update_lists_next_rng(planar_graph):
     '''
     # GROWING VERTICES
     # for newly added centers
-    update_list_end_points(planar_graph)
-    update_list_newly_added_attracting_vertices(planar_graph)
-    update_list_important_vertices(planar_graph)
-    update_list_old_attracting_vertices(planar_graph)
-    update_list_in_graph_vertices(planar_graph)
-    update_list_intersection_vertices(planar_graph)
-    update_list_plausible_starting_point_of_roads(planar_graph)
-    update_list_roads(planar_graph)
-    update_list_active_roads(planar_graph)
-    update_list_active_vertices(planar_graph)   
+    if debug:
+        print('\tUpdate list for next computation of rng')
+    update_list_end_points(planar_graph,debug)
+    update_list_newly_added_attracting_vertices(planar_graph,debug)
+    update_list_important_vertices(planar_graph,debug)
+    update_list_old_attracting_vertices(planar_graph,debug)
+    update_list_in_graph_vertices(planar_graph,debug)
+    update_list_intersection_vertices(planar_graph,debug)
+    update_list_plausible_starting_point_of_roads(planar_graph,debug)
+    update_list_roads(planar_graph,debug)
+    update_list_active_roads(planar_graph,debug)
+    update_list_active_vertices(planar_graph,debug)  
+    update_list_vertices_starting_roads(planar_graph,debug) 
 
 ## COMPUTE RNG for NEWLY ADDED CENTERS: NEXT STEP -> EVOLVE STREET for (new,old) attracting vertices
-def compute_rng_newly_added_centers(planar_graph):
+def empty_relative_neighbors_vertices_in_graph_not_end_points(planar_graph): 
+    '''
+        Cleans the old relative neighbors for the points in the graph that are not end points. 
+        Indeed if I have a new vertex that attracts a middle point, the middle point will update already calculated
+        relative neighbors since it is updated from the call of the newly added not in graph centers.
+        This function is not needed in the old update since I iterate on the end points, and the first thing that I do
+        is to empty the relative neighbors of the end points.
+        i.e. planar_graph.graph.vp['relative_neighbors'][vi] = []
+    '''
+    ingraphnotendpoints = [v for v in planar_graph.graph.vertices() if is_in_graph(planar_graph,v) and not is_end_point(planar_graph,v)]
+    for v in ingraphnotendpoints:
+        planar_graph.graph.vp['relative_neighbors'][v] = []
+
+
+def compute_rng_newly_added_centers(planar_graph,debug = False):
     '''
         Description:
             1) update_delauney:
@@ -158,6 +176,7 @@ def compute_rng_newly_added_centers(planar_graph):
             4) If it is not the case, then vj is a relative neighbor of vi
 
     '''
+    empty_relative_neighbors_vertices_in_graph_not_end_points(planar_graph)
     for vi in planar_graph.newly_added_attracting_vertices: # planar_graph.growing_graph.vertices()
 #        print('RELATIVE NEIGHBORS: {}'.format(planar_graph.graph.vp['id'][vi]))
         planar_graph.graph.vp['relative_neighbors'][vi] = []
@@ -200,12 +219,15 @@ def compute_rng_newly_added_centers(planar_graph):
                         planar_graph.graph.vp['relative_neighbors'][planar_graph.graph.vertex(vj)].append(planar_graph.graph.vp['id'][vi])
                         if planar_graph.graph.vp['end_point'][planar_graph.graph.vertex(vj)] == False and planar_graph.graph.vp['important_node'][planar_graph.graph.vertex(vj)] == False:
                             planar_graph.graph.vp['intersection'][planar_graph.graph.vertex(vj)] = True
+    if debug:
+        print('\tCompute rng for newly added centers')
+
                             # FIND THE STARTING VERTEX OF THE ROAD THIS POINTS BELONGS TO
                         # ADD ROAD 
-    update_intersections(planar_graph)
-    update_list_intersection_vertices(planar_graph)
+#    update_intersections(planar_graph)
+#    update_list_intersection_vertices(planar_graph)
 
-def new2old(planar_graph):
+def new2old(planar_graph,debug=False):
     '''
         New vertices now become old
     '''
@@ -213,8 +235,11 @@ def new2old(planar_graph):
         planar_graph.graph.vp['newly_added_center'][v] = False
         planar_graph.old_attracting_vertices.append(v)
     planar_graph.list_nodes_road_vi = []
+    if debug:
+        print('\tNewly added vertices now are old')
+        print('\t\tList nodes road vi: ',planar_graph.list_nodes_road_vi)
 
-def compute_rng_old_centers(planar_graph):
+def compute_rng_old_centers(planar_graph,debug=False):
     '''
         Description:
             1) compute the delauney triangulation with just:
@@ -223,10 +248,14 @@ def compute_rng_old_centers(planar_graph):
             2) Compare them with just the nodes that are end points and are not in the road starting 
                 from the vertex vi I am considering.
     '''
+    if debug:
+        print('RELATIVE NEIGHBORS OLD VERTICES: ')        
+
     for vi in planar_graph.end_points: # planar_graph.growing_graph.vertices()
-#        print('RELATIVE NEIGHBORS: {}'.format(planar_graph.graph.vp['id'][vi]))        
-        list_nodes_road_vi = get_list_nodes_in_roads_starting_from_v(planar_graph,vi)
+        list_nodes_road_vi = get_list_nodes_in_roads_starting_from_v(planar_graph,vi,debug)
         planar_graph.graph.vp['relative_neighbors'][vi] = []
+        if debug:
+            print('List of nodes starting from {}: '.format(planar_graph.graph.vp['id'][vi]),list_nodes_road_vi)
         for vj in planar_graph.graph.vp['old_attracting_delauney_neighbors'][vi]: # planar_graph.growing_graph.vertices()
             go2append = True
 #            print('vj:\t',vj)
@@ -266,3 +295,6 @@ def compute_rng_old_centers(planar_graph):
                     planar_graph.graph.vp['relative_neighbors'][vi].append(vj)
                     if planar_graph.graph.vp['id'][vi] not in planar_graph.graph.vp['relative_neighbors'][planar_graph.graph.vertex(vj)]:
                         planar_graph.graph.vp['relative_neighbors'][planar_graph.graph.vertex(vj)].append(planar_graph.graph.vp['id'][vi])
+    if debug:
+        for v in planar_graph.end_points:
+            print('\tRN End Point {}: '.format(planar_graph.graph.vp['id'][v]),planar_graph.graph.vp['relative_neighbors'][v])

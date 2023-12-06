@@ -1,9 +1,11 @@
+import graph_tool 
 from shapely.geometry import Polygon,Point,LineString
 import numpy as np
 from shapely.prepared import prep
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from termcolor import cprint
 
 ## FROM PROJECT
 
@@ -31,26 +33,35 @@ class road:
         Need to add a condition not to growing element grow back to the starting point  
     '''
     # TODO: need to block the growing nodes to grow back to their starting point
-    def __init__(self,initial_node,second_node,global_counting_roads,activation_vertex):
+    def __init__(self,initial_node,second_node,global_counting_roads,activation_vertex,type_ = 0,unit_length = 0.01,debug = True):
+        if debug:
+            cprint('CREATING ROAD: ' + str(global_counting_roads),'light_magenta')        
         self.id = global_counting_roads
         self.initial_node = initial_node
         self.number_iterations = 0
-        self.length = 0
+        self.length = unit_length
         self.list_nodes = [initial_node,second_node] # Vertex
 #        self.linestring = LineString(self.list_nodes)
-        self.list_edges = []
+        self.list_edges = [[initial_node,second_node]] # [vertex,vertex
         self.evolution_attractors = defaultdict()#{t:[] for t in range()}
         self.end_point = second_node    
         self.is_closed_ = False
-        if type(activation_vertex) == list or type(activation_vertex) == np.array:
-            self.activated_by = activation_vertex
+        if isinstance(activation_vertex,(list,np.ndarray,graph_tool.libgraph_tool_core.Vector_int32_t)):
+            if debug:
+                cprint('ARRAY: ' + str(len(activation_vertex)) + ' NODES','magenta')
+                for n in activation_vertex:
+                    cprint(str(n),'light_magenta')
+            self.activated_by = np.array(activation_vertex,dtype=int)
         else:
-            self.activated_by = [activation_vertex]
+            self.activated_by = [int(activation_vertex)]
+            if debug:
+                cprint(str(type(activation_vertex)),'magenta')
+                for n in self.activated_by:
+                    cprint('ACTIVATED BY: ' + str(n),'light_magenta')
         ## TYPE ROAD
-        self.type = 0
+        self.type_ = type_
         self.capacity_level = 0
         ## 
-
     def add_node_in_road(self,source_node,new_vertex,distance_sn):
         '''
             Input:
@@ -58,12 +69,12 @@ class road:
             Description:
                 Use to add point in the road
         '''
-
+        print('ADDING NODE {0} IN ROAD {1}'.format(new_vertex,self.id))
         self.list_nodes.append(new_vertex)
         self.list_edges.append([source_node,new_vertex])
         self.length += distance_sn
         self.number_iterations += 1
-        self.end_node = new_vertex
+        self.end_point = new_vertex
     
     def in_road(self,vertex):
         return vertex in self.list_nodes

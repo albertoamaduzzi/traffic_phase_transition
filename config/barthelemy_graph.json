@@ -1,5 +1,5 @@
 {
-    "side_city": 10,
+    "side_city": 20,
     "ratio_growth2size_city": 0.01,
     "number_iterations":1000,
     "tau_c":3,

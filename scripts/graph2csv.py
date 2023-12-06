@@ -37,7 +37,7 @@ def edges2csv(planar_graph):
                 for r in list_r:
                     uniqueid.append(r.id)
                     u.append(r.initial_node)
-                    v.append(r.end_node)
+                    v.append(r.end_point)
                     length.append(r.length)
                     lanes.append(1)
                     speed_mph.append(30)
