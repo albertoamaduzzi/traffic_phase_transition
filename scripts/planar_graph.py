@@ -7,7 +7,6 @@ import graph_tool as gt
 import numpy as np
 import os
 import json
-import logging
 #import matplotlib.pyplot as plt
 # FROM PROJECT
 from grid import Grid
@@ -34,14 +33,13 @@ class planar_graph:
         self.rate_growth = self.ratio_growth2size_city*self.side_city
         self.r0 = r0
         ## dynamical parameters
-        self.number_iterations = config['number_iterations'] #import multiprocessing as mp
         self.tau_c = config['tau_c'] # 
         self.number_nodes_per_tau_c = config['number_nodes_per_tau_c'] 
+        self.iteration_count = 0
         ## creation rates of nodes
         self.initial_number_points = config['initial_number_points']
         self.total_number_attraction_points = config['total_number_attraction_points'] # these are the auxins
-        self.ratio_evolving2initial = config['ratio_evolving2initial']
-        self.total_number_nodes = self.number_iterations*self.number_nodes_per_tau_c + self.initial_number_points
+        self.number_added_nodes = 0
         self.distance_matrix_ = None
         ## Roads 
         self.global_counting_roads = 0
@@ -52,8 +50,6 @@ class planar_graph:
         ## Grid
         self.number_grids = config['number_grids']
         # 
-        #  animation
-        self.offscreen = config['offscreen']
         ##
         self.initialize_base_dir()
         ## LISTS
@@ -133,7 +129,8 @@ class planar_graph:
         roads_belonging_to = self.graph.new_vertex_property('vector<int>')
         self.graph.vp['roads_belonging_to'] = roads_belonging_to # used to new nodes to the right road.
         roads = self.graph.new_vertex_property('object') # is a list of roads
-        self.graph.vp['roads'] = roads    
+        self.graph.vp['roads'] = roads 
+        self.graph.vp['roads_activated'] = self.graph.new_vertex_property('vector<int>') # is a list of roads
         ## EDGES
         growth_unit_vect = self.graph.new_edge_property('double')
         self.graph.ep['distance'] = growth_unit_vect
@@ -146,6 +143,7 @@ class planar_graph:
         ## Animation
         state = self.graph.new_vertex_property('vector<double>')
         self.graph.vp['state'] = state
+        
 
         return self.graph
 
@@ -254,7 +252,7 @@ def build_planar_graph(config,r0):
     '''
     ## Initialization parameters (with r0 being the characteristic distance of the probability distribution generation)
     debugt = True
-    debugf = True
+    debugf = False
     t0 = time.time()
     cprint('0) INITIALIZATION: ','yellow')
     bg = planar_graph(config,r0)
@@ -265,7 +263,7 @@ def build_planar_graph(config,r0):
     ## Add initial centers and control they are in the bounding box 
     t0 = time.time()
     cprint('1) ADD CENTERS: ','yellow')
-    add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city,debug = debugt)
+    add_centers2graph(bg,debug = debugt)
     t1 = time.time()
     cprint(str(t1-t0),'yellow')
     t0 = time.time()
@@ -306,14 +304,14 @@ def build_planar_graph(config,r0):
 #    cprint('\t6c) Print all lists:')
 #    print_all_lists(bg)
     cprint('******************** END INITIALIZATION *************************','yellow')
-    while(len(bg.list_active_roads)!=0): #bg.number_iterations
-        cprint('iteration: '+str(t),'light_blue','on_yellow')
-        if t%bg.tau_c == 0 and t!=0:
+    while(len(bg.list_active_roads)!=0):
+        cprint('iteration: '+str(t),'light_blue','on_white')
+        if t%bg.tau_c == 0 and t!=0 and bg.number_added_nodes < bg.total_number_attraction_points:
             cprint('xxxxxxxxxxxxx ADDING NEW CENTERS xxxxxxxxxxxxxxxxx','grey','on_green')
             # add nodes
             t0 = time.time()
             cprint('1) ADD CENTERS: ','grey','on_green')
-            add_centers2graph(bg,bg.r0,bg.ratio_evolving2initial*bg.initial_number_points,bg.side_city,debug = debugt)
+            add_centers2graph(bg,debug = debugt)
             t1 = time.time()
             cprint(str(t1-t0),'grey','on_green')
             t0 = time.time()
@@ -380,7 +378,7 @@ def build_planar_graph(config,r0):
         bg.update_time(t)
         t0 = time.time()
         cprint('6) CLOSING ROADS: ','cyan')
-        close_roads(bg)
+        close_roads(bg,debugt)
         t1 = time.time()
         cprint('7) UPDATING LISTS AFTER UPDATING GRAPH:','cyan')
         cprint('\t7a) New to old:','cyan')
@@ -389,6 +387,7 @@ def build_planar_graph(config,r0):
         update_lists_next_rng(bg,debug = debugt)
 
         t+=1
+        bg.iteration_count = t
     if not os.path.exists(os.path.join(root,'graphs')):
         os.mkdir(os.path.join(root,'graphs'))
     bg.save_custom_graph(os.path.join(root,'graphs','graph_r0_{0}.gt'.format(round(r0,2))))

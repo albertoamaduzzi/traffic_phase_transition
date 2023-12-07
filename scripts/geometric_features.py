@@ -33,7 +33,7 @@ class road:
         Need to add a condition not to growing element grow back to the starting point  
     '''
     # TODO: need to block the growing nodes to grow back to their starting point
-    def __init__(self,initial_node,second_node,global_counting_roads,activation_vertex,type_ = 0,unit_length = 0.01,debug = True):
+    def __init__(self,initial_node,second_node,global_counting_roads,activation_vertex,type_ = 0,unit_length = 0.01,debug = False):
         if debug:
             cprint('CREATING ROAD: ' + str(global_counting_roads),'light_magenta')        
         self.id = global_counting_roads
@@ -62,14 +62,15 @@ class road:
         self.type_ = type_
         self.capacity_level = 0
         ## 
-    def add_node_in_road(self,source_node,new_vertex,distance_sn):
+    def add_node_in_road(self,source_node,new_vertex,distance_sn,debug = False):
         '''
             Input:
                 new_vertex: vertex
             Description:
                 Use to add point in the road
         '''
-        print('ADDING NODE {0} IN ROAD {1}'.format(new_vertex,self.id))
+        if debug:
+            print('ADDING NODE {0} IN ROAD {1}'.format(new_vertex,self.id))
         self.list_nodes.append(new_vertex)
         self.list_edges.append([source_node,new_vertex])
         self.length += distance_sn

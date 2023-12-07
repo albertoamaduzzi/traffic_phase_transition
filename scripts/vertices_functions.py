@@ -101,6 +101,43 @@ def set_is_intersection(planar_graph,vertex,boolean):
     planar_graph.graph.vp['intersection'][vertex] = boolean
 
 
+def set_roads_belonging_to_vertex(planar_graph,vertex,list_roads_id):
+    '''
+        Description:
+            For each vertex I want to know which roads are passing through it
+        Input:
+            vertex: vertex
+            list_roads_id: [int] [list of roads id]
+    '''
+    if isinstance(list_roads_id,int):
+            planar_graph.graph.vp['roads_belonging_to'][vertex].append(list_roads_id)
+    elif isinstance(list_roads_id,list):
+        if len(list_roads_id) == 0:
+            planar_graph.graph.vp['roads_belonging_to'][vertex] = list_roads_id
+        else:
+            for road_id in list_roads_id:
+                planar_graph.graph.vp['roads_belonging_to'][vertex].append(road_id)
+            raise ValueError('ERROR: Activating more then one road at a time')
+
+def set_roads_activated_by_vertex(planar_graph,vertex,list_roads_id):
+    '''
+        Description:
+            For each vertex I want to know which roads are passing through it
+        Input:
+            vertex: vertex
+            list_roads_id: [int] [list of roads id]
+    '''
+    if isinstance(list_roads_id,int):
+        planar_graph.graph.vp['roads_activated'][vertex].append(list_roads_id)
+    elif isinstance(list_roads_id,list):
+        if len(list_roads_id) == 0:
+            planar_graph.graph.vp['roads_activated'][vertex] = list_roads_id
+        else:
+            for road_id in list_roads_id:
+                planar_graph.graph.vp['roads_activated'][vertex].append(road_id)
+            raise ValueError('ERROR: Activating more then one road at a time')
+
+
 #### "IN GRAPH NODE" FUNCTIONS #####
 
 def set_initialize_x_y_pos(planar_graph,vertex,x,y,point_idx):
@@ -271,7 +308,8 @@ def find_road_vertex(planar_graph,vertex,debug = False):
                     print('\t\t\tRoad: ',r.id,' local_idx_road: ',local_idx_road,)
                 return starting_vertex,local_idx_road,found,r.id
             else:
-                print(planar_graph.graph.vp['id'][vertex],' not in road')
+                if debug:
+                    print(planar_graph.graph.vp['id'][vertex],' not in road')
             local_idx_road += 1
     return starting_vertex,None,found,None
 '''
@@ -378,18 +416,52 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
         set_is_intersection(planar_graph,source_vertex,True)
         new_road = road(source_vertex,target_vertex,planar_graph.global_counting_roads,attracting_vertices,type_ = 0,unit_length = planar_graph.rate_growth)
         planar_graph.graph.vp['roads'][source_vertex].append(new_road)
-        planar_graph.global_counting_roads += 1
+        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id)
+        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id)
         assign_type_road(planar_graph,source_vertex,new_road,debug)
+        try:
+            for av in attracting_vertices:
+                set_roads_activated_by_vertex(planar_graph,av,new_road.id)
+        except:
+            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id)
+        planar_graph.global_counting_roads += 1
         if debug:
+            try:
+                for av in attracting_vertices:
+                    cprint('vertex: '+ str(planar_graph.graph.vp['id'][av]))
+                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][av]))
+                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][av]))
+            except:
+                    cprint('vertex: '+ str(planar_graph.graph.vp['id'][attracting_vertices]))
+                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][attracting_vertices]))
+                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][attracting_vertices]))
+
             print_property_road(planar_graph,new_road)        
     elif is_important_node(planar_graph,source_vertex):
         if debug:
             print('+++ ADDING NEW ROAD +++')
         new_road = road(source_vertex,target_vertex,planar_graph.global_counting_roads,attracting_vertices,type_ = 0,unit_length = planar_graph.rate_growth)
         planar_graph.graph.vp['roads'][source_vertex].append(new_road)
+        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id)
+        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id)
+        try:
+            for av in attracting_vertices:
+                set_roads_activated_by_vertex(planar_graph,av,new_road.id)
+        except:
+            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id)
+
         planar_graph.global_counting_roads += 1
         if debug:
-            print_property_road(planar_graph,new_road)
+            try:
+                for av in attracting_vertices:
+                    cprint('vertex: '+ str(planar_graph.graph.vp['id'][av]))
+                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][av]))
+                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][av]))
+            except:
+                    cprint('vertex: '+ str(planar_graph.graph.vp['id'][attracting_vertices]))
+                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][attracting_vertices]))
+                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][attracting_vertices]))
+            print_property_road(planar_graph,new_road)        
     else:
         ## If the vertex is neither important nor intersection, then I add the vertex 2 the road
         ## An ending point belongs just to one road, whose type will not change
@@ -398,6 +470,7 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
         starting_vertex_road,local_idx_road,found,id_ = find_road_vertex(planar_graph,source_vertex,debug)
         if found:
             planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].add_node_in_road(source_vertex,target_vertex,planar_graph.distance_matrix_[source_idx,target_idx])
+            set_roads_belonging_to_vertex(planar_graph,target_vertex,id_)
             if debug:
                 print('+++ Added node in road +++')
                 print_property_road(planar_graph,planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road])
