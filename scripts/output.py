@@ -5,14 +5,21 @@ import graph_tool
 
 ## ------------------------------------- GEOMETRY -------------------------------------
 def print_geometrical_info(planar_graph):
-    cprint('*****************************')
-    cprint('Side bounding box: '+ str(planar_graph.side_city) +'km','green')
+    cprint('*************** GEOMETRY **************','green')
+    cprint('Side bounding box: '+ str(planar_graph.side_city) +' km','green')
+    cprint('Area bounding box: '+ str(planar_graph.side_city**2) +' km^2','green')
+    cprint('r0: ' + str(planar_graph.r0) + ' km','green')
+    cprint('Growth road rate / size city:' + str(planar_graph.ratio_growth2size_city),'green')
+    cprint('Rate growth: '+ str(planar_graph.rate_growth) +' km','green')
+    cprint('*************** DYNAMICS **************','yellow')
+    cprint('Initial number nodes: '+ str(planar_graph.initial_number_points),'green')
+    cprint('Number nodes per tau_c: '+ str(planar_graph.number_nodes_per_tau_c),'green')    
+    cprint('tau_c: '+ str(planar_graph.tau_c),'green')
+#    cprint('Total number nodes: '+ str(planar_graph.total_number_nodes),'green')
+    cprint('*************`*** GRID ****************','red')
+    cprint('Number grids: '+ str(planar_graph.number_grids),'green')
 #        cprint('Number square grid: ',len(planar_graph.grid))
 #        cprint('Side single square: {} km'.format(planar_graph.side_city/np.sqrt(len(planar_graph.grid))))
-    cprint('----------------------')
-    cprint('Initial number points: '+str(planar_graph.initial_number_points),'green')
-    cprint('Total number of POIs expected: '+str(planar_graph.total_number_nodes),'green')
-    cprint('*******************************')
 
 ## ------------------------------------- VERTICES -------------------------------------
 
@@ -69,7 +76,12 @@ def print_property_road(planar_graph,r):
     cprint('length: '+ str(r.length),'red')
     cprint('list_nodes: ','red')
     for v in r.list_nodes:
-        cprint(str(planar_graph.graph.vp['id'][v]),'red')
+        cprint(str(planar_graph.graph.vp['id'][v])
+                + ' intersection: ' + str(planar_graph.graph.vp['intersection'][v])
+                + ' important node: ' + str(planar_graph.graph.vp['important_node'][v])
+                + ' is active: ' + str(planar_graph.graph.vp['is_active'][v])
+                + ' coordinates: ' + str(planar_graph.graph.vp['pos'][v])
+                ,'red')
     cprint('list_edges: ','red')
     for v1,v2 in r.list_edges:
         cprint('('+ str(planar_graph.graph.vp['id'][v1]) + ',' + str(planar_graph.graph.vp['id'][v2])+')','red')
@@ -77,7 +89,9 @@ def print_property_road(planar_graph,r):
     cprint('is_closed: ' + str(r.is_closed_),'red')
     cprint('activated_by: ','red')
     for ab in r.activated_by:
-        cprint(str(planar_graph.graph.vp['id'][ab]),'red')
+        cprint(str(planar_graph.graph.vp['id'][ab]) 
+               + ' important node: ' + str(planar_graph.graph.vp['important_node'][ab])
+               ,'red')
     cprint('type: '+ str(r.type_),'red')
     cprint('capacity_level: '+ str(r.capacity_level),'red')
 

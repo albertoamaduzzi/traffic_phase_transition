@@ -213,18 +213,24 @@ def plot_relative_neighbors(planar_graph,vi,new_added_vertex,available_vertices,
         cprint('ITERATION: '+str(time),'light_green','on_white')
         cprint('Debug plots','light_green','on_white')
     fig,ax = plt.subplots(3,2,figsize = (20,20),sharex = True,sharey = True)
-    cprint('plot old attractors','light_green','on_white')
+    if debug:
+        cprint('plot old attractors','light_green','on_white')
     ax[0][0] = plot_old_attractors(planar_graph,ax[0][0])
-    cprint('plot new attractors','light_green','on_white')
+    if debug:
+        cprint('plot new attractors','light_green','on_white')
     ax[0][1] = plot_new_attractors(planar_graph,ax[0][1])
-    cprint('plot relative neighbors','light_green','on_white')
+    if debug:
+        cprint('plot relative neighbors','light_green','on_white')
     ax[1][0] = plot_rn(planar_graph,vi,ax[1][0])
-    cprint('plot new delauney','light_green','on_white')
+    if debug:    
+        cprint('plot new delauney','light_green','on_white')
     ax[1][1] = plot_new_delauney(planar_graph,ax[1][1])
-    cprint('plot old delauney','light_green','on_white')
+    if debug:    
+        cprint('plot old delauney','light_green','on_white')
     ax[2][0] = plot_old_delauney(planar_graph,ax[2][0])
 #    ax[2][0] = plot_active_vertices(planar_graph,ax[2][0])
-    cprint('plot graph','light_green','on_white')
+    if debug:    
+        cprint('plot graph','light_green','on_white')
     ax[2][1] = plot_graph(planar_graph,ax[2][1]) 
 #    plot_number_roads_time(planar_graph,ax[2][0])
 #    plot_total_length_roads_time(planar_graph,ax[2][1])
@@ -283,61 +289,3 @@ def plot_total_length_roads_time(planar_graph,ax):
         ax.legend(['graph','square root'])
         ax.set_title('total length network in time') 
 
-## ANIMATION (DEPRECATED)
-'''
-def animate_growth(planar_graph):        
-    # Setting general parameters
-    black = [0, 0, 0, 1]           # Black color (attracting nodes)
-    red = [1, 0, 0, 1]             # Red color (important nodes)
-    green = [0, 1, 0, 1]           # Green color (growing nodes)
-    blue = [0, 0, 1, 1]            # Blue color 
-    pos = planar_graph.graph.vp['pos']
-    # Generate path save 
-    if not os.path.exists(os.path.join(root,'animation')):
-        os.mkdir(os.path.join(root,'animation'))
-    planar_graph.max_count = 500
-    # Generate the graph window
-    if not planar_graph.offscreen:
-        win = gt.GraphWindow(planar_graph.graph, pos, geometry=(500, 400),
-                        edge_color=[0.6, 0.6, 0.6, 1],
-                        vertex_fill_color=planar_graph.graph.vp['important_node'],
-                        vertex_halo=planar_graph.graph.vp['is_active'],
-                        vertex_halo_color=[0.8, 0, 0, 0.6])
-    else:
-        win = Gtk.OffscreenWindow()
-        win.set_default_size(500, 400)
-        win.graph = gt.GraphWidget(planar_graph.graph, pos,
-                            edge_color=[0.6, 0.6, 0.6, 1],
-                            vertex_fill_color=planar_graph.graph.vp['state'],
-                            vertex_halo=planar_graph.graph.vp['is_active'],
-                            vertex_halo_color=[0.8, 0, 0, 0.6])
-        win.add(win.graph)
-    # Bind the function above as an 'idle' callback.
-    cid = GLib.idle_add(planar_graph.update_state())
-    # We will give the user the ability to stop the program by closing the window.
-    win.connect("delete_event", Gtk.main_quit)
-    # Actually show the window, and start the main loop.
-    win.show_all()
-    Gtk.main()
-
-def update_state(planar_graph,win):
-    # Filter out the recovered vertices
-    planar_graph.graph.set_vertex_filter(planar_graph.graph.vp['is_active'], inverted=True)
-    # The following will force the re-drawing of the graph, and issue a
-
-    # re-drawing of the GTK window.
-    win.graph.regenerate_surface()
-    win.graph.queue_draw()
-    # if doing an offscreen animation, dump frame to disk
-
-    if offscreen:
-        global count
-        pixbuf = win.get_pixbuf()
-        pixbuf.savev(r'./frames/sirs%06d.png' % count, 'png', [], [])
-        if count > max_count:
-            sys.exit(0)
-        count += 1
-    # We need to return True so that the main loop will call this function more
-    # than once.
-    return True
-'''

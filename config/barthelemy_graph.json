@@ -1,17 +1,14 @@
 {
+
     "side_city": 20,
     "ratio_growth2size_city": 0.01,
-    "number_iterations":1000,
-    "tau_c":3,
-    "ratio_evolving2initial":0.1,
-    "number_nodes_per_tau_c":10,
-    "initial_number_points":10,
-    "ratio_evolving2initial":0.4,
-    "total_number_attraction_points":1000,
+    "initial_number_points":2,
+    "tau_c":10,
+    "number_nodes_per_tau_c":5,
+    "total_number_attraction_points":3,
     "number_grids": 10,
     "policentricity":false,
-    "degree_policentricity":1,
-    "offscreen":false
+    "degree_policentricity":1
 
 
 }

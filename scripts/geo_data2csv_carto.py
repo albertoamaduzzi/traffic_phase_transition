@@ -229,7 +229,7 @@ if __name__=='__main__':
             carto_computed = False
             if dir_ != 'carto':
                 print('dir_: ',dir_)
-                carto = ox.graph_from_place(dir2labels[dir_], network_type="drive")
+#                carto = ox.graph_from_place(dir2labels[dir_], network_type="drive")
                 save_dir = os.path.join(carto_base,dir_)            
                 ifnotexistsmkdir(save_dir)
                 print('save_dir: ',save_dir)            
@@ -238,7 +238,10 @@ if __name__=='__main__':
                     file_name = os.path.join(data_dir,dir_,file)
                     if file.endswith('.fma'):
                         if carto_computed == False:
+                            ## Read Polygon file -> From polygon 2 carto
                             gdf = read_file_gpd(file_name.split('.')[0] + '.shp')
+                            carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
+                        ## FROM POLYGON TO ORIGIN DESTINATION -> OD FILE
                         pol_ordest = polygon2origin_destination(gdf,carto)  
                         histo_point2polygon(pol_ordest)      
                         for R in range(1,11):
@@ -247,7 +250,10 @@ if __name__=='__main__':
                             save_od(save_dir,df_od,R)
                     elif carto_computed == False:
                         file_name = file_name.split('.')[0] + '.shp'
-                        gdf = read_file_gpd(file_name)                        
+                        ## Read Polygon file -> From polygon 2 carto
+                        gdf = read_file_gpd(file_name)        
+                        carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
+                        ## NODES and EdgeS files
                         df_nodes,osmid2id = nodes_file_from_gpd(carto)
                         df_edges = edges_file_from_gpd(carto,osmid2id)
                         save_nodes_edges(save_dir,df_nodes,df_edges)
