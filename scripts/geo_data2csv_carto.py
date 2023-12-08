@@ -7,6 +7,7 @@ import osmnx as ox
 from collections import defaultdict
 from shapely.geometry import Point,Polygon
 import matplotlib.pyplot as plt
+import json
 ##------------------------------------- ENVIRONMENT -------------------------------------##
 def set_environment():
     base_dir = os.path.dirname(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -85,7 +86,7 @@ def edges_file_from_gpd(carto,osmid2id):
 
 ##------------------------------------- OD -------------------------------------##
 
-def polygon2origin_destination(gdf,carto):
+def polygon2origin_destination(gdf,carto,debug = False):
     '''
         Given a network taken from the cartography or ours:
             Build the set of origin and destinations from the polygons that are coming from the 
@@ -106,16 +107,28 @@ def polygon2origin_destination(gdf,carto):
                 break
         if found_key:
             tract_id = gdf.loc[idx_containing_polygon][key]
+            if len(tract_id)==1: 
+                try:
+                    tract_id = int(tract_id.tolist()[1])
+                except IndexError:
+                    tract_id = int(tract_id.tolist()[0])
+    #            print('tract_id: ',tract_id)
+                polygon2origindest[int(tract_id)].append(node)
+                if debug:
+                    print('found polygon: ',idx_containing_polygon)
+                    print('tract_id: ',tract_id)
+                    print('type tract_id: ',type(tract_id))
+                    print('values dict: ',polygon2origindest[tract_id])
+                    print('dict: ',polygon2origindest)
+
+            elif len(tract_id)>1:
+                print('tract_id: ',tract_id)
+                raise ValueError('more than one tract id: THIS IS STRANGE')
+
+            else:
+                pass
         else:
             raise KeyError('No key found in: ',gdf.columns)
-        if len(tract_id)==1: 
-            tract_id = tract_id.tolist()[0]
-#            print('tract_id: ',tract_id)
-            polygon2origindest[tract_id].append(node)
-        elif len(tract_id)>1:
-            raise ValueError('more than one tract id: THIS IS STRANGE')
-        else:
-            pass
 
     return polygon2origindest
 
@@ -210,12 +223,34 @@ def save_od(save_dir,df_od,R = 1,start=7,end=8):
 
     pass
 
+def save_pol2orddest(save_dir,polygon2origindest):
+    '''
+        Input:
+            carto: string [path to the folder where to save the files]
+        Description:
+            Save the files in the carto folder
+    '''
+    json_obj = json.dumps(polygon2origindest,indent=4)
+    with open(os.path.join(save_dir,'polygon2origindest.json'),'w') as f:
+        f.write(json_obj)
+
+    pass
 if __name__=='__main__':
 ## GLOBAL    
     dir2labels = {
-        'BO':"Boston, Massachusetts, USA",
+        'BOS':"Boston, Massachusetts, USA",
         'SFO':"San Francisco, California, USA",
-        'LA':"Los Angeles, California, USA",
+        'LAX':"Los Angeles, California, USA",
+    }
+    alreadyhavenodeedges = {
+        'BOS':False,
+        'SFO':True,
+        'LAX':False,
+    }
+    map_already_computed ={
+        'BOS':False,
+        'SFO':False,
+        'LAX':False,
     }
     names_carto = {
         'BOS':"Boston",
@@ -226,7 +261,7 @@ if __name__=='__main__':
     for root,dirs,files in os.walk(data_dir,topdown=True):
         print('root: ',root)
         for dir_ in dirs:
-            carto_computed = False
+            carto_available = False
             if dir_ != 'carto':
                 print('dir_: ',dir_)
 #                carto = ox.graph_from_place(dir2labels[dir_], network_type="drive")
@@ -237,27 +272,36 @@ if __name__=='__main__':
                     print('file: ',file)
                     file_name = os.path.join(data_dir,dir_,file)
                     if file.endswith('.fma'):
-                        if carto_computed == False:
+                        if carto_available == False:
                             ## Read Polygon file -> From polygon 2 carto
-                            gdf = read_file_gpd(file_name.split('.')[0] + '.shp')
+                            gdf = read_file_gpd(os.path.join(root,dir_,dir_ + '.shp'))
                             carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
                         ## FROM POLYGON TO ORIGIN DESTINATION -> OD FILE
-                        pol_ordest = polygon2origin_destination(gdf,carto)  
-                        histo_point2polygon(pol_ordest)      
+                        if map_already_computed[dir_]:
+                            with open(os.path.join(save_dir,'polygon2origindest.json'),'r') as infile:
+                                pol_ordest = json.load(infile)
+                        else:
+                            pol_ordest = polygon2origin_destination(gdf,carto)  
+                            save_pol2orddest(save_dir,pol_ordest)
+#                        histo_point2polygon(pol_ordest)      
                         for R in range(1,11):
                             df_od =OD_from_fma(file_name,pol_ordest,R)
                             print('df_od: ',df_od)
                             save_od(save_dir,df_od,R)
-                    elif carto_computed == False:
-                        file_name = file_name.split('.')[0] + '.shp'
-                        ## Read Polygon file -> From polygon 2 carto
-                        gdf = read_file_gpd(file_name)        
-                        carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
-                        ## NODES and EdgeS files
-                        df_nodes,osmid2id = nodes_file_from_gpd(carto)
-                        df_edges = edges_file_from_gpd(carto,osmid2id)
-                        save_nodes_edges(save_dir,df_nodes,df_edges)
-                        carto_computed = True
+                    elif carto_available == False:
+                        if alreadyhavenodeedges[dir_]:
+                            print('Do not waste time to recomputing nodes and edges files')
+                            pass
+                        else:
+                            file_name = file_name.split('.')[0] + '.shp'
+                            ## Read Polygon file -> From polygon 2 carto
+                            gdf = read_file_gpd(file_name)        
+                            carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
+                            ## NODES and EdgeS files
+                            df_nodes,osmid2id = nodes_file_from_gpd(carto)
+                            df_edges = edges_file_from_gpd(carto,osmid2id)
+                            save_nodes_edges(save_dir,df_nodes,df_edges)
+                            carto_available = True
 
 '''
     Description:
