@@ -8,7 +8,16 @@
     "total_number_attraction_points":3,
     "number_grids": 10,
     "policentricity":false,
-    "degree_policentricity":1
-
-
+    "degree_policentricity":1,
+    "debug_initial_points":false,
+    "debug_update_lists":false,
+    "debug_add_centers":false,
+    "debug_delauney_old":false,
+    "debug_delauney_new":false,
+    "debug_rng_old":false,
+    "debug_rng_new":false,
+    "debug_evolve_old":true,
+    "debug_evolve_new":false,
+    "debug_close_roads":true,
+    "debug_new2old":false
 }
