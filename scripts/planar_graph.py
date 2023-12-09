@@ -361,7 +361,7 @@ def build_planar_graph(config,r0):
             cprint(str(t1-t0),'green')
 #            cprint('\t7c) Print all lists:')
 #            print_all_lists(bg)
-        elif t%bg.tau_c != 0 and bg.starting_phase == False:
+        elif (t%bg.tau_c != 0 and bg.starting_phase == False) or bg.number_added_nodes > bg.total_number_attraction_points:
             cprint('------------------- UPDATING OLD CENTERS -----------------------','green')
             t0 = time.time()
             cprint('3) UPDATE DELAUNEY OLD CENTERS: ','green')
@@ -395,7 +395,8 @@ def build_planar_graph(config,r0):
         new2old(bg,debug=debug_new2old)
         cprint('\t7b) Update lists next rng:','cyan')
         update_lists_next_rng(bg,debug = debug_update_lists)
-
+        for v in bg.active_vertices:
+            print(bg.graph.vp['id'][v],' is active: ',bg.graph.vp['is_active'][v],' roads activated: ',bg.graph.vp['roads_activated'][v])
         t+=1
         bg.iteration_count = t
     if not os.path.exists(os.path.join(root,'graphs')):

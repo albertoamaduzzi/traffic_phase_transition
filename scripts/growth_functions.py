@@ -41,8 +41,8 @@ def add_initial_points2graph(planar_graph,debug=False):
         set_relative_neighbors(planar_graph,vertex,[])
         set_road(planar_graph,vertex,[])
         set_is_intersection(planar_graph,vertex,False)
-        set_roads_belonging_to_vertex(planar_graph,vertex,[])
-        set_roads_activated_by_vertex(planar_graph,vertex,[])
+        set_roads_belonging_to_vertex(planar_graph,vertex,[],debug)
+        set_roads_activated_by_vertex(planar_graph,vertex,[],debug)
         if debug:
             print_properties_vertex(planar_graph,vertex)
     if len(x)==1:
@@ -59,6 +59,7 @@ def add_initial_points2graph(planar_graph,debug=False):
         for v in planar_graph.graph.vertices():
             for r in planar_graph.graph.vp['roads'][v]: 
                 r.is_closed_ = True
+                r.closing_vertex = r.end_point
     elif len(x) == 3:
         tri = Delaunay(np.array([x,y]).T)
         simplex = tri.simplices[0]
@@ -70,6 +71,7 @@ def add_initial_points2graph(planar_graph,debug=False):
                 for v in planar_graph.graph.vertices():
                     for r in planar_graph.graph.vp['roads'][v]: 
                         r.is_closed_ = True
+                        r.closing_vertex = r.end_point
     else:
         tri = Delaunay(np.array([x,y]).T)
         for simplex in tri.simplices:
@@ -81,6 +83,7 @@ def add_initial_points2graph(planar_graph,debug=False):
                     for v in planar_graph.graph.vertices():
                         for r in planar_graph.graph.vp['roads'][v]: 
                             r.is_closed_ = True  
+                            r.closing_vertex = r.end_point
     if debug: 
         for v in planar_graph.graph.vertices():
             for r in planar_graph.graph.vp['roads'][v]: 
@@ -123,8 +126,8 @@ def add_centers2graph(planar_graph,debug=False):
         ## Intersection
         set_is_intersection(planar_graph,vertex,False)
 #            print_properties_vertex(planar_graph,vertex)   
-        set_roads_belonging_to_vertex(planar_graph,vertex,[])
-        set_roads_activated_by_vertex(planar_graph,vertex,[])
+        set_roads_belonging_to_vertex(planar_graph,vertex,[],debug)
+        set_roads_activated_by_vertex(planar_graph,vertex,[],debug)
         if debug:
             print_properties_vertex(planar_graph,vertex)
         
@@ -161,8 +164,8 @@ def add_point2graph(planar_graph,source_vertex,dx,dy,debug=False):
     set_relative_neighbors(planar_graph,vertex,[])
     set_road(planar_graph,vertex,[])
     set_is_intersection(planar_graph,vertex,False)
-    set_roads_belonging_to_vertex(planar_graph,vertex,[])
-    set_roads_activated_by_vertex(planar_graph,vertex,[])
+    set_roads_belonging_to_vertex(planar_graph,vertex,[],debug)
+    set_roads_activated_by_vertex(planar_graph,vertex,[],debug)
     if debug:
         print_properties_vertex(planar_graph,vertex)
     return get_last_vertex(planar_graph)
@@ -233,9 +236,9 @@ def evolve_uniquely_attracted_vertex(planar_graph,growing_node,available_vertice
         raise ValueError('new point has wrong shape')
     update_distance_matrix(planar_graph,old_points,new_point)
     added_vertex = add_point2graph(planar_graph,growing_node,dx,dy,debug)
-    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor,intersection,debug = False)
+    add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor,intersection,debug)
     ## Find the road where the points belongs to (looking at the starting vertex it is generated from)
-    if planar_graph.iteration_count%1==0:
+    if planar_graph.iteration_count%10==0:
         plot_relative_neighbors(planar_graph,growing_node,added_vertex,available_vertices,debug)
 
 #    print('direction: ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
@@ -281,14 +284,23 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
         update_distance_matrix(planar_graph,old_points,new_point)
         if debug:
             cprint('\tEvolving sum attractor','dark_grey','on_light_yellow')
+            cprint('growing node: ' +str(growing_node),'dark_grey','on_light_yellow')
             cprint('\tAverage direction (dx,dy) =  (' + str(dx)+','+str(dy) + ')','dark_grey','on_light_yellow')
             cprint('\tlength segment: ' + str(np.sqrt(dx**2+dy**2)),'dark_grey','on_light_yellow')
             cprint('\tnew point: ' + str(new_point),'dark_grey','on_light_yellow')
         if np.shape(new_point)!=(1,2):
             raise ValueError('new point has wrong shape')
         added_vertex = add_point2graph(planar_graph,growing_node,dx,dy,debug)
-        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,available_vertices,intersection,debug= False)
-        if planar_graph.iteration_count%1==0:        
+        add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,available_vertices,intersection,debug)
+        if debug:
+            cprint('Distance ' + str(planar_graph.graph.vp['id'][added_vertex]) + ' to attracting vertices:','dark_grey','on_light_yellow')
+            for v in available_vertices:
+                cprint('\t' + str(planar_graph.graph.vp['id'][v]) + ' distance: ' + str(planar_graph.distance_matrix_[planar_graph.graph.vp['id'][added_vertex],planar_graph.graph.vp['id'][v]]),'dark_grey','on_light_yellow')
+                if planar_graph.distance_matrix_[planar_graph.graph.vp['id'][added_vertex],planar_graph.graph.vp['id'][v]]<epsilon:
+                    cprint('The road with this end point must be closed:','yellow','on_light_red')
+                    raise ValueError
+
+        if planar_graph.iteration_count%10==0:        
             plot_relative_neighbors(planar_graph,growing_node,added_vertex,available_vertices,debug)                            
 #        print('direction sum of : ',[planar_graph.graph.vp['id'][vertex_relative_neighbor] for vertex_relative_neighbor in available_vertices])
 #        print(' dx: ',dx,' dy: ',dy) 
@@ -306,6 +318,7 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
             new_point = np.array([[planar_graph.graph.vp['x'][growing_node] +dx,planar_graph.graph.vp['y'][growing_node] +dy]])
             if debug:
                 cprint('Evolving in all directions due to degeneracy')
+                cprint('growing node: ' +str(growing_node),'dark_grey','on_light_yellow')
                 cprint('\tvertex: ' + str(vertex_relative_neighbor)+' coords: '+str(planar_graph.graph.vp['pos'][vertex_relative_neighbor]),'dark_grey','on_light_yellow')
                 cprint('\tdirection (dx,dy) =  (' + str(dx)+','+str(dy) + ')','dark_grey','on_light_yellow')
                 cprint('\tlength segment: ' + str(np.sqrt(dx**2+dy**2)),'dark_grey','on_light_yellow')
@@ -314,8 +327,8 @@ def evolve_multiply_attracted_vertices(planar_graph,growing_node,available_verti
                 raise ValueError('new point has wrong shape')
             update_distance_matrix(planar_graph,old_points,new_point)
             added_vertex = add_point2graph(planar_graph,growing_node,dx,dy,debug)
-            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor,intersection,debug=False)  
-            if planar_graph.iteration_count%1==0:
+            add_edge2graph(planar_graph,planar_graph.graph.vertex(growing_node),added_vertex,vertex_relative_neighbor,intersection,debug)  
+            if planar_graph.iteration_count%10==0:
                 plot_relative_neighbors(planar_graph,growing_node,added_vertex,available_vertices,debug)
 #            print('direction sum of : ',planar_graph.graph.vp['id'][vertex_relative_neighbor])
 #            print(' dx: ',dx,' dy: ',dy) 
@@ -331,17 +344,25 @@ def evolve_street_old_attractors(planar_graph,debug = False):
     already_grown_vertices = []
     if debug:
         cprint('Evolve streets toward old attractors','dark_grey','on_light_yellow')
-        cprint('End points: ' + str(planar_graph.end_points),'dark_grey','on_light_yellow')
+        cprint('End points: ','dark_grey','on_light_yellow')
+        for p in planar_graph.end_points:
+            cprint(str(planar_graph.graph.vp['id'][p]) +
+                   ' is active: ' + str(planar_graph.graph.vp['is_active'][p]) +
+                   ' intersection: ' + str(planar_graph.graph.vp['intersection'][p]),'dark_grey','on_light_yellow')
         ## if the relative neighbor is just one
     for growing_node in planar_graph.end_points:
         if growing_node not in planar_graph.already_evolved_end_points:
             if debug:
-                cprint(' coords growing node: ' + str(planar_graph.graph.vp['pos'][growing_node]),'dark_grey','on_light_yellow')
+                cprint('coords growing node: ' + str(planar_graph.graph.vp['id'][growing_node]) +
+                       ' ' + str(planar_graph.graph.vp['pos'][growing_node]),'dark_grey','on_light_yellow')
             available_vertices = planar_graph.graph.vp['relative_neighbors'][growing_node]   
             if debug:
                 cprint('\tavailable vertices before taking away nearest neighbors','dark_grey','on_light_yellow')
                 for v in available_vertices:
-                    cprint(str(v) +' type: ' + str(type(v)),'dark_grey','on_light_yellow') 
+                    cprint('\t'+str(v) +' type: ' + 
+                   ' is active: ' + str(planar_graph.graph.vp['is_active'][v]) +
+                   ' intersection: ' + str(planar_graph.graph.vp['intersection'][v]) +
+                   ' end point: ' + str(planar_graph.graph.vp['end_point'][v]),'dark_grey','on_light_yellow')
             ## NOTE: There can be a moment in which
             available_vertices = [v for v in available_vertices if not planar_graph.graph.vp['is_in_graph'][planar_graph.graph.vertex(v)] and planar_graph.graph.vp['is_active'][planar_graph.graph.vertex(v)]] 
             number_relative_neighbors_growing_node = len(available_vertices)
@@ -349,7 +370,10 @@ def evolve_street_old_attractors(planar_graph,debug = False):
             if debug:
                 cprint('\tavailable vertices node '+ str(growing_node),'dark_grey','on_light_yellow')
                 for v in available_vertices:
-                    cprint(str(v) +' type: ' + str(type(v)),'dark_grey','on_light_yellow')
+                    cprint('\t'+str(v) +' type: ' + 
+                   ' is active: ' + str(planar_graph.graph.vp['is_active'][v]) +
+                   ' intersection: ' + str(planar_graph.graph.vp['intersection'][v]) +
+                   ' end point: ' + str(planar_graph.graph.vp['end_point'][v]),'dark_grey','on_light_yellow')
             ## Take if relative neighbor of the growing node is just one  
             if number_relative_neighbors_growing_node==1:
                 evolve_uniquely_attracted_vertex(planar_graph,growing_node,available_vertices,False,debug)
@@ -456,11 +480,19 @@ def close_roads(planar_graph,debug=False):
                 ep = planar_graph.graph.vp['id'][r.end_point]
                 if planar_graph.distance_matrix_[planar_graph.graph.vp['id'][active_v],ep] < planar_graph.rate_growth and [active_v,ep] not in already_existing_edges:
                     planar_graph.graph.add_edge(ep,active_v)
-                    planar_graph.graph.vp['roads_belonging_to'][active_v].append(r.id)
+                    if r.id not in planar_graph.graph.vp['roads_belonging_to'][active_v]:
+                        planar_graph.graph.vp['roads_belonging_to'][active_v].append(r.id)
                     planar_graph.graph.vp['is_in_graph'][active_v] = True 
                     r.is_closed_ = True
                     r.end_point = active_v
-                    deactivate_vertex(planar_graph,active_v,debug=False)
+                    starting_vertex_road,local_idx_road,found,id_ = find_road_vertex(planar_graph,ep,debug)
+                    if found:
+                        planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].add_node_in_road(ep,active_v,planar_graph.distance_matrix_[planar_graph.graph.vp['id'][ep],planar_graph.graph.vp['id'][active_v]])
+                        set_roads_belonging_to_vertex(planar_graph,active_v,id_,debug)
+#                    add_edge2graph(planar_graph,ep,active_v,active_v,False,debug)
+                    if r.closing_vertex is None:
+                        r.closing_vertex = active_v
+                    deactivate_vertex(planar_graph,active_v,debug)
                     if debug:
                         print('\tclosing road: ',r.id,' with end point: ',ep,' and starting point: ',r.initial_node)
                         print_property_road(planar_graph,r)
@@ -468,6 +500,8 @@ def close_roads(planar_graph,debug=False):
                         print_properties_vertex(planar_graph,active_v)
                 else:
                     pass
+
+
 
 def deactivate_vertex(planar_graph,vertex,debug=False):
     '''
@@ -481,7 +515,10 @@ def deactivate_vertex(planar_graph,vertex,debug=False):
         pass
     else:
         for r_id in planar_graph.graph.vp['roads_activated'][vertex]:
-            r = planar_graph.list_roads[r_id]
+            if debug:
+                cprint('\troad: ' + str(r_id) + ' is activated by vertex: ' + str(vertex),'red','on_white')
+            r = get_road_from_id_(planar_graph,r_id,debug)
+#            r = planar_graph.list_roads[r_id]
             if r.is_closed_:
                 if debug:
                     cprint('\troad: ' + str(r.id) + ' is closed','red','on_white')
@@ -499,3 +536,14 @@ def deactivate_vertex(planar_graph,vertex,debug=False):
             if debug:
                 cprint('\tvertex: ' + str(vertex) + ' still has roads to grow','red','on_white')
             pass  
+
+def get_road_from_id_(planar_graph,r_id,debug=False):
+    if debug:
+        print(planar_graph.list_roads)
+        print('Get road id: ',r_id)
+    for r in planar_graph.list_roads:
+        if debug:
+            print('r.id: ',r.id)
+            print('r_id: ',r_id)
+        if r.id == r_id:
+            return r
