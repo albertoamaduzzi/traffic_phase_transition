@@ -101,7 +101,7 @@ def set_is_intersection(planar_graph,vertex,boolean):
     planar_graph.graph.vp['intersection'][vertex] = boolean
 
 
-def set_roads_belonging_to_vertex(planar_graph,vertex,list_roads_id):
+def set_roads_belonging_to_vertex(planar_graph,vertex,list_roads_id,debug = False):
     '''
         Description:
             For each vertex I want to know which roads are passing through it
@@ -110,16 +110,24 @@ def set_roads_belonging_to_vertex(planar_graph,vertex,list_roads_id):
             list_roads_id: [int] [list of roads id]
     '''
     if isinstance(list_roads_id,int):
+        if list_roads_id not in planar_graph.graph.vp['roads_belonging_to'][vertex]:            
             planar_graph.graph.vp['roads_belonging_to'][vertex].append(list_roads_id)
     elif isinstance(list_roads_id,list):
         if len(list_roads_id) == 0:
             planar_graph.graph.vp['roads_belonging_to'][vertex] = list_roads_id
         else:
             for road_id in list_roads_id:
-                planar_graph.graph.vp['roads_belonging_to'][vertex].append(road_id)
+                if road_id not in planar_graph.graph.vp['roads_belonging_to'][vertex]:
+                    planar_graph.graph.vp['roads_belonging_to'][vertex].append(road_id)
             raise ValueError('ERROR: Activating more then one road at a time')
+    if debug:
+        print('SET ROADS BELONGING TO VERTEX: {}'.format(planar_graph.graph.vp['id'][vertex]),planar_graph.graph.vp['roads_belonging_to'][vertex])
+        print('type list roads: ',type(list_roads_id))
+        if type(list_roads_id) == list:
+            print('len list roads: ',len(list_roads_id))
+        print(planar_graph.graph.vp['roads_belonging_to'][vertex])
 
-def set_roads_activated_by_vertex(planar_graph,vertex,list_roads_id):
+def set_roads_activated_by_vertex(planar_graph,vertex,list_roads_id,debug):
     '''
         Description:
             For each vertex I want to know which roads are passing through it
@@ -128,15 +136,22 @@ def set_roads_activated_by_vertex(planar_graph,vertex,list_roads_id):
             list_roads_id: [int] [list of roads id]
     '''
     if isinstance(list_roads_id,int):
-        planar_graph.graph.vp['roads_activated'][vertex].append(list_roads_id)
+        if list_roads_id not in planar_graph.graph.vp['roads_belonging_to'][vertex]:            
+            planar_graph.graph.vp['roads_activated'][vertex].append(list_roads_id)
     elif isinstance(list_roads_id,list):
         if len(list_roads_id) == 0:
             planar_graph.graph.vp['roads_activated'][vertex] = list_roads_id
         else:
             for road_id in list_roads_id:
-                planar_graph.graph.vp['roads_activated'][vertex].append(road_id)
+                if road_id not in planar_graph.graph.vp['roads_activated'][vertex]:
+                    planar_graph.graph.vp['roads_activated'][vertex].append(road_id)
             raise ValueError('ERROR: Activating more then one road at a time')
-
+    if debug:
+        print('SET ROADS ACTIVATED BY VERTEX: ',planar_graph.graph.vp['id'][vertex])
+        print('type list roads: ',type(list_roads_id))
+        if type(list_roads_id) == list:
+            print('len list roads: ',len(list_roads_id))
+        print(planar_graph.graph.vp['roads_activated'][vertex])
 
 #### "IN GRAPH NODE" FUNCTIONS #####
 
@@ -241,7 +256,7 @@ def assign_type_road(planar_graph,initial_node,r,debug=False):
             initial_node: vertex
     '''
     if debug:
-        print('\t\t\t\t\tASSIGNING TYPE ROAD')        
+        print('\t\tASSIGNING TYPE ROAD')        
     if is_important_node(planar_graph,initial_node):
         r.previous_roads = []
         pass
@@ -251,7 +266,7 @@ def assign_type_road(planar_graph,initial_node,r,debug=False):
         r.previous_roads = []
         while(not is_important_node(planar_graph,backward_initial_node)):
             r.type_ += 1
-            backward_initial_node,_,found,id_ = find_road_vertex(planar_graph,backward_initial_node) 
+            backward_initial_node,_,found,id_ = find_road_vertex(planar_graph,backward_initial_node,debug) 
             if found==False or id_ is None:
                 raise ValueError('ERROR: New road has started from nowhere')
             r.previous_roads.append(id_)
@@ -297,15 +312,15 @@ def find_road_vertex(planar_graph,vertex,debug = False):
     for starting_vertex in planar_graph.plausible_starting_road_vertices:
         if debug:
             print('\tPlausible starting vertex: {}'.format(planar_graph.graph.vp['id'][starting_vertex]))
+        local_idx_road = 0        
         for r in planar_graph.graph.vp['roads'][starting_vertex]:
             if debug:
                 print('\t\tRoad: {}'.format(r.id))
-            local_idx_road = 0
             if r.in_road(vertex):
                 found = True
                 if debug:
                     print('\t\t\tFOUND ROAD')
-                    print('\t\t\tRoad: ',r.id,' local_idx_road: ',local_idx_road,)
+                    print('\t\t\tRoad: ',r.id,' local_idx_road: ',local_idx_road)
                 return starting_vertex,local_idx_road,found,r.id
             else:
                 if debug:
@@ -400,7 +415,7 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
                     5b1) I check if the source vertex is in the road and add the target vertex to it 
     '''
     if debug:
-        print('ADDING EDGE TO GRAPH')
+        cprint('ADDING EDGE TO GRAPH','red','on_green')
     source_idx = planar_graph.graph.vp['id'][source_vertex]
     target_idx = planar_graph.graph.vp['id'][target_vertex]
     planar_graph.graph.add_edge(source_idx,target_idx)
@@ -408,33 +423,34 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
     planar_graph.graph.ep['direction'][planar_graph.graph.edge(source_idx,target_idx)] = planar_graph.graph.vp['pos'][target_vertex].a - planar_graph.graph.vp['pos'][source_vertex].a
     planar_graph.graph.ep['real_edge'][planar_graph.graph.edge(source_idx,target_idx)] = False
     if debug:
-        print('source index: ',source_idx)
-        print('target index: ',target_idx)
+        cprint('source index: ' + str(source_idx),'red','on_green')
+        cprint('target index: ' + str(target_idx),'red','on_green')
     if intersection:
         if debug:
             print('+++ ADDING INTERSECTION +++')
+        close_road_at_intersection(planar_graph,source_vertex,debug)
         set_is_intersection(planar_graph,source_vertex,True)
         new_road = road(source_vertex,target_vertex,planar_graph.global_counting_roads,attracting_vertices,type_ = 0,unit_length = planar_graph.rate_growth)
         planar_graph.graph.vp['roads'][source_vertex].append(new_road)
-        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id)
-        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id)
+        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id,debug)
+        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id,debug)
         assign_type_road(planar_graph,source_vertex,new_road,debug)
         try:
             for av in attracting_vertices:
-                set_roads_activated_by_vertex(planar_graph,av,new_road.id)
+                set_roads_activated_by_vertex(planar_graph,av,new_road.id,debug)
         except:
-            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id)
+            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id,debug)
         planar_graph.global_counting_roads += 1
         if debug:
             try:
                 for av in attracting_vertices:
                     cprint('vertex: '+ str(planar_graph.graph.vp['id'][av]))
-                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][av]))
-                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][av]))
+                    cprint('belongs to road(s): ' + str(planar_graph.graph.vp['roads_belonging_to'][av]))
+                    cprint('activated road(s): ' + str(planar_graph.graph.vp['roads_activated'][av]))
             except:
                     cprint('vertex: '+ str(planar_graph.graph.vp['id'][attracting_vertices]))
-                    cprint('belongs to road(s)' + str(planar_graph.graph.vp['roads_belonging_to'][attracting_vertices]))
-                    cprint('activated road(s)' + str(planar_graph.graph.vp['roads_activated'][attracting_vertices]))
+                    cprint('belongs to road(s): ' + str(planar_graph.graph.vp['roads_belonging_to'][attracting_vertices]))
+                    cprint('activated road(s): ' + str(planar_graph.graph.vp['roads_activated'][attracting_vertices]))
 
             print_property_road(planar_graph,new_road)        
     elif is_important_node(planar_graph,source_vertex):
@@ -442,13 +458,13 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
             print('+++ ADDING NEW ROAD +++')
         new_road = road(source_vertex,target_vertex,planar_graph.global_counting_roads,attracting_vertices,type_ = 0,unit_length = planar_graph.rate_growth)
         planar_graph.graph.vp['roads'][source_vertex].append(new_road)
-        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id)
-        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id)
+        set_roads_belonging_to_vertex(planar_graph,source_vertex,new_road.id,debug)
+        set_roads_belonging_to_vertex(planar_graph,target_vertex,new_road.id,debug)
         try:
             for av in attracting_vertices:
-                set_roads_activated_by_vertex(planar_graph,av,new_road.id)
+                set_roads_activated_by_vertex(planar_graph,av,new_road.id,debug)
         except:
-            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id)
+            set_roads_activated_by_vertex(planar_graph,attracting_vertices,new_road.id,debug)
 
         planar_graph.global_counting_roads += 1
         if debug:
@@ -470,7 +486,7 @@ def add_edge2graph(planar_graph,source_vertex,target_vertex,attracting_vertices,
         starting_vertex_road,local_idx_road,found,id_ = find_road_vertex(planar_graph,source_vertex,debug)
         if found:
             planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].add_node_in_road(source_vertex,target_vertex,planar_graph.distance_matrix_[source_idx,target_idx])
-            set_roads_belonging_to_vertex(planar_graph,target_vertex,id_)
+            set_roads_belonging_to_vertex(planar_graph,target_vertex,id_,debug)
             if debug:
                 print('+++ Added node in road +++')
                 print_property_road(planar_graph,planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road])
@@ -518,6 +534,7 @@ def update_list_roads(planar_graph,debug = False):
         print('\t\t\tList of roads')
 #        for r in planar_graph.list_roads:
 #            print_property_road(planar_graph,r) 
+    
 
 
 def update_list_active_roads(planar_graph,debug = False):
@@ -538,3 +555,23 @@ def update_list_active_roads(planar_graph,debug = False):
         print('\t\t\tList of active roads')
         for r in planar_graph.list_active_roads:
             print_property_road(planar_graph,r)
+
+##----------------- CLOSE ROAD AT INTERSECTION -----------------##
+def close_road_at_intersection(planar_graph,intersection_vertex,debug=False):
+    starting_vertex_road,local_idx_road,found,id_ = find_road_vertex(planar_graph,intersection_vertex,debug)
+    if found:
+        planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].is_closed_ = True
+        planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].end_point = intersection_vertex
+        if planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].closing_vertex is None:
+            planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].closing_vertex = intersection_vertex
+        for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
+            list(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)]).remove(id_)
+        if debug:
+            print('xxx Closing road at intersection xxx')
+            for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
+                print('new set of roads acivated by: ',attracting_id)
+                print(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
+            print_property_road(planar_graph,planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road])
+
+    else:
+        raise ValueError('ERROR: No road found to be closed at intersection')

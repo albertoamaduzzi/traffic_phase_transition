@@ -1,6 +1,5 @@
 from termcolor import cprint
-import numpy as np
-import graph_tool
+
 ##------------------------------------------------------------- PRINTING ----------------------------------------------------------
 
 ## ------------------------------------- GEOMETRY -------------------------------------
@@ -40,6 +39,8 @@ def print_properties_vertex(planar_graph,vertex):
     cprint('y: ' + str(planar_graph.graph.vp['y'][vertex]),'magenta')
     cprint('pos: ' + str(planar_graph.graph.vp['pos'][vertex]),'magenta')
     cprint('ROADS ASSOCIATED TO VERTEX','magenta')
+    for r in planar_graph.graph.vp['roads_belonging_to'][vertex]:
+        cprint('road: ' + str(r),'magenta')
 
 def print_not_considered_vertices(planar_graph,not_considered):
     '''
@@ -94,6 +95,11 @@ def print_property_road(planar_graph,r):
                ,'red')
     cprint('type: '+ str(r.type_),'red')
     cprint('capacity_level: '+ str(r.capacity_level),'red')
+    if r.closing_vertex is not None:
+        cprint('Vertex causing the closure: '+ str(planar_graph.graph.vp['id'][r.closing_vertex]),'red')
+    else:
+        cprint('Vertex causing the closure: None','red')
+    print('----------------------------------------')
 
 
 
