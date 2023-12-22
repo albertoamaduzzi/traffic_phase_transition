@@ -15,6 +15,9 @@ class Grid:
         self.maxy = self.side_city/2
         self.geom = Polygon([[self.minx,self.miny],[self.minx,self.maxy],[self.maxx,self.maxy],[self.maxx,self.miny],[self.minx,self.miny]])
         self.grid2point = defaultdict(list)
+        self.grid_bounds()
+        self.partition()
+
 
     def get_polygon(self):
         return self.geom        
@@ -74,5 +77,17 @@ class Grid:
 
 
 
+class renormalization_group:
+    '''
+    In Kadanoff's original approach, the system is defined on a lattice.
+    dofs: degrees of freedom (N values on some space X)
+    Vol(X): volume of the space X
+    N dofs are distributed in V.
+    d_V is a distance in V, the distance is usually used to define which pair will have interaction.
+    '''
+    def __init__(self):
+        super(Grid, self).__init__()
+        pass        
         
-        
+    def _free_energy(self,epsilon,L):        
+        pass

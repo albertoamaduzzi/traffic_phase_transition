@@ -41,7 +41,9 @@ def print_properties_vertex(planar_graph,vertex):
     cprint('ROADS ASSOCIATED TO VERTEX','magenta')
     for r in planar_graph.graph.vp['roads_belonging_to'][vertex]:
         cprint('road: ' + str(r),'magenta')
-
+    cprint('ROADS ACTIVATED BY VERTEX','magenta')
+    for r in planar_graph.graph.vp['roads_activated'][vertex]:
+        cprint('road: ' + str(r),'magenta')
 def print_not_considered_vertices(planar_graph,not_considered):
     '''
     Type: Debug
@@ -73,6 +75,7 @@ def print_property_road(planar_graph,r):
 
     cprint('PRINT PROPERTY ROAD','red')
     cprint('road: '+ str(r.id),'red')
+    cprint('initial_node: '+ str(planar_graph.graph.vp['id'][r.initial_node]),'red')
     cprint('number_iterations: '+ str(r.number_iterations),'red')
     cprint('length: '+ str(r.length),'red')
     cprint('list_nodes: ','red')
@@ -82,6 +85,7 @@ def print_property_road(planar_graph,r):
                 + ' important node: ' + str(planar_graph.graph.vp['important_node'][v])
                 + ' is active: ' + str(planar_graph.graph.vp['is_active'][v])
                 + ' coordinates: ' + str(planar_graph.graph.vp['pos'][v])
+                + ' is in graph: ' + str(planar_graph.graph.vp['is_in_graph'][v])
                 ,'red')
     cprint('list_edges: ','red')
     for v1,v2 in r.list_edges:
@@ -95,10 +99,10 @@ def print_property_road(planar_graph,r):
                ,'red')
     cprint('type: '+ str(r.type_),'red')
     cprint('capacity_level: '+ str(r.capacity_level),'red')
-    if r.closing_vertex is not None:
+    if r.closing_vertex != -1:
         cprint('Vertex causing the closure: '+ str(planar_graph.graph.vp['id'][r.closing_vertex]),'red')
     else:
-        cprint('Vertex causing the closure: None','red')
+        cprint('Vertex causing the closure: -1','red')
     print('----------------------------------------')
 
 
