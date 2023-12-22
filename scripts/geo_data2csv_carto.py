@@ -8,6 +8,7 @@ from collections import defaultdict
 from shapely.geometry import Point,Polygon
 import matplotlib.pyplot as plt
 import json
+import networkx as nx
 ##------------------------------------- ENVIRONMENT -------------------------------------##
 def set_environment():
     base_dir = os.path.dirname(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -29,6 +30,8 @@ def read_file_gpd(file_name):
     '''
     df = gpd.read_file(file_name)
     return df
+
+            
 
 ##------------------------------------- CONVERT TO CSV -------------------------------------##
 
@@ -86,7 +89,7 @@ def edges_file_from_gpd(carto,osmid2id):
 
 ##------------------------------------- OD -------------------------------------##
 
-def polygon2origin_destination(gdf,carto,debug = False):
+def polygon2origin_destination(gdf,carto,dir_,debug = False):
     '''
         Given a network taken from the cartography or ours:
             Build the set of origin and destinations from the polygons that are coming from the 
@@ -94,41 +97,41 @@ def polygon2origin_destination(gdf,carto,debug = False):
         
     '''
     polygon2origindest = defaultdict(list)
-    possiblekeys = ['tractID','tractid','TRACTID','tract_id','tract_ID','TRACT_ID','TRACTCE']
+    possiblekeys = ['tractid','tract_id','tractID_ne','TRACTCE']
     for node in carto.nodes():
-        containing_polygon = gdf.geometry.apply(lambda x: x.contains(Point(carto.nodes[node]['x'],carto.nodes[node]['y'])))
+        containing_polygon = gdf.geometry.apply(lambda x: Point(carto.nodes[node]['x'],carto.nodes[node]['y']).within(x))
 #        print('containing_polygon: ',containing_polygon)
         idx_containing_polygon = gdf[containing_polygon].index
 #        print('idx_containing_polygon: ',idx_containing_polygon)
-        found_key = False
-        for key in possiblekeys:
-            if key in gdf.columns:
-                found_key = True
-                break
-        if found_key:
-            tract_id = gdf.loc[idx_containing_polygon][key]
-            if len(tract_id)==1: 
-                try:
-                    tract_id = int(tract_id.tolist()[1])
-                except IndexError:
-                    tract_id = int(tract_id.tolist()[0])
-    #            print('tract_id: ',tract_id)
-                polygon2origindest[int(tract_id)].append(node)
-                if debug:
-                    print('found polygon: ',idx_containing_polygon)
-                    print('tract_id: ',tract_id)
-                    print('type tract_id: ',type(tract_id))
-                    print('values dict: ',polygon2origindest[tract_id])
-                    print('dict: ',polygon2origindest)
-
-            elif len(tract_id)>1:
+        if dir_ == 'SFO':
+            key = 'TRACT'
+        if dir_ == 'LAX':
+            key = 'external_i'
+        if dir_ == 'LIS':
+            key = 'ID'
+        if dir_ == 'RIO':
+            key = 'Zona'
+        tract_id = gdf.loc[idx_containing_polygon][key]
+        if len(tract_id)==1: 
+            try:
+                tract_id = int(tract_id.tolist()[1])
+            except IndexError:
+                tract_id = int(tract_id.tolist()[0])
+#            print('tract_id: ',tract_id)
+            polygon2origindest[int(tract_id)].append(node)
+            if debug:
+                print('found polygon: ',idx_containing_polygon)
                 print('tract_id: ',tract_id)
-                raise ValueError('more than one tract id: THIS IS STRANGE')
+                print('type tract_id: ',type(tract_id))
+                print('values dict: ',polygon2origindest[tract_id])
+                print('dict: ',polygon2origindest)
 
-            else:
-                pass
+        elif len(tract_id)>1:
+            print('tract_id: ',tract_id)
+            print('more than one tract id: THIS IS STRANGE')
+
         else:
-            raise KeyError('No key found in: ',gdf.columns)
+            pass
 
     return polygon2origindest
 
@@ -151,10 +154,13 @@ def OD_from_fma(file,
         This function, takes advantage of the polygon2origindest dictionary to build the origin and destination
         selecting at random one of the nodes that are contained in the polygon.
     '''
+    PRINTING_INTERVAL = 10000000
     users_id = []
     time_ = []
     origins = []
     destinations = []
+    total_number_people_not_considered = 0
+    total_number_people_considered = 0
     with open(file,'r') as infile:
         count_line = 0
         print('OPENED FILE: ',file)
@@ -162,43 +168,73 @@ def OD_from_fma(file,
             count_line += 1
             if count_line > offset:
                 tok = line.split(' ')
-                origin = int(tok[0])
-                destination = int(tok[1])
+                origin = tok[0]
+                destination = tok[1]
                 number_people = int(float(tok[2].split('\n')[0]))
                 bin_width = 1
                 iterations = number_people/bin_width    
-                if count_line%10000==0:
+                if count_line%PRINTING_INTERVAL==0:
                     print('iterations: ',iterations,' number_people: ',number_people,' origin: ',origin,' destination: ',destination,' R: ',R)        
-                    
                 if number_people > 0:
-                    if count_line%10000==0:
+                    if count_line%PRINTING_INTERVAL==0:
                         print('number_people: ',number_people)
-                    for it in range(int(iterations)):
-                        if count_line%10000==0:
-                            print('NUMBER DEST per polygon {}: '.format(destination),len(polygon2origindest[destination]),' NUMBER ORIGIN per polygon {}: '.format(origin),len(polygon2origindest[origin]))
-                            print('it: ',it)
-                        if len(polygon2origindest[destination])>0 and len(polygon2origindest[origin])>0:
-                            if count_line%10000==0:
-                                print('NUMBER NODES ORIGIN: ',len(polygon2origindest[origin]))
-                                print('NUMBER NODES DESTINATION: ',len(polygon2origindest[destination]))                            
-                            for r in range(R):
+                    try:
+                        for it in range(int(iterations)):
+                            if count_line%PRINTING_INTERVAL==0:
+                                print('NUMBER DEST per polygon {}: '.format(destination),len(polygon2origindest[destination]),' NUMBER ORIGIN per polygon {}: '.format(origin),len(polygon2origindest[origin]))
+                                print('it: ',it)                        
+                            if len(polygon2origindest[destination])>0 and len(polygon2origindest[origin])>0:
+                                if count_line%PRINTING_INTERVAL==0:
+                                    print('NUMBER NODES ORIGIN: ',len(polygon2origindest[origin]))
+                                    print('NUMBER NODES DESTINATION: ',len(polygon2origindest[destination]))                                                    
                                 users_id.append(count_line-offset)
                                 time_.append(start_hour*seconds_in_minute + it*seconds_in_minute)
                                 i = np.random.randint(0,len(polygon2origindest[origin]))
                                 origins.append(polygon2origindest[origin][i])
                                 i = np.random.randint(0,len(polygon2origindest[destination]))                        
                                 destinations.append(polygon2origindest[destination][i])
-    print('number elements OD: ',len(destinations))
-    df1 = pd.DataFrame({
-        'SAMPN':users_id,
-        'PERNO':users_id,
-        'origin':origins,
-        'destination':destinations,
-        'dep_time':time_,
-        'origin_osmid':origins,
-        'destination_osmid':destinations
-        })
+                                total_number_people_considered += 1
+                    except KeyError:
+                        total_number_people_not_considered += number_people
+                        #print('Key not found at iteration: ',iterations,' number_people: ',number_people,' origin: ',origin,' destination: ',destination,' R: ',R)        
+        print('number_people considered: ',total_number_people_considered)
+        print('number_people not considered: ',total_number_people_not_considered)
+        print('Loss bigger 5%',total_number_people_not_considered/total_number_people_considered>0.05)
+        df1 = pd.DataFrame({
+            'SAMPN':users_id,
+            'PERNO':users_id,
+            'origin':origins,
+            'destination':destinations,
+            'dep_time':time_,
+            'origin_osmid':origins,
+            'destination_osmid':destinations
+            })
     return df1
+
+def configOD(carto_dir,
+             shape_file_dir,
+            name,
+            start,
+            end,
+            df1,
+            R,
+            p= 0.5,
+            number_of_rings = 10,
+            grid_size = 1,
+            tif_file='usa_ppp_2020_UNadj_constrained.tif'):
+    config = {'carto_dir':carto_dir, # Directory where the cartographic data is stored
+        'shape_file_dir': shape_file_dir, # Directory where the shape files are stored
+        'start': start, # Time where cumulation of trips starts
+        'end': end, # If not specified, it is assumed that the OD is for 1 hour (time where cumlation of trips ends)
+        "name":name,
+        "number_users":len(df1),
+        "R":R,
+        "grid_size":grid_size, # Grid size in km
+        'number_of_rings':number_of_rings,
+        "p":p,
+        "tif_file":tif_file
+              }
+    return config
 ##------------------------------------- SAVE FILES -------------------------------------##
 
 def save_nodes_edges(save_dir,df_nodes,df_edges):
@@ -241,73 +277,110 @@ if __name__=='__main__':
         'BOS':"Boston, Massachusetts, USA",
         'SFO':"San Francisco, California, USA",
         'LAX':"Los Angeles, California, USA",
+        'RIO':"Rio de Janeiro, Brazil",
+        "LIS":"Lisbon, Portugal",
     }
-    alreadyhavenodeedges = {
-        'BOS':False,
-        'SFO':True,
-        'LAX':False,
+    city2file_tif = {
+        'BOS':"usa_ppp_2020_UNadj_constrained.tif",
+        'SFO':"usa_ppp_2020_UNadj_constrained.tif",
+        'LAX':"usa_ppp_2020_UNadj_constrained.tif",
+        'RIO':"bra_ppp_2020_UNadj_constrained.tif",
+        "LIS":"prt_ppp_2020_UNadj_constrained.tif",
+    }
+    R_city = {
+        'BOS':np.linspace(120,200,80),
+        'SFO':np.linspace(120,200,80),
+        'LAX':np.linspace(120,200,80),
+        'RIO':np.linspace(50,100,50),
+        "LIS":np.linspace(20,70,50),
     }
     map_already_computed ={
-        'BOS':False,
-        'SFO':False,
-        'LAX':False,
+        'BOS':True,
+        'SFO':True,
+        'LAX':True,
+        'RIO':False,
+        "LIS":False,
     }
     names_carto = {
         'BOS':"Boston",
         'SFO':"San_Francisco",
         'LAX':"Los_Angeles",
     }
-    data_dir,carto_base = set_environment()
-    for root,dirs,files in os.walk(data_dir,topdown=True):
-        print('root: ',root)
-        for dir_ in dirs:
-            carto_available = False
-            if dir_ != 'carto':
-                print('dir_: ',dir_)
-#                carto = ox.graph_from_place(dir2labels[dir_], network_type="drive")
-                save_dir = os.path.join(carto_base,dir_)            
-                ifnotexistsmkdir(save_dir)
-                print('save_dir: ',save_dir)            
-                for file in os.listdir(os.path.join(root,dir_)):
-                    print('file: ',file)
-                    file_name = os.path.join(data_dir,dir_,file)
+    list_cities = ['BOS','SFO','LAX','RIO','LIS']
+    populations = [4.5e6,7.5e6,13e6,12.6e6,2.8e6]
+    config_dir = '/home/aamad/Desktop/phd/berkeley/traffic_phase_transition/config'
+    root = '/home/aamad/Desktop/phd/berkeley/data/carto'
+    base_dir_shape = '/home/aamad/Desktop/phd/berkeley/data'
+#    infocity = {city: {'population':0,'Area':0,'Roads length':0,'Volume':0} for city in list_cities}
+    pop_count = 0
+    for dir_ in list_cities:
+        save_dir = os.path.join(root,dir_)            
+        ifnotexistsmkdir(save_dir)
+        print(os.path.join(root,dir_,dir_ + '_new_tertiary_simplified.graphml'))
+        G = ox.load_graphml(filepath=os.path.join(save_dir,dir_ + '_new_tertiary_simplified.graphml'))
+        gdf = read_file_gpd(os.path.join(base_dir_shape,dir_,dir_ + '.shp'))
+#        infocity[dir_]['population'] = populations[pop_count]
+#        infocity[dir_]['Area'] = gdf.to_crs(4326).area.sum()
+#        infocity[dir_]['Roads length'] = G.size(weight='length')
+        ## FROM POLYGON TO ORIGIN DESTINATION -> OD FILE
+        if os.path.isfile(os.path.join(save_dir,'polygon2origindest.json')):
+            if map_already_computed[dir_]:
+                print('already computed origin destination; pass.')
+                pass
+            else:
+                with open(os.path.join(save_dir,'polygon2origindest.json'),'r') as infile:
+                    pol_ordest = json.load(infile)
+                for file in os.listdir(os.path.join(base_dir_shape,dir_)):
                     if file.endswith('.fma'):
-                        if carto_available == False:
-                            ## Read Polygon file -> From polygon 2 carto
-                            gdf = read_file_gpd(os.path.join(root,dir_,dir_ + '.shp'))
-                            carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
-                        ## FROM POLYGON TO ORIGIN DESTINATION -> OD FILE
-                        if map_already_computed[dir_]:
-                            with open(os.path.join(save_dir,'polygon2origindest.json'),'r') as infile:
-                                pol_ordest = json.load(infile)
-                        else:
-                            pol_ordest = polygon2origin_destination(gdf,carto)  
-                            save_pol2orddest(save_dir,pol_ordest)
-#                        histo_point2polygon(pol_ordest)      
-                        for R in range(1,11):
-                            df_od =OD_from_fma(file_name,pol_ordest,R)
-                            print('df_od: ',df_od)
-                            save_od(save_dir,df_od,R)
-                    elif carto_available == False:
-                        if alreadyhavenodeedges[dir_]:
-                            print('Do not waste time to recomputing nodes and edges files')
-                            pass
-                        else:
-                            file_name = file_name.split('.')[0] + '.shp'
-                            ## Read Polygon file -> From polygon 2 carto
-                            gdf = read_file_gpd(file_name)        
-                            carto = ox.graph_from_polygon(gdf.unary_union,network_type='drive', simplify=False)
-                            ## NODES and EdgeS files
-                            df_nodes,osmid2id = nodes_file_from_gpd(carto)
-                            df_edges = edges_file_from_gpd(carto,osmid2id)
-                            save_nodes_edges(save_dir,df_nodes,df_edges)
-                            carto_available = True
+                        start = int(file.split('.')[0].split('D')[1])
+                        end = start + 1
+                        R = 1
+                        print('file.fma: ',file)
+                        file_name = os.path.join(base_dir_shape,dir_,file)
+    #                        histo_point2polygon(pol_ordest)      
+    #                    for R in R_city[dir_]:
+    #                        print('R: ',R)
+                        df_od = OD_from_fma(file_name,pol_ordest)#,R
+#                        infocity[dir_]['Volume']= len(df_od)
+                        print('saving od:\n',save_dir,' start: ',start,' end: ',end)
+                        save_od(save_dir,df_od,R,start,end)#,R
+                        config = configOD(os.path.join(root,dir_),os.path.join(root,dir_),dir_,start,end,df_od,R,city2file_tif[dir_])
+                        with open(os.path.join(config_dir,'{%sdir_}configOD_{%sstart}_{%send}_R_{%sR}.json'),'w') as f:
+                            json.dump(config,f,indent=4)
 
+
+        else:
+            print('computing polygon2origindest')
+            pol_ordest = polygon2origin_destination(gdf,G,dir_)  
+            print('saving polygon2origindest')
+            save_pol2orddest(save_dir,pol_ordest)
+            for file in os.listdir(os.path.join(base_dir_shape,dir_)):
+                print('file.fma: ',file)
+                if file.endswith('.fma'):
+                    start = int(file.split('.')[0][-1])
+                    end = start + 1
+                    R = 1
+                    file_name = os.path.join(base_dir_shape,dir_,file)
+#                        histo_point2polygon(pol_ordest)      
+#                    for R in R_city[dir_]:
+#                        print('R: ',R)
+                    df_od = OD_from_fma(file_name,pol_ordest)#,R
+#                    infocity[dir_]['Volume']= len(df_od)
+                    print('saving od')
+                    save_od(save_dir,df_od,R,start,end)
+                    config = configOD(os.path.join(root,dir_),os.path.join(root,dir_),dir_,start,end,df_od,R,city2file_tif[dir_])
+                    with open(os.path.join(config_dir,'{%sdir_}configOD_{%sstart}_{%send}_R_{%sR}_p_{%sround(p,3)}.json'),'w') as f:
+                        json.dump(config,f,indent=4)
+        pop_count += 1
+#    with open(os.path.join(root,'infocity.json'),'w') as f:
+#        json.dump(infocity,f,indent=4)
 '''
     Description:
         I take the shape file and convert it to nodes.csv, edges.csv 
         Take OD and convert it to origin_destination.csv
-
+    Input:
+        G: cartography that is polished in mobility_planner.py
+        gdf: polygon file utilized in mobility planner to reconstruct a polished cartography
     Output:
         _routes.csv ->  each row is index of the person
         _people.csv -> time_arrival is time_departure+numb_steps

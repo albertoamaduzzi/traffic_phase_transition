@@ -85,9 +85,9 @@ def plot_new_attractors(planar_graph,ax,debug=False):
 
     if len(coords)!=0:        
         if len(coords)==1:
-            ax.scatter(coords[0][0],coords[0][1],color = 'grey')
+            ax.scatter(coords[0][0],coords[0][1],color = 'grey',label = 'newly added attracting vertices')
         else:
-            ax.scatter(coords[:][0],coords[:][1],color = 'grey')
+            ax.scatter(coords[:][0],coords[:][1],color = 'grey',label = 'newly added attracting vertices')
             for av in range(len(coords)):
                 ax.text(coords[av][0],coords[av][1], f'({ids[av]})', verticalalignment='bottom', horizontalalignment='center', fontsize=10)
     else:
@@ -95,9 +95,9 @@ def plot_new_attractors(planar_graph,ax,debug=False):
     coords = [np.array([planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v]]) for v in planar_graph.graph.vertices() if v in planar_graph.is_in_graph_vertices]
     if len(coords)!=0:
         if len(coords)==1:
-            ax.scatter(coords[0][0],coords[0][1],color = 'cyan')
+            ax.scatter(coords[0][0],coords[0][1],color = 'cyan',label = 'in graph')
         else:
-            ax.scatter(coords[:][0],coords[:][1],color = 'cyan')
+            ax.scatter(coords[:][0],coords[:][1],color = 'cyan',label = 'in graph')
         for av in range(len(coords)):
             circle1 = plt.Circle(coords[av], r, color='black', linestyle = '--',fill=True ,alpha = 0.1)
             ax.add_artist(circle1)
@@ -125,7 +125,7 @@ def plot_active_vertices(planar_graph,ax):
 
 def plot_graph(planar_graph,ax):  
     ax = default_axis(ax,'evolving graph')        
-    for v in planar_graph.important_vertices:
+    for v in planar_graph.graph.vertices():
 #        ax.scatter(planar_graph.graph.vp['x'][v],planar_graph.graph.vp['y'][v],color = 'red')   
         for r in planar_graph.graph.vp['roads'][v]:
             for edge in r.list_edges:
@@ -143,8 +143,8 @@ def plot_rn(planar_graph,vi,ax,debug = False):
     default_axis(ax,'relative neighbors')
     coordinates_all = np.array([planar_graph.graph.vp['x'].a ,planar_graph.graph.vp['y'].a]).T
     coordinates_vi = np.array([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi]])
-    ax.scatter(coordinates_all[:,0],coordinates_all[:,1],color = 'blue')
-    ax.scatter(planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi],color = 'red')
+    ax.scatter(coordinates_all[:,0],coordinates_all[:,1],color = 'blue',label = 'all nodes')
+    ax.scatter(planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['y'][vi],color = 'red',label = 'growing node') 
     if debug:
         cprint('relative neighbors','light_green','on_white')
         cprint('vertex: ' + str(planar_graph.graph.vp['id'][vi]),'light_green','on_white')
@@ -153,18 +153,17 @@ def plot_rn(planar_graph,vi,ax,debug = False):
     for vj in planar_graph.graph.vp['relative_neighbors'][vi]:
         vertex_vj = planar_graph.graph.vertex(vj)
         if vertex_vj in planar_graph.newly_added_attracting_vertices:
-            ax.scatter(planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj],color = 'grey')
+            ax.scatter(planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj],color = 'grey',label = 'newly added attracting vertices')
         elif vertex_vj in planar_graph.old_attracting_vertices:
-            ax.scatter(planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj],color = 'brown')
+            ax.scatter(planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj],color = 'brown',label = 'old added attracting vertices')
         coordinates_vj = np.array([planar_graph.graph.vp['x'][vertex_vj],planar_graph.graph.vp['y'][vertex_vj]])
         r = planar_graph.distance_matrix_[planar_graph.graph.vp['id'][vi]][vj]
-        circle1 = plt.Circle(coordinates_vi, r, color='red', linestyle = '--',fill=True ,alpha = 0.1)
-        circle2 = plt.Circle(coordinates_vj, r, color='green', linestyle = '--',fill=True ,alpha = 0.1)
+        circle1 = plt.Circle(coordinates_vi, r, color='red', linestyle = '--',fill=True ,alpha = 0.1, label = 'circle of attraction')
+        circle2 = plt.Circle(coordinates_vj, r, color='green', linestyle = '--',fill=True ,alpha = 0.1, label = 'circle of being attracted')
         ax.add_artist(circle1)
         ax.add_artist(circle2)
         ax.scatter(planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)],color = 'green')
 #        ax.plot([planar_graph.graph.vp['x'][vi],planar_graph.graph.vp['x'][planar_graph.graph.vertex(vj)]],[planar_graph.graph.vp['y'][vi],planar_graph.graph.vp['y'][planar_graph.graph.vertex(vj)]],linestyle = '--',color = 'green')
-    ax.legend(['all','growing','old attracting','relative neighbors','circle of attraction'])
     return ax
 def plot_old_delauney(planar_graph,ax):
     '''
@@ -216,6 +215,9 @@ def plot_relative_neighbors(planar_graph,vi,new_added_vertex,available_vertices,
     if debug:
         cprint('plot old attractors','light_green','on_white')
     ax[0][0] = plot_old_attractors(planar_graph,ax[0][0])
+#    if debug:
+#        cprint('roads in time','light_green','on_white')
+#    plot_number_roads_time(planar_graph,ax[0][0])        
     if debug:
         cprint('plot new attractors','light_green','on_white')
     ax[0][1] = plot_new_attractors(planar_graph,ax[0][1])
@@ -275,11 +277,11 @@ def plot_number_roads_time(planar_graph,ax):
         ax.scatter(planar_graph.time,planar_graph.count_roads)
         ax.plot(planar_graph.time,np.array(planar_graph.time) + planar_graph.count_roads[0])
         ax.plot(planar_graph.time,2*np.array(planar_graph.time) + planar_graph.count_roads[0])
-        ax.xlabel('time')
-        ax.ylabel('number of roads')
+        ax.set_xlabel('time')
+        ax.set_ylabel('number of roads')
         ax.legend(['graph','tree','lattice'])
         ax.set_title('number roads in nodes') 
-
+        plt.savefig(os.path.join(planar_graph.base_dir,'number_roads_time'),dpi = 200)
 def plot_total_length_roads_time(planar_graph,ax):
     if len(planar_graph.time)!=0:
         ax.scatter(planar_graph.time,planar_graph.length_total_roads)
@@ -288,4 +290,5 @@ def plot_total_length_roads_time(planar_graph,ax):
         ax.set_ylabel('total length (m)')
         ax.legend(['graph','square root'])
         ax.set_title('total length network in time') 
+        plt.savefig(os.path.join(planar_graph.base_dir,'total_length_roads_time'),dpi = 200)
 

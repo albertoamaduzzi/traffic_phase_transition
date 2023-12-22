@@ -46,7 +46,8 @@ class road:
         self.evolution_attractors = defaultdict()#{t:[] for t in range()}
         self.end_point = second_node    
         self.is_closed_ = False
-        self.closing_vertex = None
+        self.closing_vertex = -1
+
         if isinstance(activation_vertex,(list,np.ndarray,graph_tool.libgraph_tool_core.Vector_int32_t)):
             if debug:
                 cprint('ARRAY: ' + str(len(activation_vertex)) + ' NODES','magenta')
