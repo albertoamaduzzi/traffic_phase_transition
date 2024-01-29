@@ -6,3 +6,5 @@ output/
 data/
 cache/
 tests/cache/
+*.yml
+*artemis.json

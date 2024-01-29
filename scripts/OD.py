@@ -1,3 +1,8 @@
+'''
+This file is responsible for the reorganization of the city policentricity.
+The policentricty is essentially defined via the potential. 
+
+'''
 import json
 import argparse
 import numpy as np
@@ -7,6 +12,7 @@ import osmnx as ox
 import shapely as shp
 import pandas as pd
 from collections import defaultdict
+import networkx as nx
 import h3
 import shapely.geometry as sg
 import rasterio
@@ -51,23 +57,51 @@ class OD:
     '''
         The origin destination file is OD{start}_{}end_Rk.csv -> It counts how many people go from any origin to any destination leaving at time start and arriving at time end
     '''
-    def __init__(self,config):
+    def __init__(self,config,grid_size = 0.01):
+                'dir_grid':[os.path.join(self.save_dir,'grid','grid_size_{}.geojson'.format(grid_size)) for grid_size in grid_sizes], # Directory where the grid is stored
+                'dir_hexagons':[os.path.join(self.save_dir,'hexagon','hexagon_resolution_{}.geojson'.format(resolution)) for resolution in resolutions], # Directory where the hexagons are stored
+                'dir_rings':[os.path.join(self.save_dir,'ring','rings_n_{}.geojson'.format(n_ring)) for n_ring in number_of_rings], # Directory where the rings are stored
+                'dir_polygon':os.path.join(self.gdf_polygons_dir,self.city + 'new'+'.shp'), # Directory where the polygons are stored
+                'dir_edges':self.save_dir, # Directory where the edges are stored
+                'dir_nodes':self.save_dir, # Directory where the nodes are stored
+                'dir_graph':self.save_dir, # Directory where the graph is stored
+                'dir_graphml':os.path.join(self.save_dir,self.city + '_new_tertiary_simplified.graphml'), # Directory where the graphml is stored
+                "name":self.city,
+                "number_trips":len(self.df1),
+                "grid_sizes":grid_sizes, # Grid size in km
+                'number_of_rings':number_of_rings,
+                'resolutions':resolutions,
+                "tif_file":tif_file
+                    }
+
         if 'carto_dir' in config:
             self.carto_dir = config['carto_dir']
         else:
             self.carto_dir = '/home/aamad/Desktop/phd/traffic_phase_transition/data/carto/'
+        ## UPLOAD GEMOETRICAL OBJECTS FROM FILE
         if 'shape_file_dir' in config:
             self.shape_file_dir = config['shape_file_dir']
         else:
-            self.shape_file_dir = self.carto_dir
-        if 'tif_file' in config:
-            self.tif_file = config['tif_file']
+            raise ValueError('shape_file_dir is not specified')
+        if 'dir_lattice' in config:
+            self.dir_lattice = config['dir_lattice'][0]                             # I know that 0 corresponds to the grid_size = 0.01
         else:
-            self.tif_file = '/home/aamad/Desktop/phd/berkeley/data/usa_ppp_2020_UNadj_constrained.tif'
-        if 'file_OD' in config:
-            self.file_OD = config['file_OD']
+            raise ValueError('dir_lattice is not specified')                        # I would not be able to construct the potential
+        
+        if 'dir_OD' in config:
+            self.file_OD = os.path.join(config['dir_OD'],'od_demand_{0}to{1}_R_{2}.csv'.format(config['start'],config['end'],config['R']))
+            
         else:
             self.file_OD = '/home/aamad/Desktop/phd/berkeley/data/carto/BOS/od_demand_7to8_R_1.csv'
+        if 'osmid2idx_path' in config:
+            with open(config['osmid2idx_path'],'r') as f:
+                self.osmid2idx = json.load(f)
+        else:
+            self.osmid2idx = json.load(open('/home/aamad/Desktop/phd/traffic_phase_transition/data/carto/BOS/osmid2idx.json','r'))
+        if 'dir_grid' in config:
+            self.dir_grid = config['dir_grid']
+        else:
+            raise ValueError('dir_grid not available')
         if 'name' in config:
             self.name = config['name']
         else:
@@ -99,12 +133,11 @@ class OD:
         else:
             self.number_of_rings = 10
         ## GRAPH -> Nx
+        self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir,self.name + 'new' +'.shp'))
         self.graph = ox.load_graphml(filepath=os.path.join(self.carto_dir,self.name + '_new_tertiary_simplified.graphml'))
+        self.lattice = nx.read_graphml(self.dir_lattice)
         self.crs = self.graph.graph['crs']
         ## POLYGONS -> geopandas
-        self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir,self.name + '.shp'))
-        self.Area = self.gdf_polygons.unary_union.area
-        self.radius = np.sqrt(self.Area/np.pi)
         ## TILING
 #        self.get_squared_grid()
 #        self.get_rings()
@@ -119,26 +152,37 @@ class OD:
         else:
             raise ValueError('polygon2od.json does not exist')
         self.realization2UCI = defaultdict(list)
+        self.mass_polygon = defaultdict(list)
+        self.mass_hexagons = defaultdict(list)
+        self.mass_rings = defaultdict(list)
 
 ##------------------------------------------------ TILING ------------------------------------------------##
 
-    def get_squared_grid(self):
+    def get_squared_grid(self,grid_size):
         '''
             centroid: Point -> centroid of the city
             bounding_box: tuple -> (minx,miny,maxx,maxy)
             grid: GeoDataFrame -> grid of points of size grid_size
-            idx2grid: dict -> {idx:grid_point}
+            In this way grid is ready to be used as the matrix representation of the city and the gradient and the curl defined on it.
+            From now on I will have that the lattice is associated to the centroid grid.
+            Usage:
+                grid and lattice are together containing spatial and network information
         '''
+
         self.centroid = self.gdf_polygons.geometry.unary_union.centroid
         self.bounding_box = self.gdf_polygons.geometry.unary_union.bounds
         bbox = shp.geometry.box(*self.bounding_box)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox], crs=self.crs)
         x = np.arange(self.bounding_box[0], self.bounding_box[2], self.grid_size)
         y = np.arange(self.bounding_box[1], self.bounding_box[3], self.grid_size)
-        grid_points = gpd.GeoDataFrame(geometry=[shp.geometry.box(x, y) for x in x for y in y], crs=self.crs)
+        grid_points = gpd.GeoDataFrame(geometry=[shp.geometry.box(xi, yi,maxx = max(x),maxy = max(y)) for xi in x for yi in y], crs=self.crs)
+        ij = [[i,j] for i in range(len(x)) for j in range(len(y))]
+        grid_points['i'] = np.array(ij)[:,0]
+        grid_points['j'] = np.array(ij)[:,1]
         # Clip the grid to the bounding box
         self.grid = gpd.overlay(grid_points, bbox_gdf, how='intersection')
-        self.idx2grid = {idx:grid for idx,grid in enumerate(self.grid)}
+        self.grid['centroid'] = self.grid.geometry.centroid
+        self.lattice = nx.grid_2d_graph(len(x),len(y))
 
     def get_rings(self):
         '''
@@ -157,6 +201,7 @@ class OD:
                 intersection_ = gdf_original_crs.buffer(r).intersection(gdf_original_crs.buffer(self.radiuses[i-1]))
                 complement = gdf_original_crs.buffer(r).difference(intersection_)
                 self.rings[i] = complement
+        self.rings = gpd.GeoDataFrame(geometry=pd.concat(list(self.rings.values()), ignore_index=True),crs=crs)
 
     def get_hexagon_tiling(self,resolution=8):
         '''
@@ -165,7 +210,7 @@ class OD:
         '''
         ## READ TIF FILE
         self.resolution = resolution
-        if not os.path.exists(os.path.join(self.carto_dir,'{}_hexagonal_tiling.geojson'.format(self.name))):
+        if not os.path.exists(os.path.join(self.carto_dir,'{0}_hexagonal_tiling_resolution_{1}'.format(self.name,resolution))):
             with rasterio.open(self.tif_file) as dataset:
                 clipped_data, clipped_transform = mask(dataset, self.gdf_polygons.geometry, crop=True)
             ## CHANGE NULL ENTRANCIES (-99999) for US (may change for other Countries [written in United Nation page of Download])
@@ -198,35 +243,85 @@ class OD:
 
 
 ## ------------------------------------------------ MAP TILE TO POLYGONS ------------------------------------------------ ##
+    def hexagon2polygon(self):
+        '''
+            Consider just the hexagons of the tiling that have population > 0
+            Any time we have that a polygon is intersected by the hexagon, we add to the population column
+            of the polygon the population of the hexagon times the ratio of intersection area with respect to the hexagon area
+        '''
+        if self.gdf_hexagons is None:
+            raise ValueError('grid is None')
+        elif self.gdf_polygons is None:
+            raise ValueError('gdf_polygons is None')
+        else:
+        polygon_sindex = self.gdf_polygons.sindex
+        populationpolygon = np.zeros(len(self.gdf_polygons))
+        for idxh,hex in self.gdf_hexagons.loc[self.gdf_hexagons['population'] > 0].iterrows():
+            possible_matches_index = list(polygon_sindex.intersection(hex.geometry.bounds))
+            possible_matches = self.gdf_polygons.iloc[possible_matches_index]    
+            # Filter based on actual intersection
+            if len(possible_matches) > 0:
+                intersecting = possible_matches[possible_matches.geometry.intersects(hex.geometry)]
+                for idxint,int_ in intersecting.iterrows():
+                    populationpolygon[idxint] += hex.population*int_.geometry.intersection(hex.geometry).area/hex.geometry.area        
+                    if int_.geometry.intersection(hex.geometry).area/hex.geometry.area>1.01:
+                        raise ValueError('Error the area of the intersection is greater than 1: ',int_.geometry.intersection(hex.geometry).area/hex.geometry.area)
+            else:
+                pass
+            self.gdf_polygons['population'] = populationpolygon
+
+
 
     def get_intersection_polygon2grid(self):
+        '''
+            Associates the mass to the grid 
+        '''
         if self.grid is None:
             raise ValueError('grid is None')
         elif self.gdf_polygons is None:
             raise ValueError('gdf_polygons is None')
         else:
-            for k in self.idx2grid.keys():
-                self.gdf_polygons['intersection_{}'.format(k)] = self.gdf_polygons.geometry.apply(lambda x: x.intersection(self.grid))
+            grid_sindex = self.grid.sindex
+            populationpolygon = np.zeros(len(self.grid))
+            for idxh,hex in self.gdf_hexagons.loc[self.gdf_hexagons['population'] > 0].iterrows():
+                possible_matches_index = list(grid_sindex.intersection(hex.geometry.bounds))
+                possible_matches = self.grid.iloc[possible_matches_index]    
+                # Filter based on actual intersection
+                if len(possible_matches) > 0:
+                    intersecting = possible_matches[possible_matches.geometry.intersects(hex.geometry)]
+                    for idxint,int_ in intersecting.iterrows():
+                        populationpolygon[idxint] += hex.population*int_.geometry.intersection(hex.geometry).area/hex.geometry.area        
+                        if int_.geometry.intersection(hex.geometry).area/hex.geometry.area>1.01:
+                            raise ValueError('Error the area of the intersection is greater than 1: ',int_.geometry.intersection(hex.geometry).area/hex.geometry.area)
+                else:
+                    pass
+                self.grid['population'] = populationpolygon
             
 
     def get_intersection_polygon2rings(self):
+        '''
+            Gives the population to the rings
+        '''
         if self.rings is None:
             raise ValueError('rings is None')
         elif self.gdf_polygons is None:
             raise ValueError('gdf_polygons is None')
         else:
-            for r in self.radiuses:
-                self.gdf_polygons['intersection_{}'.format(r)] = self.gdf_polygons.geometry.apply(lambda x: x.intersection(x.buffer(r)))
-    
-    def get_intersection_polygon2hexagon(self):
-        self.polygon2hexagon = defaultdict(list)
-        if self.gdf_hexagons is None:
-            raise ValueError('gdf_hexagons is None')
-        elif self.gdf_polygons is None:
-            raise ValueError('gdf_polygons is None')
-        else:
-            for idx,hexagon in enumerate(self.gdf_hexagons.geometry):
-                self.gdf_polygons['intersection_{}'.format(idx)] = self.gdf_polygons.geometry.apply(lambda x: x.intersection(hexagon))
+            ring_sindex = self.rings.sindex
+            populationpolygon = np.zeros(len(self.rings))
+            for idxh,hex in self.gdf_hexagons.loc[self.gdf_hexagons['population'] > 0].iterrows():
+                possible_matches_index = list(ring_sindex.intersection(hex.geometry.bounds))
+                possible_matches = self.grid.iloc[possible_matches_index]    
+                # Filter based on actual intersection
+                if len(possible_matches) > 0:
+                    intersecting = possible_matches[possible_matches.geometry.intersects(hex.geometry)]
+                    for idxint,int_ in intersecting.iterrows():
+                        populationpolygon[idxint] += hex.population*int_.geometry.intersection(hex.geometry).area/hex.geometry.area        
+                        if int_.geometry.intersection(hex.geometry).area/hex.geometry.area>1.01:
+                            raise ValueError('Error the area of the intersection is greater than 1: ',int_.geometry.intersection(hex.geometry).area/hex.geometry.area)
+                else:
+                    pass
+                self.rings['population'] = populationpolygon
 
 
 ##------------------------------------------------ MATRIX REPRESENTATION ------------------------------------------------##   
@@ -306,8 +401,9 @@ class OD:
             else:
                 pass
 
-    def shuffle_matrix_weighted():
+    def shuffle_matrix_weighted(self):
             entries = 0
+            self.shuffled_matrix = self.matrix_OD.copy()
             while(entries< self.dimensionality_matrix):
                 i = np.random.randint(0,self.dimensionality_matrix[0])
                 j = np.random.randint(0,self.dimensionality_matrix[1])
@@ -317,9 +413,9 @@ class OD:
                 r = np.random.rand()
                 if r<np.exp(-self.beta*(self.matrix_OD[i,j])): ## If I have a lot of people I do not want to move them
                     if(l!=i and k!=j):
-                        self.matrix_OD[l,k] = self.matrix_OD[l,k] + self.matrix_OD[i,j]
-                        if self.matrix_OD[i,j] != 0:
-                            self.matrix_OD[i,j] = 0
+                        self.shuffled_matrix[l,k] = self.shuffled_matrix[l,k] + self.shuffled_matrix[i,j]
+                        if self.shuffled_matrix[i,j] != 0:
+                            self.shuffled_matrix[i,j] = 0
                         else:
                             pass
                 else:
@@ -327,13 +423,20 @@ class OD:
 
 ##------------------------------------------------ MOBILITY VECTOR FIELD ------------------------------------------------##
     def mobility_vector_field(self):
+        '''
+            hexagonidx2vector_field: dict -> {hexagonidx:{hexagonidx:vector}}
+            NOTE:
+                I have maximally entropically redistributed the trips form polygons to their covering hexagons (1/N_hexagon*OD)
+        '''
+        
+        self.hexagonidx2vector_field = defaultdict(dict)
         for i in range(len(self.gdf_hexagons.geometry)):
             for j in range(len(self.gdf_polygons.geometry)):
                 if i!=j:
                     u = np.diff(self.gdf_polygons['centroid'][j].x -self.gdf_polygons['centroid'][i].x)
                     v = np.diff(self.gdf_polygons['centroid'][j].y -self.gdf_polygons['centroid'][i].y)
-                    
-                    (['centroid'][j]) 
+                    self.hexagonidx2vector_field[i][j] = np.array([u,v])#*self.matrix_OD[i,j] -> I need the origin dest for polygon
+
                                 
 
 ##------------------------------------------------ QUANTITIES OF SOCIOLOGICAL INTEREST ------------------------------------------------##
@@ -359,13 +462,15 @@ class OD:
             Compute the Gini index of the matrix
         '''
         return Gini
-    def multivariatePoisson(self,mean):
-        '''
-            Generate a multivariate Poisson distribution
-        '''
-
-        return np.random.multivariate_normal(mean,mean)
     
+
+##------------------------------------------------ PERIMETER POLYGON ------------------------------------------------##
+def circuitation_polygon(polygon):
+    for i,side in enumerate(polygon.convex_hull.boundary.coords.xy):
+
+## -------------------------------------- OD FIELD -------------------------------------- ##
+def gravitational_field(mass,r,r1,d):
+    return mass*np.exp(np.linalg.norm(r1-r)/d)    
 
  ##------------------------------------------------ GLOBAL FUNCTION ABOUT TILING ------------------------------------------------##   
 
@@ -397,7 +502,16 @@ if __name__=='__main__':
     with open(config_file,'r') as f:
         config = json.load(f)
     od = OD(config)
+    # GEOMETRICAL STRUCTURE IS ACQUIRED
+    od.get_squared_grid()
+    od.get_rings()
+    od.get_hexagon_tiling()
+    od.hexagon2polygon()
+    od.get_intersection_polygon2grid()
+    od.get_intersection_polygon2rings()
+    
     od.OD2matrix()
+    od.OD2Laplacian()
 
     for r in range(1000):
         od.shuffle_matrix()

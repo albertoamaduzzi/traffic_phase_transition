@@ -5,7 +5,7 @@ import rioxarray
         Given:
             - data type (population, births, pregnancies, urban change)
             - country (optional)
-            - year (optional)
+            - year (optional)np.array([np.array([norm_vect[i][j] if norm_vect[i][j][0] != 0 else 1 for j in range(len(norm_vect[i]))]) for i in range(len(norm_vect))])
     https://github.com/Geo4Dev/Population-Weighted-Wealth/blob/main/Population-Weighted-Wealth.ipynb
 '''
 
