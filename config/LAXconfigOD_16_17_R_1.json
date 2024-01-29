@@ -1,0 +1,14 @@
+{
+    "carto_dir": "/home/aamad/Desktop/phd/berkeley/data/carto/LAX",
+    "shape_file_dir": "/home/aamad/Desktop/phd/berkeley/data/carto/LAX",
+    "start": 16,
+    "end": 17,
+    "name": "LAX",
+    "number_trips": 642448,
+    "osmid2idx_path": "/home/aamad/Desktop/phd/berkeley/data/carto/LAX/osmid2idx.json",
+    "R": 1,
+    "grid_size": 7,
+    "number_of_rings": 10,
+    "p": "usa_ppp_2020_UNadj_constrained.tif",
+    "tif_file": "usa_ppp_2020_UNadj_constrained.tif"
+}

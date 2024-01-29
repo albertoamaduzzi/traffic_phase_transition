@@ -204,42 +204,42 @@ def plot_relative_neighbors(planar_graph,vi,new_added_vertex,available_vertices,
             7) Number of roads (lower-left)
             8) Total lenght streets (lower-right)
     '''
-    if debug:
-        if len(planar_graph.time)!=0:
-            time = planar_graph.time[-1] + 1
-        else:
-            time = 0
-        cprint('ITERATION: '+str(time),'light_green','on_white')
-        cprint('Debug plots','light_green','on_white')
+#    if debug:
+#        if len(planar_graph.time)!=0:
+#            time = planar_graph.time[-1] + 1
+#        else:
+#            time = 0
+#        cprint('ITERATION: '+str(time),'light_green','on_white')
+#        cprint('Debug plots','light_green','on_white')
     fig,ax = plt.subplots(3,2,figsize = (20,20),sharex = True,sharey = True)
-    if debug:
-        cprint('plot old attractors','light_green','on_white')
+#    if debug:
+#        cprint('plot old attractors','light_green','on_white')
     ax[0][0] = plot_old_attractors(planar_graph,ax[0][0])
 #    if debug:
 #        cprint('roads in time','light_green','on_white')
 #    plot_number_roads_time(planar_graph,ax[0][0])        
-    if debug:
-        cprint('plot new attractors','light_green','on_white')
+#    if debug:
+#        cprint('plot new attractors','light_green','on_white')
     ax[0][1] = plot_new_attractors(planar_graph,ax[0][1])
-    if debug:
-        cprint('plot relative neighbors','light_green','on_white')
+#    if debug:
+#        cprint('plot relative neighbors','light_green','on_white')
     ax[1][0] = plot_rn(planar_graph,vi,ax[1][0])
-    if debug:    
-        cprint('plot new delauney','light_green','on_white')
+#    if debug:    
+#        cprint('plot new delauney','light_green','on_white')
     ax[1][1] = plot_new_delauney(planar_graph,ax[1][1])
-    if debug:    
-        cprint('plot old delauney','light_green','on_white')
+#    if debug:    
+#        cprint('plot old delauney','light_green','on_white')
     ax[2][0] = plot_old_delauney(planar_graph,ax[2][0])
 #    ax[2][0] = plot_active_vertices(planar_graph,ax[2][0])
-    if debug:    
-        cprint('plot graph','light_green','on_white')
+#    if debug:    
+#        cprint('plot graph','light_green','on_white')
     ax[2][1] = plot_graph(planar_graph,ax[2][1]) 
 #    plot_number_roads_time(planar_graph,ax[2][0])
 #    plot_total_length_roads_time(planar_graph,ax[2][1])
     ## All attracting vertices
-    if debug:
-        for v in available_vertices:
-            cprint('available vertices inside function: ' + str(planar_graph.graph.vp['id'][v]),'light_green','on_white')
+#    if debug:
+#        for v in available_vertices:
+#            cprint('available vertices inside function: ' + str(planar_graph.graph.vp['id'][v]),'light_green','on_white')
     ifnotexistsmkdir(os.path.join(planar_graph.base_dir,'relative_neighbor'))
 #    print(planar_graph.time)
     if len(planar_graph.time)!=0:

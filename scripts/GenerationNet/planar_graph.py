@@ -491,7 +491,7 @@ if __name__ == '__main__':
     root = tuple.__next__()[0]
     cprint('root: {}'.format(root),'black','on_green')
     config_dir = os.path.join('/home/aamad/Desktop/phd/berkeley/traffic_phase_transition','config')
-    config_name = os.listdir(config_dir)[0]
+    config_name = 'barthelemy_graph.json'#os.listdir(config_dir)[0]
     with open(os.path.join(config_dir,config_name),'r') as f:
         config = json.load(f)
     for r0 in list_r0:

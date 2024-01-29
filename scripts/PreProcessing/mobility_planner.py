@@ -1,8 +1,20 @@
+'''
+    The unique use of this script is to build and save nodes.csv and edges.csv that are needed to run the GPU simulation.
+    - REQUIRED:
+        city_shapefile.shp
+    - RUN:
+        python3 ./mobility_planner.py
+
+    - CITY AVAILBLE:
+        ['BOS','LAX','SFO','RIO','LIS']
+    To modify the city could be added a configuration set of steps to automatically retrieve the shapefiles, save and have a list of names of saved shapefile.
+    NOTE: In this script the shape file are saved as data_dir/NAME/NAME.shp (RULE: 2 step below the dir of this file (data_dir/scripts/PreProcessing) )
+'''
+
 import geopandas as gpd
 import numpy as np
 import os
 import pandas as pd
-from global_functions import ifnotexistsmkdir
 import osmnx as ox
 from collections import defaultdict
 from shapely.geometry import Point,Polygon
@@ -10,6 +22,10 @@ import matplotlib.pyplot as plt
 import json
 import ast
 import statistics
+import sys
+sys.path.append('~/Desktop/phd/berkeley/traffic_phase_transition/GenerationNet')
+from global_functions import ifnotexistsmkdir
+
 
 class mobility_planner:
     '''
@@ -46,7 +62,7 @@ class mobility_planner:
         self.ecols = ['uniqueid', 'u', 'v', 'key', 'oneway', 'highway', 'name', 'length',
                 'lanes', 'width', 'est_width', 'maxspeed', 'access', 'service',
                 'bridge', 'tunnel', 'area', 'junction', 'osmid', 'ref']
-        self.useful_cols = ['uniqueid', 'u', 'v', 'length', 'maxspeed', 'lanes', 'highway', 'oneway']
+        self.useful_cols = ['uniqueid', 'u', 'v', 'length', 'speed_mph', 'lanes'] #, 'highway', 'oneway'
         self.types = ['motorway', 'motorway_link', 'trunk', 'trunk_link', 
          'primary', 'primary_link', 'secondary', 'secondary_link',
          'tertiary', 'tertiary_link', 'unclassified', 'road']
@@ -114,8 +130,10 @@ class mobility_planner:
             i = 0
             for u, v, k, d in self.G2_simp.edges(data=True, keys=True):
                 d['uniqueid'] = i
-                d['u'] = u
-                d['v'] = v
+                d['u'] = u #self.osmid2index[u]
+                d['v'] = v#self.osmid2index[v]
+#                d['osmid_u'] = u
+#                d['osmid_v'] = v
                 i += 1
         else:
             raise ValueError('gpd_polygon is None, need to upload a valid shape file')
@@ -136,6 +154,7 @@ class mobility_planner:
             self.nodes['index'] = self.nodes.index
             print('nodes after reset index',self.nodes)
             print('nodes dir:\n',os.path.join(self.save_dir,'nodes.csv'))
+            self.osmid2index = self.nodes[['osmid','index']].set_index('osmid').to_dict()['index']
             self.nodes.to_csv(os.path.join(self.save_dir,'nodes.csv'), index=False, encoding='utf-8')
         else:
             raise ValueError('Nodes is None, need to upload a valid graph')
@@ -147,10 +166,7 @@ class mobility_planner:
             raise ValueError('Edges is None, need to upload a valid graph')
 
     def process_highway(self):
-        print(self.edges)
         if self.edges is not None:
-            self.edges['u'] = self.edges['u'].astype(int)
-            self.edges['v'] = self.edges['v'].astype(int)
             self.edges['highway'] = self.edges['highway'].map(convert_lists)
             self.edges['highway'] = self.edges['highway'].map(collapse_multiple_hwy_values)
             self.edges['lanes'] = self.edges['lanes'].map(convert_lists)
@@ -176,7 +192,13 @@ class mobility_planner:
             self.edges['capacity_lane_hour'] = self.edges.apply(infer_capacity, axis=1)
             self.edges['capacity_hour'] = self.edges['capacity_lane_hour'] * self.edges['lanes']
             self.edges['length'] = self.edges['length'].round(1)
+            self.edges.drop(columns=['u','v','key'], inplace=True)
+#            print(self.edges.columns)            
+            self.edges.reset_index(inplace=True)
             self.edges_save = self.edges[self.useful_cols]
+#            self.edges_save['osmid_u'] = self.edges_save['u']
+#            self.edges_save['osmid_v'] = self.edges_save['v']            
+            print(self.edges_save)
             print('edges dir:\n',os.path.join(self.save_dir,'edges.csv'))
             self.edges_save.to_csv(os.path.join(self.save_dir,'edges.csv'), index=False, encoding='utf-8')
         else:
@@ -285,12 +307,15 @@ def parse_speed_strings(value):
         else:
             value = value.replace(' mph', '')
         # sometimes multiple speeds are semicolon-delimited -- collapse to a single value
-        if ';' in value and value != 'cyclestreet':
+        if ';' in value:
             # return the mean of the values if it has that semicolon
             values = [int(x) for x in value.split(';')]
             return statistics.mean(values)
         else:
-            return int(value)
+            try:
+                return int(value)
+            except:
+                return 10
     else:
         return value
     
@@ -331,7 +356,7 @@ def infer_capacity(row):
 
 
 def set_environment():
-    base_dir = os.path.dirname(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+    base_dir = os.path.dirname(os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..')))
     data_dir = os.path.join(base_dir,'data')
     carto = os.path.join(data_dir,'carto')
     ifnotexistsmkdir(data_dir)
@@ -355,7 +380,7 @@ def read_file_gpd(file_name):
 if __name__ =='__main__':
     
     data_dir,carto_base = set_environment()
-    dirs = ['BOS','LAX','SFO','RIO','LIS']#['LAX','RIO','LIS']
+    dirs = ['BOS','LAX','SFO','RIO','LIS']#['BOS','LAX']['SFO','RIO','LIS']
     for dir_ in dirs:
         save_dir = os.path.join(carto_base,dir_)            
         mobility_planner(dir_)

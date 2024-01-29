@@ -573,29 +573,32 @@ def close_road_at_intersection(planar_graph,intersection_vertex,debug=False):
         Find the road that has the intersection vertex as end point
     '''
 
+    ## FIND ROAD THE VERTEX IS INTERSECTION OF
     starting_vertex_road,local_idx_road,found,id_ = find_road_vertex(planar_graph,intersection_vertex,debug)
+    ## ELIMINATE ATTRCTION OF THE ROAD (vertex attribute roads_activated)
+    for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
+        a_activated_roads = np.array(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
+        indices = np.where(a_activated_roads != id_)
+        planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)] = [a_activated_roads[xi] for xi in range(len(a_activated_roads)) if xi in np.unique(indices[0])]
+        if debug:
+            print('roads acivated by: ',attracting_id, ' after remove in intersection: ',planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
+        if id_ in planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)]:
+            raise ValueError('ERROR: Road not removed from activated roads')    
+    if debug:
+        print('xxx Closing road at intersection xxx')
+        for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
+            print('new set of roads acivated by: ',attracting_id)
+            print(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
+            print('removing road: ',id_,' from vertex acivated roads: ',list(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)]))
+            print('activated vertices after remove (I expect not to find {}): '.format(id_))    
     if found:
+        ## CLOSE ROAD
         planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].is_closed_ = True
         planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].end_point = intersection_vertex
         planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by = []
-        if debug:
-            print('xxx Closing road at intersection xxx')
-            for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
-                print('new set of roads acivated by: ',attracting_id)
-                print(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
-                print('removing road: ',id_,' from vertex acivated roads: ',list(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)]))
-                print('activated vertices after remove (I expect not to find {}): '.format(id_))
-            print_property_road(planar_graph,planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road])    
         if planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].closing_vertex == -1:
             planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].closing_vertex = intersection_vertex
-        for attracting_id in planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road].activated_by:
-            a_activated_roads = np.array(planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
-            indices = np.where(a_activated_roads != id_)
-            planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)] = [a_activated_roads[xi] for xi in range(len(a_activated_roads)) if xi in np.unique(indices[0])]
-            if debug:
-                print('roads acivated by: ',attracting_id, ' after remove in intersection: ',planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)])
-            if id_ in planar_graph.graph.vp['roads_activated'][planar_graph.graph.vertex(attracting_id)]:
-                raise ValueError('ERROR: Road not removed from activated roads')
+            print_property_road(planar_graph,planar_graph.graph.vp['roads'][starting_vertex_road][local_idx_road])    
     else:
         raise ValueError('ERROR: No road found to be closed at intersection')
     
