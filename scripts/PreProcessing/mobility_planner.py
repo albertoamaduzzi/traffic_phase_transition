@@ -23,7 +23,8 @@ import json
 import ast
 import statistics
 import sys
-sys.path.append('~/Desktop/phd/berkeley/traffic_phase_transition/GenerationNet')
+TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
+sys.path.append(os.path.join(TRAFFIC_DIR,'GenerationNet'))
 from global_functions import ifnotexistsmkdir
 
 
