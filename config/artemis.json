@@ -1,7 +1,0 @@
-{
-    "hostname": "artemis.ist.berkeley.edu",
-    "username": "alberto",
-    "password": "fakepassword",
-    "key_filename": "/home/aamad/.ssh/rsa_aamad",
-    "TRAFFIC_DIR": "/home/alberto/test/LPSim"
-}
