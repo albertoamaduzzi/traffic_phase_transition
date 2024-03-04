@@ -1,17 +1,29 @@
 {
-    "side_city": 10,
-    "ratio_growth2size_city": 0.1,
-    "number_iterations":1000,
-    "tau_c":4,
-    "ratio_evolving2initial":0.1,
-    "number_nodes_per_tau_c":10,
-    "initial_number_points":10,
-    "ratio_evolving2initial":0.4,
-    "total_number_attraction_points":1000,
+
+    "side_city": 20,
+    "ratio_growth2size_city": 0.01,
+    "initial_number_points":4,
+    "tau_c":6,
+    "number_nodes_per_tau_c":3,
+    "total_number_attraction_points":50,
     "number_grids": 10,
     "policentricity":false,
     "degree_policentricity":1,
-    "offscreen":false
-
-
+    "debug_initial_points":false,
+    "debug_update_lists":false,
+    "debug_add_centers":false,
+    "debug_delauney_old":false,
+    "debug_delauney_new":false,
+    "debug_rng_old":false,
+    "debug_rng_new":false,
+    "debug_evolve_old":false,
+    "debug_evolve_new":false,
+    "debug_close_roads":false,
+    "debug_new2old":false,
+    "debug_intersection":false,
+    "debug_evolution_roads":false,
+    "debug_unique_evolution":false,
+    "debug_degenerate_evolution":false,
+    "debug_sum_evolution":false,
+    "iteration_plot":1
 }
