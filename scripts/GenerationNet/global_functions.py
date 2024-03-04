@@ -1,7 +1,7 @@
 import os
-import graph_tool as gt
+#import graph_tool as gt
 import numpy as np  
-from graph_tool.all import label_components
+#from graph_tool.all import label_components
 from scipy.spatial import distance_matrix
 
 def ifnotexistsmkdir(path):
