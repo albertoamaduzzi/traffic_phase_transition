@@ -81,7 +81,7 @@ class mobility_planner:
         print('Input dir: ',self.data_dir)
         print('Creating polygon for: ',self.name)
         print('saving dir: ',self.save_dir)
-        if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml')) == False:
+        if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml')):
             print('simplify graph:')
             self.simplify_graph_from_polygon_gdf()
             # create a unique ID for each edge because osmid can hold multiple values due to topology simplification
@@ -159,6 +159,7 @@ class mobility_planner:
             self.nodes.to_csv(os.path.join(self.save_dir,'nodes.csv'), index=False, encoding='utf-8')
         else:
             raise ValueError('Nodes is None, need to upload a valid graph')
+    
     def handle_edges_and_save(self):
         if not self.edges is None:
             self.edges = self.edges.drop(columns=['geometry']).reindex(columns=self.ecols)

@@ -1,10 +1,10 @@
-# citations
 citations/
-#output
 output/
-#data
 data/
 cache/
 tests/cache/
+workspace/
+Doxyfile
+tests/
 *.yml
 *artemis.json

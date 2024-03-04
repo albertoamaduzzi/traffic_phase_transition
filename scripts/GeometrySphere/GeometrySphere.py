@@ -12,17 +12,17 @@ def ProjCoordsTangentSpace(lat,lon,lat0,lon0):
     
     x = c_lon*(lon-lon0)
     y = c_lat*(lat-lat0)
-    if isinstance(x,np.ndarray):
+    if isinstance(x,np.ndarray) or isinstance(x,np.float64):
         pass
     else:        
         x = x.to_numpy()
-    if isinstance(y,np.ndarray):
+    if isinstance(y,np.ndarray) or isinstance(y,np.float64):
         pass
     else:
         y = y.to_numpy()
     return x,y
 
-def calculate_area(geometry):
+def ComputeAreaSquare(geometry):
     x,y = geometry.centroid.xy
     lat0 = x[0]
     lon0 = y[0]

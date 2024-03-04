@@ -19,7 +19,7 @@
             polygon2origindest.json,origindest2polygon.json
         3e) graph: [edges.csv,nodes.csv,{city}_new_tertiary_simplified.graphml]
         3f) OD: 
-            [{city}_oddemand_{start}to{end}_R_{number}.csv]
+            [{city}_oddemand_{start}_{end}_R_{number}.csv]
         3g) maps: [osmid2idx.json,idx2osmid.json]
             []
 
@@ -55,12 +55,13 @@ import time
 from multiprocessing import Pool
 import sys
 TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
-sys.path.append(os.path.join(TRAFFIC_DIR,'traffic_phase_transition','scripts','ServerCommunication'))
-sys.path.append(os.path.join(TRAFFIC_DIR,'traffic_phase_transition','scripts','GenerationNet'))
-sys.path.append(os.path.join(TRAFFIC_DIR,'traffic_phase_transition','scripts','GeometrySphere'))
+sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','ServerCommunication'))
+sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','GenerationNet'))
+sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','GeometrySphere'))
 from global_functions import ifnotexistsmkdir
 from HostConnection import *
 from GeometrySphere import *
+from PolygonSettings import *
 from plot import *
 
 RUNNING_ON_SERVER = False
@@ -70,7 +71,7 @@ TODO: Create all the files that are needed to handle the Origin and destination 
 Output:
     1) nodes.csv -> NEEDED IN SIMULATION
     2) edges.csv -> NEEDED IN SIMULATION
-    3) od_demand_{0}to{1}_R_{2}.csv -> NEEDED IN SIMULATION
+    3) od_demand_{0}_{1}_R_{2}.csv -> NEEDED IN SIMULATION
     4) polygon2origindest.json -> NEEDED IN OD (to build the OD for all the different tilings in particular for: getPolygonPopulation)
     5) osmid2idx.json -> NEEDED IN OD (to build the OD for all the different tilings in particular for: getPolygonPopulation)
     6) idx2osmid.json -> NEEDED IN OD (to build the OD for all the different tilings in particular for: getPolygonPopulation)
@@ -118,15 +119,16 @@ class GeometricalSettingsSpatialPartition:
         self.shape_file_dir_local = os.path.join(TRAFFIC_DIR,'data','carto',self.city,'shape_files')
         self.ODfma_dir = os.path.join(TRAFFIC_DIR,'data','carto',self.city,'ODfma')
         # OUTPUT DIRS
-        self.save_dir_local = os.os.path.join(TRAFFIC_DIR,'data','carto',self.city) 
+        self.save_dir_local = os.path.join(TRAFFIC_DIR,'data','carto',self.city) 
         self.save_dir_server = os.path.join(SERVER_TRAFFIC_DIR,self.city) # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/test/LPSim/LivingCity/{city}
 
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
         else:
             raise ValueError('Graph City not found')
-        if os.path.isfile(os.path.join(self.shape_file_dir_local,self.city,self.city + '.shp'))
-            self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir_local,self.city,self.city + '.shp')) # POLYGON FILE
+        if os.path.isfile(os.path.join(self.shape_file_dir_local,self.city + '.shp')):
+            self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir_local,self.city + '.shp')) # POLYGON FILE
+
         else:
             raise ValueError('Polygon City not found')
         self.nodes = None
@@ -164,7 +166,7 @@ class GeometricalSettingsSpatialPartition:
             cprint('Initialize Grid: ' + str(grid_size),'yellow')
             self.grid_size = grid_size
             ifnotexistsmkdir(os.path.join(self.save_dir_local,'grid'))
-            ifnotexistsmkdir(os.path.join(self.save_dir_local,'grid',self.grid_size))
+            ifnotexistsmkdir(os.path.join(self.save_dir_local,'grid',str(self.grid_size)))
             self.dir_grid = os.path.join(self.save_dir_local,'grid')
             t0 = time.time()
             if os.path.isfile(os.path.join(self.dir_grid,self.grid_size,"grid.geojson")):
@@ -269,7 +271,7 @@ class GeometricalSettingsSpatialPartition:
             self.radius = max([abs(self.bounding_box[0] -self.bounding_box[2])/2,abs(self.bounding_box[1] - self.bounding_box[3])/2]) 
             self.radiuses = np.linspace(0,self.radius,self.number_of_rings)
             ifnotexistsmkdir(os.path.join(self.save_dir_local,'ring'))
-            ifnotexistsmkdir(os.path.join(self.save_dir_local,'ring',self.number_of_rings))
+            ifnotexistsmkdir(os.path.join(self.save_dir_local,'ring',str(self.number_of_rings)))
             self.dir_rings = os.path.join(self.save_dir_local,'ring')
             if os.path.isfile(os.path.join(self.save_dir_local,self.number_of_rings,'ring','rings.geojson')):
                 cprint('{} ALREADY COMPUTED'.format(os.path.join(self.save_dir_local,self.number_of_rings,'ring','rings.geojson')),'blue')
@@ -298,6 +300,7 @@ class GeometricalSettingsSpatialPartition:
             cprint('time to compute the rings: ' + str(t1-t0),'red')
         else:
             pass    
+    
     def get_hexagon_tiling(self,resolution=8):
         '''
             This function is used to get the hexagon tiling of the area, it can be used just for US right now as we have just
@@ -307,7 +310,7 @@ class GeometricalSettingsSpatialPartition:
         cprint('get_hexagon_tiling','green')
         self.resolution = resolution
         ifnotexistsmkdir(os.path.join(self.save_dir_local,'hexagon'))
-        ifnotexistsmkdir(os.path.join(self.save_dir_local,'hexagon',self.resolution))
+        ifnotexistsmkdir(os.path.join(self.save_dir_local,'hexagon',str(self.resolution)))
         self.dir_hexagons = os.path.join(self.save_dir_local,'hexagon')
         if not os.path.exists(os.path.join(self.save_dir_local,'hexagon',self.resolution,'hexagon.geojson')):
             cprint('COMPUTING: {} '.format(os.path.join(self.save_dir_local,'hexagon',self.resolution,'hexagon.geojson')),'green')
@@ -765,15 +768,17 @@ class GeometricalSettingsSpatialPartition:
         cprint('R: ' + str(self.R) + ' Rmin: ' + str(Rmin) + ' Rmax: ' + str(Rmax) + ' spacing: ' + str(spacing),'cyan')
         gridIdx2ij = {self.grid['index'][i]: (self.grid['i'].tolist()[i],self.grid['j'].tolist()[i]) for i in range(len(self.grid))}
         for multiplicative_factor in np.arange(Rmin/self.R,Rmax/self.R,spacing):
-            if os.path.isfile(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}to{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R)))):
-                cprint(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}to{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R))),'cyan')
+            # Not a repetition, is necessary to update the R
+            self.R = GetTotalMovingPopulation(OD_vector)/3600 
+            if os.path.isfile(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R)))):
+                cprint(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R))),'cyan')
                 continue
             else:
                 gridIdx2dest = defaultdict(int)
                 for o in self.grid['index'].tolist():
                     for d in self.grid['index'].tolist():
                         gridIdx2dest[(o,d)] = 0    
-                cprint('COMPUTING {}'.format(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}to{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R)))),'green')
+                cprint('COMPUTING {}'.format(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(multiplicative_factor*self.R)))),'green')
                 count_line = 0
                 users_id = []
                 time_ = []
@@ -849,11 +854,15 @@ class GeometricalSettingsSpatialPartition:
             orig = []
             dest = []
             number_people = []
+            idxorig = []
+            idxdest = []
             for k in gridIdx2dest.keys():
                 orig.append(k[0])
                 dest.append(k[1])
                 number_people.append(gridIdx2dest[k])
-            df = pd.DataFrame({'origin':orig,'destination':dest,'number_people':number_people})
+                idxorig.append(gridIdx2ij[k[0]])
+                idxdest.append(gridIdx2ij[k[1]])
+            df = pd.DataFrame({'origin':orig,'destination':dest,'number_people':number_people,'(i,j)O':idxorig,'(i,j)D':idxdest})
             df.to_csv(os.path.join(self.save_dir_local,'grid',self.grid_size,'ODgrid.csv'),sep=',',index=False)
             self.Files2Upload[os.path.join(self.save_dir_local,'grid',self.grid_size,'ODgrid.csv')] = os.path.join(self.save_dir_server,'grid',self.grid_size,'ODgrid.csv')
             self.df1 = pd.DataFrame({
@@ -866,37 +875,38 @@ class GeometricalSettingsSpatialPartition:
                 'destination_osmid':destinations
                 })
             self.R = multiplicative_factor*self.R
-            self.df1.to_csv(os.path.join(self.save_dir_local,'OD','od_demand_{0}to{1}_R_{2}.csv'.format(self.start,self.end,int(self.R))),sep=',',index=False)
-            self.Files2Upload[os.path.join(self.save_dir_local,'OD','od_demand_{0}to{1}_R_{2}.csv'.format(self.start,self.end,int(self.R)))] = os.path.join(self.save_dir_server,'OD','od_demand_{0}to{1}_R_{2}.csv'.format(self.start,self.end,int(self.R)))
+            self.df1.to_csv(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(self.R))),sep=',',index=False)
+            self.Files2Upload[os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(self.R)))] = os.path.join(self.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,self.start,self.end,int(self.R)))
             ## NEED TO UPLOAD THE FILES AND LAUNCH THE SIMULATIONS AUTOMATICALL
-            Upload2ServerPwd(os.path.join(self.save_dir_local,'od_demand_{0}to{1}_R_{2}.csv'.format(self.start,self.end,int(self.R))), os.path.join('/home/alberto/test/LPSim/LivingCity/berkeley_2018/',self.city,'od_demand_{0}to{1}_R_{2}.csv'.format(self.start,self.end,int(self.R))))
+            cprint(str(self.Files2Upload),'green')
+            self.configLaunch()
             plot_departure_times(self.df1,self.save_dir_local,self.start,self.end,int(self.R))
             self.configOD(number_of_rings,grid_sizes,resolutions)
             # END TAB
             t1 = time.time()
-            cprint('time to compute OD_from_fma: ' + str(t1-t0),'red')
+            cprint('time to compute OD_from_fma: ' + str(t1-t0),'cyan')
 ## ---------------------------------- CONFIG ---------------------------------- ##
     def configOD(self,
         number_of_rings,
         grid_sizes,
         resolutions,
         tif_file='usa_ppp_2020_UNadj_constrained.tif'):
-        if os.path.isfile(os.path.join(self.save_dir_local,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R))):
+        if os.path.isfile(os.path.join(self.save_dir_local,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R))):
             cprint('{} config.json ALREADY COMPUTED'.format(self.city),'green')
         else:
             cprint('COMPUTING config.json','green')
-            config = {'carto_dir':self.save_dir_local, # Directory where the cartographic data is stored
-                'shape_file_dir_local': self.save_dir_local, # Directory where the shape files are stored
-                'dir_lattice': str([os.path.join(self.save_dir_local,'lattice','lattice_size_{}.graphml'.format(grid_size)) for grid_size in grid_sizes]), # Directory where the lattice is stored
-                'dir_grid':str([os.path.join(self.save_dir_local,'grid','grid_size_{}.geojson'.format(grid_size)) for grid_size in grid_sizes]), # Directory where the grid is stored
-                'dir_hexagons':str([os.path.join(self.save_dir_local,'hexagon','hexagon_resolution_{}.geojson'.format(resolution)) for resolution in resolutions]), # Directory where the hexagons are stored
-                'dir_rings':str([os.path.join(self.save_dir_local,'ring','rings_n_{}.geojson'.format(n_ring)) for n_ring in number_of_rings]), # Directory where the rings are stored
-                'dir_polygon':os.path.join(self.shape_file_dir,self.city + 'new'+'.shp'), # Directory where the polygons are stored
-                'dir_OD':self.save_dir_local, # Directory where the OD are stored
-                'dir_edges':self.save_dir_local, # Directory where the edges are stored
-                'dir_nodes':self.save_dir_local, # Directory where the nodes are stored
-                'dir_graph':self.save_dir_local, # Directory where the graph is stored
-                'dir_graphml':os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml'), # Directory where the graphml is stored
+            config = {
+                'local_tiff_dir':self.tiff_file_dir_local, # Directory where the tiff file is stored
+                'server_tiff_dir':self.Files2Upload[self.tiff_file_dir_local], # Directory where the tiff file is stored
+                'local_city_dir':self.save_dir_local, # Directory where the cartographic data is stored
+                'server_city_dir': self.Files2Upload[self.save_dir_server], # Directory where the shape files are stored
+                'local_grid_dir':self.dir_grid, # Directory where the grid is stored
+                'server_grid_dir':self.Files2Upload[self.dir_grid], # Directory where the grid is stored
+                'local_hexagon_dir':self.dir_hexagons, # Directory where the hexagons are stored
+                'server_hexagon_dir':self.Files2Upload[self.dir_hexagons], # Directory where the hexagons are stored
+                'local_ring_dir':self.dir_rings, # Directory where the rings are stored
+                'server_ring_dir':self.Files2Upload[self.dir_rings], # Directory where the rings are stored
+                'local_polygon_dir':self.dir_polygon, # Directory where the polygons are stored
                 'start': int(self.start), # Time where cumulation of trips starts
                 'end': int(self.end), # If not specified, it is assumed that the OD is for 1 hour (time where cumlation of trips ends)
                 "name":self.city,
@@ -906,9 +916,8 @@ class GeometricalSettingsSpatialPartition:
                 "grid_sizes":str(grid_sizes), # Grid size in km
                 'number_of_rings':str(number_of_rings),
                 'resolutions':str(resolutions),
-                "tif_file":tif_file
                     }
-            with open(os.path.join(self.save_dir_local,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)),'w') as f:
+            with open(os.path.join(self.save_dir_local,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)),'w') as f:
                 json.dump(config,f,indent=4)
             if not RUNNING_ON_SERVER:
                 print('Uploading in:')
@@ -917,12 +926,13 @@ class GeometricalSettingsSpatialPartition:
                     print(self.Files2Upload[file])
             else:
 
-                Upload2ServerPwd(os.path.join(self.save_dir_local,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)), os.path.join('/home/alberto/test/LPSim/LivingCity/berkeley_2018/',self.city,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)))
+                Upload2ServerPwd(os.path.join(self.save_dir_local,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)), os.path.join('/home/alberto/test/LPSim/LivingCity/berkeley_2018/',self.city,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)))
 
     def configLaunch(self):
-        text2write = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=berkeley_2018/{0}/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={1}\nEND_HR=24\nOD_DEMAND_FILE=od_demand_{2}to{3}_R_{4}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nNUM_GPUS=1'.format(self.city,self.start,self.start,self.end,self.R)
-
-        Upload2ServerPwd(os.path.join(self.save_dir_local,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)), os.path.join('/home/alberto/test/LPSim/LivingCity/berkeley_2018/',self.city,'{0}configOD_{1}to{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)))
+        text2write = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=berkeley_2018/{0}/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={1}\nEND_HR=24\nOD_DEMAND_FILE=od_demand_{2}_{3}_R_{4}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nNUM_GPUS=1'.format(self.city,self.start,self.start,self.end,self.R)
+        with open(os.path.join(self.save_dir_local,'command_line_options.ini'),'w') as f:
+            f.write(text2write)
+        self.Files2Upload[os.path.join(self.save_dir_local,'command_line_options.ini')] = os.path.join(self.save_dir_server,'command_line_options.ini')
 
 ##---------------------------------------- PRINT FUNCTIONS ----------------------------------------##
 
@@ -975,6 +985,7 @@ def main(NameCity,TRAFFIC_DIR):
                 file_name = os.path.join(GeometricalInfo.ODfma_dir,NameCity,file)
                 if start == 7:
                     df_od = GeometricalInfo.OD_from_fma(file_name,n_rings,grid_sizes,resolutions)#,R
+                    GeometricalInfo.configLaunch()
 
 
 if __name__=='__main__':
@@ -1009,7 +1020,7 @@ if __name__=='__main__':
     }
     ## GLOBAL VARIABLES 
 
-    list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','shape_files'))
+    list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     print('arguments:\n',np.shape(arguments))
     with Pool() as pool:
