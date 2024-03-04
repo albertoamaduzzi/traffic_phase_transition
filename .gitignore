@@ -1,2 +1,12 @@
-# citations
-*/citations
+citations/
+output/
+data/
+cache/
+tests/cache/
+workspace/
+*Doxyfile
+tests/
+*.yml
+*artemis.json
+OutputPlanarGraph/
+*__pycache__/
