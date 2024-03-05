@@ -12,8 +12,12 @@ import sys
 import subprocess
 import time
 # SETTING GLOBAL VARIABLES
-TRAFFIC_DIR_LOCAL = os.getenv('TRAFFIC_DIR') 
-TRAFFIC_DIR_SERVER = '/home/alberto/test/LPSim/LivingCity/berkeley_2018'
+
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    TRAFFIC_DIR_LOCAL = '/home/alberto/test/LPSim/traffic_phase_transition'
+else:
+    TRAFFIC_DIR_LOCAL = os.getenv('TRAFFIC_DIR') 
+TRAFFIC_DIR_SERVER = '/home/alberto/LPSim/LivingCity/berkeley_2018'
 sys.path.append(os.path.join(TRAFFIC_DIR_LOCAL,'scripts','GenerationNet'))
 from global_functions import *
 
@@ -151,7 +155,7 @@ def MoveDir(relative_remote_path,relative_destination_remote_path,config_dir = o
         print(f"Failed to move directory '{remote_path}'. Error: {stderr.read().decode()}")
     CloseConnection(client)
 ##---------------------------------------- LAUNCHING DOCKER ----------------------------------------##
-def LaunchDocker(container_name,File2Move,DirDestinationFile,DirFile2Move = '/home/alberto/test/LPSim/LivingCity'):
+def LaunchDocker(container_name,File2Move,DirDestinationFile,DirFile2Move = '/home/alberto/LPSim/LivingCity'):
     '''
         This function launches the program in the docker container
         Args:
