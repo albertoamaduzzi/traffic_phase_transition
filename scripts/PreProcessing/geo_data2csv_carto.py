@@ -54,7 +54,12 @@ from termcolor import cprint
 import time
 from multiprocessing import Pool
 import sys
-TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
+import socket
+
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    TRAFFIC_DIR ='/home/alberto/test/LPSim/traffic_phase_transition'
+else:
+    TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
 sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','ServerCommunication'))
 sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','GenerationNet'))
 sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','GeometrySphere'))
@@ -65,7 +70,7 @@ from PolygonSettings import *
 from plot import *
 
 RUNNING_ON_SERVER = False
-SERVER_TRAFFIC_DIR = '/home/alberto/test/LPSim/LivingCity'
+SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity'
 '''
 TODO: Create all the files that are needed to handle the Origin and destination in such a way that traffic can be studied with different initial configurations.
 Output:
@@ -120,7 +125,7 @@ class GeometricalSettingsSpatialPartition:
         self.ODfma_dir = os.path.join(TRAFFIC_DIR,'data','carto',self.city,'ODfma')
         # OUTPUT DIRS
         self.save_dir_local = os.path.join(TRAFFIC_DIR,'data','carto',self.city) 
-        self.save_dir_server = os.path.join(SERVER_TRAFFIC_DIR,self.city) # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/test/LPSim/LivingCity/{city}
+        self.save_dir_server = os.path.join(SERVER_TRAFFIC_DIR,self.city) # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/LPSim/LivingCity/{city}
 
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
@@ -926,7 +931,7 @@ class GeometricalSettingsSpatialPartition:
                     print(self.Files2Upload[file])
             else:
 
-                Upload2ServerPwd(os.path.join(self.save_dir_local,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)), os.path.join('/home/alberto/test/LPSim/LivingCity/berkeley_2018/',self.city,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)))
+                Upload2ServerPwd(os.path.join(self.save_dir_local,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)), os.path.join('/home/alberto/LPSim/LivingCity/berkeley_2018/',self.city,'{0}configOD_{1}_{2}_R{3}.json'.format(self.city,self.start,self.end,self.R)))
 
     def configLaunch(self):
         text2write = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=berkeley_2018/{0}/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={1}\nEND_HR=24\nOD_DEMAND_FILE=od_demand_{2}_{3}_R_{4}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nNUM_GPUS=1'.format(self.city,self.start,self.start,self.end,self.R)

@@ -66,24 +66,24 @@ def DistanceDf2Matrix(df_distance):
     pivot_df = pivot_df.fillna(0)
 
     # Convert to numpy array
-    distance_matrix = pivot_df.to_numpy()
+    distance_matrix = pivot_df.to_numpy(dtype = np.float32)
     return distance_matrix
 
 def Grid2Arrays(grid):
-    gridIdx = grid['index'].to_numpy()
-    gridPopulation = grid['population'].to_numpy()
+    gridIdx = grid['index'].to_numpy(dtype = np.int32)
+    gridPopulation = grid['population'].round().astype(dtype = np.int32).to_numpy(dtype = np.int32)
     return gridIdx,gridPopulation
 
 def T2Arrays(T):
-    Vnpeople = T['number_people'].to_numpy()
-    Vorigins = T['origin'].to_numpy()
-    Vdestinations = T['destination'].to_numpy()
+    Vnpeople = T['number_people'].round().astype(dtype = np.int32).to_numpy(dtype = np.int32)
+    Vorigins = T['origin'].to_numpy(dtype = np.int32)
+    Vdestinations = T['destination'].to_numpy(dtype = np.int32)
     return Vnpeople,Vorigins,Vdestinations
 
 ## SUBSAMPLING
 
 #------------------------------------------------- FLUXES  -------------------------------------------------#
-@numba.njit(nopython=True)
+@numba.njit(['(int32[:], int32[:], int32[:])'],parallel=True)
 def SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations):
     '''
         Input:
@@ -105,7 +105,7 @@ def SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations):
     return Vnpeople, Vorigins, Vdestinations
 
 
-@numba.njit(nopython=True)
+@numba.njit(['(int32[:], int32[:], int32[:],int32)'],parallel=True)
 def SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_x):
     '''
         Input:
@@ -124,7 +124,7 @@ def SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_x):
     VdestinationsX = Vdestinations[IndicesXFlux]
     return IndicesXFlux,VnpeopleX, VoriginsX, VdestinationsX
 
-@numba.njit(nopython=True)
+@numba.njit(['(int32[:], int32[:], int32[:],int32)'],parallel=True)
 def SubsampleByCellFluxDestination(Vnpeople, Vorigins, Vdestinations,cell_i):
 
     '''
@@ -146,7 +146,7 @@ def SubsampleByCellFluxDestination(Vnpeople, Vorigins, Vdestinations,cell_i):
 
 #------------------------------------------------- GRID  -------------------------------------------------#
 
-@numba.njit(nopython=True)
+@numba.njit(['(int32[:], int32[:],int32)'],parallel=True)
 def SubSampleGridByCell(VgridIdx, VgridPopulation,cell_x):
     '''
         Input:
@@ -163,13 +163,23 @@ def SubSampleGridByCell(VgridIdx, VgridPopulation,cell_x):
     return IndicesXGrid,VgridIdxX,VgridPopulationX
 
 #------------------------------------------------- POTENTIAL  -------------------------------------------------#
+@numba.njit#('int32(int32)',noptyhon=True)
+def ComputeMaxSized0(N):
+    max_size = 0
+    for k in range(2,N-1):
+        if k >=2:
+            max_size += k*(k-1)*(k-2)
+    return max_size
+
 ## POTENTIAL FITTING
-@numba.njit(nopython=True)
-def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix,debug = False):
+@numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32[:],float32[:,:])'],parallel=True)
+def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix): # debug = False
 #    if debug:
 #        count = 0
 #        NCycleControl = 1000
-    d0s = []
+    count = 0 
+    max_size = ComputeMaxSized0(len(DistanceMatrix))
+    d0s = np.zeros(max_size,dtype = np.float32)
     Vnpeople, Vorigins, Vdestinations = SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations)
     for cell_x in Vorigins:
         # Get Fluxes from cell_x
@@ -192,13 +202,17 @@ def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPo
                 for cell_j in VdestinationsX:
                     if cell_i < cell_j:
                         _,VnpeopleXj, VoriginsXj, VdestinationsXj = SubsampleByCellFluxDestination(VnpeopleX, VoriginsX, VdestinationsX,cell_j)
-                        _,VgridIdxXj,VgridPopulationXj = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_j)
+                        _,_,VgridPopulationXj = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_j)
  #                       if debug:
  #                           DebuggingGetd0Celli(count_j,NCycleControl,VnpeopleXj,VoriginsXj,VdestinationsXj,cell_j)
- #                           count_j += 1
+#                           count_j += 1
                         if len(VnpeopleXi)==1 and len(VnpeopleXj)==1:
-                            dxi = DistanceMatrix[VoriginsXi[0], VdestinationsXi[0]]
-                            dxj = DistanceMatrix[VoriginsXj[0], VdestinationsXj[0]]
+                            idx_i0 = VoriginsXi[0]
+                            idx_i1 = VdestinationsXi[0]
+                            dxi = DistanceMatrix[idx_i0][idx_i1]
+                            idx_j0 = VoriginsXj[0]
+                            idx_j1 = VdestinationsXj[0]
+                            dxj = DistanceMatrix[idx_j0][idx_j1]
                             Txi = VnpeopleXi[0]
                             Txj = VnpeopleXj[0]
                             mi = VgridPopulationXi[0]
@@ -207,50 +221,16 @@ def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPo
 #                                print('Invalid: ',' Tx{0}: {1} Tx{2} {3} mi: {4},mj: {5}'.format(cell_i,Txi,cell_j,Txj,mi,mj))
 #                            else:
 #                                print('Valid: ',' Tx{0}: {1} Tx{2} {3} mi: {4},mj: {5}, idxj {6} idxi {7}'.format(cell_i,Txi,cell_j,Txj,mi,mj,VgridIdxXj[0],VgridIdxXi[0]))
-                            d0s.append(dxi - dxj / (-np.log(Txi * mi / (Txj * mj))))
+                            if not np.isnan(np.log(Txi * mi / (Txj * mj))):
+                                d0s[count] = dxi - dxj / (-np.log(Txi * mi / (Txj * mj)))
+                            else:
+                                pass
                         else:
                             raise ValueError('More than 1 flux')
-#                        count += 1
-        median = np.median(np.asarray(d0s))
+                        count += 1
+        idx = np.where(d0s != 0)
+        median = np.median(d0s[idx])
     return median,d0s
-
-@numba.njit(parallel=True)
-def d0PotentialFitOptimizedParallel(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix,debug = False):
-    num_origins = len(Vorigins)
-    d0s = np.empty(num_origins, dtype=np.float64)
-    d0_count = 0
-    
-    Vnpeople, Vorigins, Vdestinations = SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations)
-    
-    for idx_x in numba.prange(num_origins):
-        cell_x = Vorigins[idx_x]
-        _, VnpeopleX, VoriginsX, VdestinationsX = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations, cell_x)
-        
-        for cell_i in VdestinationsX:
-            if cell_x < cell_i:
-                _, VnpeopleXi, _, VdestinationsXi = SubsampleByCellFluxDestination(VnpeopleX, VoriginsX, VdestinationsX, cell_i)
-                _, VgridIdxXi, VgridPopulationXi = SubSampleGridByCell(VgridIdx, VgridPopulation, cell_i)
-                
-                for cell_j in VdestinationsX:
-                    if cell_i < cell_j:
-                        _, VnpeopleXj, _, VdestinationsXj = SubsampleByCellFluxDestination(VnpeopleX, VoriginsX, VdestinationsX, cell_j)
-                        _, VgridIdxXj, VgridPopulationXj = SubSampleGridByCell(VgridIdx, VgridPopulation, cell_j)
-                        
-                        if len(VnpeopleXi) == 1 and len(VnpeopleXj) == 1:
-                            dxi = DistanceMatrix[VoriginsXi[0], VdestinationsXi[0]]
-                            dxj = DistanceMatrix[VoriginsXj[0], VdestinationsXj[0]]
-                            Txi = VnpeopleXi[0]
-                            Txj = VnpeopleXj[0]
-                            mi = VgridPopulationXi[0]
-                            mj = VgridPopulationXj[0]
-                            
-                            d0s[d0_count] = dxi - dxj / (-np.log(Txi * mi / (Txj * mj)))
-                            d0_count += 1
-                        else:
-                            raise ValueError('More than 1 flux')
-
-    median = np.median(d0s[:d0_count])
-    return median, d0s[:d0_count]
 
 
 def d0PotentialFit(grid, df_distance, T, chunk_size=1000):

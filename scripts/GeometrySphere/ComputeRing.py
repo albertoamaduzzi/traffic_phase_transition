@@ -10,9 +10,16 @@ from Hexagon import *
 from Grid import *
 from Ring import *
 from multiprocessing import Pool
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
+import socket
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
 from HostConnection import *
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','PreProcessing'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
 from plot import *
 
 def AllStepsRing(GeometricalInfo,radius,NameCity):
@@ -53,8 +60,10 @@ def ComputeRing(NameCity,TRAFFIC_DIR):
         pool.map(AllStepsRing,ParametersRingParallel)
 
 if __name__=='__main__':
-
-    TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
+    if socket.gethostname()=='artemis.ist.berkeley.edu':
+        TRAFFIC_DIR ='/home/alberto/test/LPSim/traffic_phase_transition'
+    else:
+        TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
     list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     with Pool() as pool:

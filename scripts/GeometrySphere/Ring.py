@@ -6,7 +6,12 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import sys
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','GenerationNet'))
+import socket
+
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','GenerationNet'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','GenerationNet'))
 from global_functions import *
 ##---------------------------------------- DIRECTORY ----------------------------------------##
 def SetRingDir(save_dir_local,number_of_rings):
