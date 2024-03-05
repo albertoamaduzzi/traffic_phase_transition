@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 import socket
 if socket.gethostname()=='artemis.ist.berkeley.edu':
-    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
+    sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
 else:
     sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
 
@@ -172,7 +172,7 @@ if __name__=='__main__':
 
     '''
     if socket.gethostname()=='artemis.ist.berkeley.edu':
-        TRAFFIC_DIR = '/home/alberto/test/LPSim/traffic_phase_transition'
+        TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
     else:
         TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
     list_cities = ['BOS']#os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
