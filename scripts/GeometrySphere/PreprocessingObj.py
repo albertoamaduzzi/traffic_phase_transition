@@ -2,8 +2,13 @@ import os
 from collections import defaultdict
 import geopandas as gpd
 import osmnx as ox
-TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
-SERVER_TRAFFIC_DIR = '/home/alberto/test/LPSim/LivingCity/berkeley_2018'
+import socket
+
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    TRAFFIC_DIR = '/home/alberto/test/LPSim/traffic_phase_transition'
+else:
+    TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
+SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
 
 '''
     THIS OBJECT IS 1-1 WITH THE CITY
@@ -25,7 +30,7 @@ class GeometricalSettingsSpatialPartition:
         self.ODfma_dir = os.path.join(TRAFFIC_DIR,'data','carto',self.city,'ODfma')
         # OUTPUT DIRS
         self.save_dir_local = os.path.join(TRAFFIC_DIR,'data','carto',self.city) 
-        self.save_dir_server = os.path.join(SERVER_TRAFFIC_DIR,self.city) # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/test/LPSim/LivingCity/{city}
+        self.save_dir_server = os.path.join(SERVER_TRAFFIC_DIR,self.city) # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/LPSim/LivingCity/{city}
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
         else:
