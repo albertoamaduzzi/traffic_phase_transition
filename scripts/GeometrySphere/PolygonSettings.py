@@ -7,9 +7,16 @@ from collections import defaultdict
 from shapely.geometry import Point
 import time
 import sys
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','GenerationNet'))
+import socket
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','GenerationNet'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','GenerationNet'))
 from global_functions import *
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','PreProcessing'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
 from plot import *
 
 

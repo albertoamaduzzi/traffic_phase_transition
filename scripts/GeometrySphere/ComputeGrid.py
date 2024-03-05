@@ -9,9 +9,15 @@ import pandas as pd
 from Hexagon import *
 from Grid import *
 from multiprocessing import Pool
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
+import socket
+if socket.gethostname()=='artemis.ist.berkeley.edu':
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
+    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','PreProcessing'))
+else:
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
+    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
+
 from HostConnection import *
-sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
 from plot import *
 import warnings
 warnings.filterwarnings("ignore")
@@ -68,7 +74,10 @@ if __name__=='__main__':
     '''
         Compute Grids In parallel. For each city.
     '''
-    TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
+    if socket.gethostname()=='artemis.ist.berkeley.edu':
+        TRAFFIC_DIR = '/home/alberto/test/LPSim/traffic_phase_transition'
+    else:
+        TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
     list_cities = ['BOS']#os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     for arg in arguments:
