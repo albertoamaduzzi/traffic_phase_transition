@@ -57,7 +57,7 @@ import sys
 import socket
 
 if socket.gethostname()=='artemis.ist.berkeley.edu':
-    TRAFFIC_DIR ='/home/alberto/test/LPSim/traffic_phase_transition'
+    TRAFFIC_DIR ='/home/alberto/LPSim/traffic_phase_transition'
 else:
     TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
 sys.path.append(os.path.join(TRAFFIC_DIR,'scripts','ServerCommunication'))

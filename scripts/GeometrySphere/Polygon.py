@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import socket
 if socket.gethostname()=='artemis.ist.berkeley.edu':
-    sys.path.append(os.path.join('/home/alberto/test/LPSim','traffic_phase_transition','scripts','PlanarGraph'))
+    sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','PlanarGraph'))
 else:
     sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PlanarGraph'))
 from global_functions import *
