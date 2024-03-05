@@ -14,7 +14,7 @@ import time
 # SETTING GLOBAL VARIABLES
 
 if socket.gethostname()=='artemis.ist.berkeley.edu':
-    TRAFFIC_DIR_LOCAL = '/home/alberto/test/LPSim/traffic_phase_transition'
+    TRAFFIC_DIR_LOCAL = '/home/alberto/LPSim/traffic_phase_transition'
 else:
     TRAFFIC_DIR_LOCAL = os.getenv('TRAFFIC_DIR') 
 TRAFFIC_DIR_SERVER = '/home/alberto/LPSim/LivingCity/berkeley_2018'

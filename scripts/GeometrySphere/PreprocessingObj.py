@@ -5,7 +5,7 @@ import osmnx as ox
 import socket
 
 if socket.gethostname()=='artemis.ist.berkeley.edu':
-    TRAFFIC_DIR = '/home/alberto/test/LPSim/traffic_phase_transition'
+    TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
 else:
     TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
 SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
