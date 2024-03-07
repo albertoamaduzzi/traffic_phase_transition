@@ -13,8 +13,8 @@ def powerlaw(x, amp, index):
 def exponential(x, amp, index):
     return amp * np.exp(-index*np.array(x))
 
-def linear(x, amp):
-    return amp * np.array(x)
+def linear(x, amp,q):
+    return amp * np.array(x) + q
 
 def quadratic_loss_function(y_predict, y_measured):
     return np.sum((y_predict-y_measured)**2)

@@ -34,7 +34,7 @@ class GeometricalSettingsSpatialPartition:
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
         else:
-            raise ValueError('Graph City not found')
+            raise ValueError('Graph City not found: ',os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml'))
         if os.path.isfile(os.path.join(self.shape_file_dir_local,self.city + '.shp')):
             self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir_local,self.city + '.shp')) # POLYGON FILE
             self.bounding_box = self.gdf_polygons.geometry.unary_union.bounds
