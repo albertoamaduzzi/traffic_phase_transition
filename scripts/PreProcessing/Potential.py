@@ -163,12 +163,17 @@ def SubSampleGridByCell(VgridIdx, VgridPopulation,cell_x):
     return IndicesXGrid,VgridIdxX,VgridPopulationX
 
 #------------------------------------------------- POTENTIAL  -------------------------------------------------#
-@numba.njit#('int32(int32)',noptyhon=True)
-def ComputeMaxSized0(N):
+#@numba.njit#('int32(int32)',noptyhon=True)
+@numba.njit(['int32(int32[:], int32[:], int32[:])'])
+def ComputeMaxSized0(Vnpeople, Vorigins, Vdestinations):
     max_size = 0
-    for k in range(2,N-1):
-        if k >=2:
-            max_size += k*(k-1)*(k-2)
+    for cell_x in Vorigins:
+        # Get Fluxes from cell_x
+        _,VnpeopleX, VoriginsX, VdestinationsX = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_x)
+        max_size += len(VnpeopleX)*(len(VnpeopleX)-1)/2
+        for cell_i in VdestinationsX:
+            if cell_x < cell_i:
+                _,_, _, _ = SubsampleByCellFluxDestination(VnpeopleX, VoriginsX, VdestinationsX,cell_i)
     return max_size
 
 ## POTENTIAL FITTING
@@ -178,9 +183,13 @@ def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPo
 #        count = 0
 #        NCycleControl = 1000
     count = 0 
-    max_size = ComputeMaxSized0(len(DistanceMatrix))
-    d0s = np.zeros(max_size,dtype = np.float32)
     Vnpeople, Vorigins, Vdestinations = SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations)
+#    t0 = time.time()
+    max_size = ComputeMaxSized0(Vnpeople, Vorigins, Vdestinations)
+#    t1 = time.time()
+#    print('time spent to compute max size: ',t1-t0)
+#    print('max_size: ',max_size)
+    d0s = np.zeros(max_size,dtype = np.float32)
     for cell_x in Vorigins:
         # Get Fluxes from cell_x
         _,VnpeopleX, VoriginsX, VdestinationsX = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_x)
@@ -217,104 +226,95 @@ def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPo
                             Txj = VnpeopleXj[0]
                             mi = VgridPopulationXi[0]
                             mj = VgridPopulationXj[0]
+
 #                            if np.isnan(np.log(Txi * mi / (Txj * mj))):
 #                                print('Invalid: ',' Tx{0}: {1} Tx{2} {3} mi: {4},mj: {5}'.format(cell_i,Txi,cell_j,Txj,mi,mj))
 #                            else:
 #                                print('Valid: ',' Tx{0}: {1} Tx{2} {3} mi: {4},mj: {5}, idxj {6} idxi {7}'.format(cell_i,Txi,cell_j,Txj,mi,mj,VgridIdxXj[0],VgridIdxXi[0]))
                             if not np.isnan(np.log(Txi * mi / (Txj * mj))):
-                                d0s[count] = dxi - dxj / (-np.log(Txi * mi / (Txj * mj)))
+                                if (-np.log(Txi * mi / (Txj * mj)))!=0:
+                                    d0s[count] = np.abs(dxi - dxj) / (-np.log(Txi * mi / (Txj * mj)))
+                                else:
+                                    pass
                             else:
                                 pass
                         else:
                             raise ValueError('More than 1 flux')
                         count += 1
-        idx = np.where(d0s != 0)
-        median = np.median(d0s[idx])
+    idx = np.where(d0s != 0)
+    median = np.median(d0s[idx])
     return median,d0s
 
-
-def d0PotentialFit(grid, df_distance, T, chunk_size=1000):
+@numba.njit(['int32(int32[:], int32[:], int32[:])'])
+def ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations):
     '''
-    Input:
-        grid: output of GetGrid
-        df_distance: output of distance_matrix
-        T: output of OD2Grid
-        chunk_size: Number of combinations to process in each chunk
-    Output:
-        d0: float -> The value of d0
+        Input:
+            Vnpeople: np.array(int32) [number of people exchanged]  example: [1,1,5,...,32,12,1,...]
+            Vorigins: np.array(int32) [indices origin]              example: [32,32,32,...,34,34,34,34,...] with repetitions as it is extended for each dest
+            Vdestination: np.array(int32) [indices destination]     example: [34,42,56,...,97,108,115,122,...]
+        TOUSE in:
+            GetkPotential
+        Return:
+            max_size -> int (number of couples ij for which there is a flux !=0)
+        NOTE: It may be useless as it should be len(Vorigins)
     '''
-    # Create all possible combinations of cell indices
+    max_size = 0
+    for cell_i in Vorigins:
+        # Get Fluxes from cell_x
+        _,VnpeopleX, _, _ = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_i)
+        max_size += len(VnpeopleX)
+    return max_size
 
-    subsetflux = T[T['number_people'] > 0]
-    cell_x = np.random.choice(subsetflux['origin'])
-    d0s = []
-    count = 0
-    for cell_x,subsetorigin in subsetflux.groupby('origin'):
-        print('cell_x: ',cell_x)
-        subsetorigin = subsetorigin[subsetorigin['number_people'] > 0]
-        for cell_i,subsetdestinationi in subsetorigin.groupby('destination'):
-            subsetdestinationi = subsetdestinationi[subsetdestinationi['number_people'] > 0]
-            if count == 0 or count % 1000 == 0:
-                print('comibnation OD subsetdestinationi: ',len(subsetdestinationi))
-            for cell_j,subsetdestinationj in subsetorigin.groupby('destination'):
-                if count == 0 or count % 1000 == 0:
-                    print('combinations OD subsetdestinationj: ',len(subsetdestinationj))
-                if cell_i < cell_j:
-                    subsetdestinationj = subsetdestinationj[subsetdestinationj['number_people'] > 0]
-                    dxi = df_distance.loc[df_distance['i'].values == cell_x]
-                    dxi = dxi[dxi['j'] == cell_i]['distance'].values[0]
-                    dxj = df_distance.loc[df_distance['i'].values == cell_x]
-                    dxj = dxj[dxj['j'] == cell_j]['distance'].values[0]      
-                    Txi = subsetdestinationi.loc[subsetdestinationi['destination'].values == cell_i]['number_people'].values[0]
-                    Txj = subsetdestinationj.loc[subsetdestinationj['destination'].values == cell_j]['number_people'].values[0]
-                    mi = grid.loc[grid['index'] == cell_i, 'population'].values[0]
-                    mj = grid.loc[grid['index'] == cell_j, 'population'].values[0]
-                    if np.isnan(np.log(Txi * mi / (Txj * mj))):
-                        print('Invalid: ',' Tx{}:'.format(cell_i),Txi,' Tx{}:'.format(cell_j),Txj,' mi: ',mi,' mj: ',mj)
-                    else:
-                        if count == 0:
-                            print('Valid: ',' Tx{}:'.format(cell_i),Txi,' Tx{}:'.format(cell_j),Txj,' mi: ',mi,' mj: ',mj)
-                    d0s.append(dxi - dxj / (-np.log(Txi * mi / (Txj * mj))))
-            count += 1
-    print('np.shape(d0s): ',np.shape(d0s))
-    print('median(d0s): ',np.median(d0s))
-    plt.hist(d0s)
-    plt.show()
-
-    return np.median(d0s)
-
-def GetParametersPotential(grid,df_distance,Tij,save_dir):
+@numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32[:],float32[:,:],float32)'],parallel=True)
+def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix,d0):
     '''
         Function to get the parameters of the potential
         cell_i is the origin
         cell_j is the destination
     '''
-    if not os.path.isfile(os.path.join(save_dir,'FitFluxesParameters.json')):
-        d0 = d0PotentialFit(grid,df_distance,Tij)
-        print('d0: ',d0)
-        subsetflux = Tij[Tij['number_people'] > 0]
-        EstimateFluxesScaled = []
-        Fluxes = []
-        for cell_i,subsetorigin in subsetflux.groupby('origin'):
-            subsetorigin = subsetorigin[subsetorigin['number_people'] > 0]
-            for cell_j,subsetdestination in subsetorigin.groupby('destination'):
-                if cell_i < cell_j:
-                    subsetdestination = subsetdestination[subsetdestination['number_people'] > 0]
-                    dij = df_distance.loc[df_distance['i'].values == cell_i]
-                    dij = dij[dij['j'] == cell_j]['distance'].values[0]
-                    mi = grid.loc[grid['index'] == cell_i, 'population'].values[0]
-                    mj = grid.loc[grid['index'] == cell_j, 'population'].values[0]
-                    Tij = subsetdestination['number_people'].loc[subsetdestination['destination'].values == cell_j]['number_people'].values[0]
-                    Testimatedij = np.exp(mi*mj*np.exp(dij/d0))
-                    EstimateFluxesScaled.append(Testimatedij)
-                    Fluxes.append(Tij)
-
-        k = Fitting(np.array(EstimateFluxesScaled),np.array(Fluxes),label = 'linear',initial_guess = max(Tij['number_people'])/max(EstimateFluxesScaled) ,maxfev = 10000)
-        json.dump({'d0':d0,'k':k},open(os.path.join(save_dir,'FitFluxesParameters.json'),'w'))
+    if 0 in Vnpeople:
+        raise ValueError('You forgot to filter the fluxes')
+    count = 0 
+    max_size = ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations)
+    EstimateFluxesScaled = np.zeros(max_size,dtype = np.float32)
+    Fluxes = np.zeros(max_size,dtype = np.float32)
+    for cell_i in Vorigins:
+        # Get Fluxes from cell_i
+        _,VnpeopleI, VoriginsI, VdestinationsI = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_i)
+        _,_,VgridPopulationI = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_i)
+        # Get Row of the grid
+        for cell_j in VdestinationsI:
+            if cell_i < cell_j:
+                _,VnpeopleIJ, _, VdestinationsIJ = SubsampleByCellFluxDestination(VnpeopleI, VoriginsI, VdestinationsI,cell_j)
+                _,_,VgridPopulationJ = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_j)
+#                       if debug:
+#                           DebuggingGetd0Celli(count_j,NCycleControl,VnpeopleXj,VoriginsXj,VdestinationsXj,cell_j)
+#                           count_j += 1
+                if len(VnpeopleIJ)==1:
+                    idx_i0 = VoriginsI[0]
+                    idx_i1 = VdestinationsIJ[0]
+                    dij = DistanceMatrix[idx_i0][idx_i1]
+                    Tij = VnpeopleIJ[0]
+                    mi = VgridPopulationI[0]
+                    mj = VgridPopulationJ[0]
+                    Esteem = mi*mj*np.exp(-dij/d0)
+                    if not np.isnan(Esteem):
+                        EstimateFluxesScaled[count] = Esteem
+                        Fluxes[count] = Tij
+                    else:
+                        pass
+                else:
+                    raise ValueError('More than 1 flux')
+                count += 1
+    return EstimateFluxesScaled,Fluxes
+def GetkPotential(EstimateFluxesScaled,Fluxes,d0,save_dir,initial_guess = [10**(-6),0]):    
+    if not os.path.isfile(os.path.join(save_dir,'FitFluxesParameters.json')):        
+        k,q = Fitting(np.array(EstimateFluxesScaled),np.array(Fluxes),label = 'linear',initial_guess = initial_guess ,maxfev = 10000) #max(Fluxes)/max(EstimateFluxesScaled)
     else:
-        d0,k = json.load(open(os.path.join(save_dir,'FitFluxesParameters.json'),'r'))
-    return d0,k
+        d0,k,q = json.load(open(os.path.join(save_dir,'FitFluxesParameters.json'),'r'))
+    return d0,k,q
 
+# END FITTING PROCEDURE
 
 def GetCommunicationLevelsAmongGrids(Tij):
     subsetflux = Tij[Tij['number_people'] > 0]
