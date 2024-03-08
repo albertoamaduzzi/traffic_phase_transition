@@ -236,6 +236,7 @@ def d0PotentialFitOptimized(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPo
                                     d0s[count] = np.abs(dxi - dxj) / (-np.log(Txi * mi / (Txj * mj)))
                                 else:
                                     pass
+
                             else:
                                 pass
                         else:
@@ -278,6 +279,13 @@ def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, Vgrid
     max_size = ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations)
     EstimateFluxesScaled = np.zeros(max_size,dtype = np.float32)
     Fluxes = np.zeros(max_size,dtype = np.float32)
+    Massi = np.zeros(max_size,dtype = np.float32)
+    Massj = np.zeros(max_size,dtype = np.float32)
+    DistanceVector = np.zeros(max_size,dtype = np.float32)
+    ErrorFluxes = np.zeros(max_size,dtype = np.float32)
+    ErrorEsteem = np.zeros(max_size,dtype = np.float32)
+    ErrorDist = np.zeros(max_size,dtype = np.float32)
+    maxVnpeople = max(Vnpeople)
     for cell_i in Vorigins:
         # Get Fluxes from cell_i
         _,VnpeopleI, VoriginsI, VdestinationsI = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_i)
@@ -299,20 +307,127 @@ def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, Vgrid
                     mj = VgridPopulationJ[0]
                     Esteem = mi*mj*np.exp(-dij/d0)
                     if not np.isnan(Esteem):
-                        EstimateFluxesScaled[count] = Esteem
-                        Fluxes[count] = Tij
+                        if Esteem < 10*maxVnpeople:
+                            EstimateFluxesScaled[count] = Esteem
+                            Fluxes[count] = Tij
+                            DistanceVector[count] = dij
+                            Massi[count] = mi
+                            Massj[count] = mj
+                        else:
+                            ErrorEsteem[count] = Esteem
+                            ErrorFluxes[count] = Tij
+                            ErrorDist[count] = dij
+
                     else:
                         pass
                 else:
                     raise ValueError('More than 1 flux')
                 count += 1
-    return EstimateFluxesScaled,Fluxes
+    idx = np.where(EstimateFluxesScaled != 0)
+    EstimateFluxesScaled = EstimateFluxesScaled[idx]
+    idx = np.where(Fluxes != 0)
+    Fluxes = Fluxes[idx]
+    idx = np.where(Massi != 0)
+    Massi = Massi[idx]
+    idx = np.where(Massj != 0)
+    Massj = Massj[idx]
+    idx = np.where(DistanceVector != 0)
+    DistanceVector = DistanceVector[idx]
+    return EstimateFluxesScaled,Fluxes,DistanceVector,ErrorEsteem,ErrorFluxes,ErrorDist,Massi,Massj
+
+
+
 def GetkPotential(EstimateFluxesScaled,Fluxes,d0,save_dir,initial_guess = [10**(-6),0]):    
     if not os.path.isfile(os.path.join(save_dir,'FitFluxesParameters.json')):        
         k,q = Fitting(np.array(EstimateFluxesScaled),np.array(Fluxes),label = 'linear',initial_guess = initial_guess ,maxfev = 10000) #max(Fluxes)/max(EstimateFluxesScaled)
+        with open(os.path.join(save_dir,'FitFluxesParameters.json'),'w') as f:
+            json.dump({'d0':float(d0),'k':k[0],'q': k[1]},f)
     else:
         d0,k,q = json.load(open(os.path.join(save_dir,'FitFluxesParameters.json'),'r'))
     return d0,k,q
+
+def PlotDistanceFluxes(EstimateFluxesScaled,Fluxes,DistanceVector,title):
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    n,bins = np.histogram(DistanceVector,bins = 50)
+    AvgFluxGivenR =[np.mean(Fluxes[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]) for i in range(len(bins)-1)]
+    AvgEsteemGivenR =[np.mean(EstimateFluxesScaled[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]) for i in range(len(bins)-1)]
+    ax.scatter(bins[:-1],AvgFluxGivenR)
+    ax.plot(bins[:-1],AvgEsteemGivenR)
+    ax.set_xlabel('R(km)')
+    ax.set_ylabel('Count')
+    ax.set_title(title)
+    ax.legend(['Fluxes','Gravity'])
+    plt.show()
+
+## PREPARE VESPIGNANI
+@numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32[:],float32[:,:])'],parallel=True)
+def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix):
+    '''
+        Returns:
+            4 1D vectors:
+                1) Massi
+                2) Massj
+                3) Dij
+                4) Wij
+        TO GIVE to Fitting(...,'vespignani')
+    '''
+    if 0 in Vnpeople:
+        raise ValueError('You forgot to filter the fluxes')
+    count = 0 
+    max_size = ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations)
+    Fluxes = np.zeros(max_size,dtype = np.float32)
+    Massi = np.zeros(max_size,dtype = np.float32)
+    Massj = np.zeros(max_size,dtype = np.float32)
+    DistanceVector = np.zeros(max_size,dtype = np.float32)
+    for cell_i in Vorigins:
+        # Get Fluxes from cell_i
+        _,VnpeopleI, VoriginsI, VdestinationsI = SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_i)
+        _,_,VgridPopulationI = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_i)
+        # Get Row of the grid
+        for cell_j in VdestinationsI:
+            if cell_i < cell_j:
+                _,VnpeopleIJ, _, VdestinationsIJ = SubsampleByCellFluxDestination(VnpeopleI, VoriginsI, VdestinationsI,cell_j)
+                _,_,VgridPopulationJ = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_j)
+#                       if debug:
+#                           DebuggingGetd0Celli(count_j,NCycleControl,VnpeopleXj,VoriginsXj,VdestinationsXj,cell_j)
+#                           count_j += 1
+                if len(VnpeopleIJ)==1:
+                    idx_i0 = VoriginsI[0]
+                    idx_i1 = VdestinationsIJ[0]
+                    dij = DistanceMatrix[idx_i0][idx_i1]
+                    Tij = VnpeopleIJ[0]
+                    mi = VgridPopulationI[0]
+                    mj = VgridPopulationJ[0]
+                    Fluxes[count] = Tij
+                    DistanceVector[count] = dij
+                    Massi[count] = mi
+                    Massj[count] = mj
+                else:
+                    raise ValueError('More than 1 flux')
+                count += 1
+    idx = np.where(Fluxes != 0)
+    Fluxes = Fluxes[idx]
+    idx = np.where(Massi != 0)
+    Massi = Massi[idx]
+    idx = np.where(Massj != 0)
+    Massj = Massj[idx]
+    idx = np.where(DistanceVector != 0)
+    DistanceVector = DistanceVector[idx]
+    VespignaniVector = [Massi,Massj,DistanceVector]
+    return VespignaniVector,Fluxes
+
+
+def PlotVespignaniFit(EstimateFluxesScaled,Fluxes,DistanceVector,Massi,Massj):
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    n,bins = np.histogram(DistanceVector,bins = 50)
+    AvgFluxGivenR =[Fluxes[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]/(Massi[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]*Massj[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]) for i in range(len(bins)-1)]
+    ax.boxplot(bins[:-1],AvgFluxGivenR)
+    ax.set_xlabel('R(km)')
+    ax.set_ylabel('W/(mi*mj)')
+    ax.legend(['Fluxes','Gravity'])
+    plt.show()
+
+
 
 # END FITTING PROCEDURE
 
