@@ -16,7 +16,7 @@ def exponential(x, amp, index):
 def linear(x, amp,q):
     return amp * np.array(x) + q
 
-def multilinear4variables(log_Ni, log_Nj, log_dij, log_d, a, b, c):
+def multilinear4variables(x, a,b,c,log_d):
     '''
         N is the couples of Origin and Destination
         Fitting like Vespignani:
@@ -30,7 +30,7 @@ def multilinear4variables(log_Ni, log_Nj, log_dij, log_d, a, b, c):
                 3) b: exponent mass j
                 4) c: exp(1/d0)                        
     '''
-    return a * log_Ni + b * log_Nj + c * log_dij + log_d
+    return a * x[0] + b * x[1] + c * x[2] + log_d
 
 # LOSS FUNCTIONS
 def quadratic_loss_function(y_predict, y_measured):
@@ -64,9 +64,10 @@ def objective_function_multilinear4variables(params,x,y_measured):
         raise ValueError('The x must be an array of shape (3,N)')
     if len(x[0])!=len(y_measured):
         raise ValueError('The log of the fluxes must be of the same length as the masses')
-    return quadratic_loss_function(multilinear4variables(params[0] * x[0] + params[1] * x[1] + params[2] * x[2] + params[3],y_measured))
+    y_guessed = multilinear4variables(x, params[0],params[1],params[2],params[3])
+    return quadratic_loss_function(y_guessed,y_measured)
 ## DICTIONARY FOR LOSS FUNCTIONS
-Name2Function = {'powerlaw':powerlaw,'exponential':exponential,'linear':linear,'vespignani':objective_function_multilinear4variables}
+Name2Function = {'powerlaw':powerlaw,'exponential':exponential,'linear':linear,'vespignani':multilinear4variables}
 Name2LossFunction = {'powerlaw':objective_function_powerlaw,'exponential':objective_function_exponential,'linear':objective_function_linear,'vespignani':objective_function_multilinear4variables}
     
 
@@ -83,7 +84,7 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
     print('Fitting {}'.format(label))
     result_powerlaw = minimize(Name2LossFunction[label], initial_guess, args = (x, y_measured))#,maxfev = maxfev
     optimal_params_pl = result_powerlaw.x
-    fit = curve_fit(Name2Function[label], x, y_measured,p0 = optimal_params_pl,maxfev = maxfev)
+    fit = curve_fit(Name2Function[label], xdata = x, ydata = y_measured,p0 = list(optimal_params_pl),maxfev = maxfev)
     print(fit)
     print('{} fit: '.format(label),fit[0][0],' ',fit[0][1])
     print('Convergence fit {}: '.format(label),result_powerlaw.success)
