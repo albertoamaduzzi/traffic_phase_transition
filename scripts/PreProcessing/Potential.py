@@ -8,51 +8,18 @@ import time
 import matplotlib.pyplot as plt
 import numba
 import logging
+import pandas as pd
+import ast
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 sys.path.append('~/berkeley/traffic_phase_transition/scripts')
 from FittingProcedures import Fitting
-def OD2Gradient(df_grid,grid,lattice):
-    df_grid.groupby('origin')['destination'].unique().apply(lambda x: x[0]).to_dict()
 
+###################################################################################################################
+###############################         FITTING PROCEDURE           ###############################################
+###################################################################################################################
 
-## FITTING THE POTENTIAL
-'''
-def d0PotentialFit(grid,df_distance,T):
-    
-        Input:
-            grid: output of GetGrid
-            df_distance: output of distance_matrix
-            T is the output of OD2Grid
-        Output:
-            d0: float -> The value of d0
-    
-    d0s = []
-    for _,cell_x in grid.iterrows():
-        for _,cell_i in grid.iterrows():
-            for _,cell_j in grid.iterrows():
-                if cell_i['index']!=cell_j['index'] and cell_i['index']!=cell_x['index'] and cell_j['index']!=cell_x['index']:
-                    dxi = df_distance['distance'].loc[df_distance['i'] == cell_i['index']].loc[df_distance['j'] == cell_x['index']]
-                    dxj = df_distance['distance'].loc[df_distance['i'] == cell_j['index']].loc[df_distance['j'] == cell_x['index']]
-                    mi = cell_i['population']
-                    mj = cell_j['population']
-                    Txi = T['number_people'].loc[T['origin'] == cell_x['index']].loc[T['destination'] == cell_i['index']]
-                    Txj = T['number_people'].loc[T['origin'] == cell_x['index']].loc[T['destination'] == cell_j['index']]
-                    d0s.append(dxi-dxj/np.log(Txi*mi/(Txj*mj)))
-    return np.median(d0s)
-'''
-def chunked_combinations(subsetflux, x, chunk_size=1000):
-    combinations = ((i, j) for i in subsetflux['destination'] for j in subsetflux['destination'] if i != j != x)
-    chunk = []
-    for combination in combinations:
-        chunk.append(combination)
-        if len(chunk) == chunk_size:
-            yield chunk
-            chunk = []
-    if chunk:
-        yield chunk
-
-#### CONVERSION DATA:
+#### STEP1: Grid, Df_distance, T -> 1D array [Done For Optimization in Numba]
 def DistanceDf2Matrix(df_distance):
     '''
         Input:
@@ -82,6 +49,9 @@ def T2Arrays(T):
 
 ## SUBSAMPLING
 
+######
+######         NOTE: Vorigins and Vdestinations are the Indices shared by T,Grid,Df_distance np.where on these in the OPTIMIZED CODE
+######
 #------------------------------------------------- FLUXES  -------------------------------------------------#
 @numba.njit(['(int32[:], int32[:], int32[:])'],parallel=True)
 def SubsampleFluxesByPop(Vnpeople, Vorigins, Vdestinations):
@@ -112,11 +82,13 @@ def SubsampleByCellFluxOrigin(Vnpeople, Vorigins, Vdestinations,cell_x):
             Vnpeople: (np.array 1D) -> number of people
             Vorigins: (np.array 1D) -> origin
             Vdestinations: (np.array 1D) -> destination
-            chunk_size: (int) -> Number of combinations to process in each chunk
+            cell_x: (int) -> Cell of Origin
         Output:
             Vnpeople: (np.array 1D) -> number of people
             Vorigins: (np.array 1D) -> origin
             Vdestinations: (np.array 1D) -> destination
+            IndicesXFlux: Indices of choice -> Never Used: USELESS!!!!!
+        NOTE: The output is a vector
     '''
     IndicesXFlux = np.where(Vorigins == cell_x)
     VnpeopleX = Vnpeople[IndicesXFlux]
@@ -132,11 +104,14 @@ def SubsampleByCellFluxDestination(Vnpeople, Vorigins, Vdestinations,cell_i):
             Vnpeople: (np.array 1D) -> number of people
             Vorigins: (np.array 1D) -> origin
             Vdestinations: (np.array 1D) -> destination
-            chunk_size: (int) -> Number of combinations to process in each chunk
+            cell_i: (int) -> Cell of Origin
         Output:
-            Vnpeople: (np.array 1D) -> number of people
-            Vorigins: (np.array 1D) -> origin
-            Vdestinations: (np.array 1D) -> destination
+            Vnpeople: int -> number of people
+            Vorigins: int -> origin
+            Vdestinations: int -> destination
+            NOTE: IndicesXFlux: Indices of choice LOCAL to FLUX-> Never Used: USELESS!!!!!
+        NOTE: The output is a float
+        
     '''
     IndicesXFlux = np.where(Vdestinations == cell_i)
     VnpeopleX = Vnpeople[IndicesXFlux]
@@ -156,13 +131,20 @@ def SubSampleGridByCell(VgridIdx, VgridPopulation,cell_x):
         Output:
             VgridIdxX: (np.array 1D) -> index of the grid
             VgridPopulationX: (np.array 1D) -> population of the grid
+        NOTE: Same story of the Flux Vector, we have that the value of cell_x is shared with fluxes.
+        NOTE: IndicesXGrid never used as it is local for the Grid: USELESS!!!!
     '''
     IndicesXGrid = np.where(VgridIdx == cell_x)
     VgridIdxX = VgridIdx[IndicesXGrid]
     VgridPopulationX = VgridPopulation[IndicesXGrid]
     return IndicesXGrid,VgridIdxX,VgridPopulationX
 
-#------------------------------------------------- POTENTIAL  -------------------------------------------------#
+
+#####
+#####           NOTE: EXTENSIVE USAGE OF MEMORY. OPTIMIZATION NEEDED
+#####
+
+#------------------------------------------------- GRAVITATION LAW FITTING  -------------------------------------------------#
 #@numba.njit#('int32(int32)',noptyhon=True)
 @numba.njit(['int32(int32[:], int32[:], int32[:])'])
 def ComputeMaxSized0(Vnpeople, Vorigins, Vdestinations):
@@ -269,6 +251,8 @@ def ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations):
 @numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32[:],float32[:,:],float32)'],parallel=True)
 def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix,d0):
     '''
+        Input:
+            Vnpeople: 
         Function to get the parameters of the potential
         cell_i is the origin
         cell_j is the destination
@@ -335,8 +319,6 @@ def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, Vgrid
     DistanceVector = DistanceVector[idx]
     return EstimateFluxesScaled,Fluxes,DistanceVector,ErrorEsteem,ErrorFluxes,ErrorDist,Massi,Massj
 
-
-
 def GetkPotential(EstimateFluxesScaled,Fluxes,d0,save_dir,initial_guess = [10**(-6),0]):    
     if not os.path.isfile(os.path.join(save_dir,'FitFluxesParameters.json')):        
         k,q = Fitting(np.array(EstimateFluxesScaled),np.array(Fluxes),label = 'linear',initial_guess = initial_guess ,maxfev = 10000) #max(Fluxes)/max(EstimateFluxesScaled)
@@ -359,10 +341,17 @@ def PlotDistanceFluxes(EstimateFluxesScaled,Fluxes,DistanceVector,title):
     ax.legend(['Fluxes','Gravity'])
     plt.show()
 
-## PREPARE VESPIGNANI
+#------------------------------------------------- GRAVITATION VESPIGNANI FITTING  -------------------------------------------------#
+
+#####
+#####               NOTE: Equivalent to GetEstimationFluxes
+#####
+    
+
 @numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32[:],float32[:,:])'],parallel=True)
 def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, DistanceMatrix):
     '''
+        
         Returns:
             4 1D vectors:
                 1) Massi
@@ -411,7 +400,7 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
     Massi = Massi[idx]
     idx = np.where(Massj != 0)
     Massj = Massj[idx]
-    idx = np.where(DistanceVector != 0)
+    idx = np.where(Fluxes != 0)
     DistanceVector = DistanceVector[idx]
     VespignaniVector = [Massi,Massj,DistanceVector]
     return VespignaniVector,Fluxes
@@ -447,36 +436,142 @@ def GetCommunicationLevelsAmongGrids(Tij):
     plt.title('Joint Probability Distribution')
     plt.show()
     
-def VectorField(lattice,df_distance,Tij):  
-    TijDirection = []  
-    for i in df_distance['i'].tolist():
-        uix = df_distance.loc[df_distance['i'] == i]
-        Tix = Tij.loc[Tij['i'] == i]
-        Tiui = []
-        for j in uix['j'].tolist():
-            Tiui.append(Tix.loc[Tix['j'] == j]*np.array(uix['dir_vector'].loc[uix['j'] == j]))
-        Tiui = np.sum(Tiui)
-        TijDirection.append(Tiui)
-    return TijDirection        
 
+###################################################################################################################
+###############################         VECTOR FIELD AND POTENTIAL           ######################################
+###################################################################################################################
 
-
-def GetPotential(TijDirection,lattice):
-    '''TODO: Implement this function'''
-    Vi = []
-    for node in lattice.nodes(data=True):
-        for edge in lattice.edges():
-            np.array(lattice[edge[0]][edge[1]]['dx']*TijDirection[edge[0]][0])-np.array(lattice.nodes[edge[0]]['x'])
+#------------------------------------------ VECTOR FIELD --------------------------------------------------------#
     
-def Potential(grid,df_distance,Tij,lattice,save_dir):
-    for i in range(len(grid)):
-        for j in range(len(grid)):
-            if i < j:
-                dij = df_distance.loc[df_distance['i'] == i].loc[df_distance['j'] == j]['distance'].values[0]
-                if np.isnan():
-                    mi = grid[i]['population']
-                    mj = grid[j]['population']
-                    Tij['potential'].loc[Tij['i'] == i].loc[Tij['j'] == j] = k*mi*mj*np.exp(dij/d0)
+#####
+#####                   NOTE: Usage ->  VectorField = GetVectorField(Tij,df_distance)
+#####                                   VectorFieldDir = os.path.join(TRAFFIC_DIR,'data','carto',name,'grid',str(grid_size))
+#####                                   SaveVectorField(VectorField,VectorFieldDir)
+
+def parse_dir_vector(vector_string):
+    '''
+        Input:
+            String of the index in df_distance
+        Output:
+            (i,j): tuple (int,int)
+        Usage:
+            Guarantees the multiplication df_distance*Tij for fluxes vector
+    '''
+    if vector_string== '[nan,nan]' or vector_string== '[nan nan]':
+        vector_array = np.array([0,0])
+    # Split the string representation of the vector
+    else:
+        vector_parts = vector_string.strip('[]').split()
+        # Convert each part to a float or np.nan if it's 'nan'
+        vector_array = np.array([float(part) if part != 'nan' else np.nan for part in vector_parts])
+    return vector_array
+
+def GetVectorField(Tij,df_distance):
+    '''
+        Input:
+            Tij: ['']
+    '''
+    Tij['vector_flux'] = df_distance['dir_vector'].apply(lambda x: parse_dir_vector(x) ) * Tij['number_people']
+    # Create VectorField DataFrame
+    VectorField = pd.DataFrame(index=Tij['(i,j)D'].unique(), columns=['(i,j)', 'Ti', 'Tj'])
+    Tj_values = Tij.groupby('(i,j)D')['vector_flux'].sum()
+    VectorField['Tj'] = Tj_values
+
+    # Calculate 'Ti' values
+    Ti_values = Tij.groupby('(i,j)O')['vector_flux'].sum()
+    VectorField['Ti'] = Ti_values
+    VectorField['(i,j)'] = VectorField['index']
+    VectorField['index'] = VectorField.index
+    VectorField.reset_index(inplace=True)
+    return VectorField
+
+def SaveVectorField(VectorField,save_dir):
+    VectorField.to_csv(os.path.join(save_dir,'VectorField.csv'))    
+
+def GetSavedVectorFieldDF(save_dir):
+    return pd.read_csv(os.path.join(save_dir,'VectorField.csv'))
+
+#------------------------------------------ POTENTIAL ----------------------------------------------------------#
+#####
+#####                   NOTE: Usage ->  lattice = GetPotentialLattice(lattice,VectorField)
+#####                                   PotentialDataframe = ConvertLattice2PotentialDataframe(lattice)
+#####                                   SavePotentialDataframe(PotentialDataframe,dir_grid)
+
+def GetPotentialLattice(lattice,VectorField):
+    '''
+        Input: 
+            lattice -> without ['V_in','V_out']
+            VectorField: Dataframe [index,(i,j),Ti,Tj]
+        Output:
+            lattice with:
+                'V_in' potential for the incoming fluxes
+                'V_out' potential for the outgoing fluxes
+        Describe:
+            Output = Input for ConvertLattice2PotentialDataframe
+    '''
+    nx.set_node_attributes(lattice, 0, 'V_in')
+    nx.set_node_attributes(lattice, 0, 'V_out')
+    nx.set_node_attributes(lattice, 0, 'index')
+    max_i = max(ast.literal_eval(node_str)[0] for node_str in lattice.nodes)
+    max_j = max(ast.literal_eval(node_str)[1] for node_str in lattice.nodes)
+    for node_str in lattice.nodes:    
+        ij = ast.literal_eval(node_str)
+        i = ij[0]
+        j = ij[1]
+        lattice.nodes[node_str]['V_in'] = 0
+        lattice.nodes[node_str]['V_out'] = 0
+
+    for edge in lattice.edges(data=True):
+        # Extract the indices of the nodes
+        node_index_1, node_index_2 = edge[:2]    
+        VectorField.index = VectorField['(i,j)']
+        # Compute the value of V for the edge using the formula
+        node_Vin = lattice.nodes[node_index_1]['V_in'] + lattice[node_index_1][node_index_2]['dx'] * VectorField.loc[node_index_1, 'Tj'][0]  + lattice[node_index_1][node_index_2]['dy'] * VectorField.loc[node_index_1, 'Tj'][1]  
+        node_Vout = lattice.nodes[node_index_1]['V_out'] + lattice[node_index_1][node_index_2]['dx'] * VectorField.loc[node_index_1, 'Ti'][0]  + lattice[node_index_1][node_index_2]['dy'] * VectorField.loc[node_index_1, 'Ti'][1]      
+        lattice.nodes[node_index_2]['V_in'] = node_Vin
+        lattice.nodes[node_index_2]['V_out'] = node_Vout
+        lattice.nodes[node_index_2]['index'] = VectorField.loc[node_index_1, 'index']
+    return lattice
+
+def ConvertLattice2PotentialDataframe(lattice):
+    '''
+        Input: 
+            Lattice with potential
+        Output:
+            Dataframe with:
+                V_in, V_out, centroid (x,y), index, node_id(i,j)
+        Usage:
+            3D plot for Potential and Lorenz Curve.
+    '''
+    data_ = []
+    for node,data in lattice.nodes(data=True):
+        # Extract the indices of the nodes
+        ij = ast.literal_eval(node)    
+        node_id = (ij[0],ij[1])
+        # Compute the value of V_in for the edge
+        node_Vin = lattice.nodes[node]['V_in']  
+        
+        # Compute the value of V_out for the edge
+        node_Vout = lattice.nodes[node]['V_out']
+        
+        x = lattice.nodes[node]['x']
+        y = lattice.nodes[node]['y']
+        index_ = lattice.nodes[node]['index']
+        # Save the information to the list
+        data_.append({'V_in': node_Vin, 'V_out': node_Vout,'index': index_ ,'node_id': node_id,'x':x,'y':y})
+        
+        # Create a DataFrame from the list
+        PotentialDataframe = pd.DataFrame(data_)
+
+        # Format the 'node_id' column using ast.literal_eval
+#        PotentialDataframe['node_id'] = PotentialDataframe['node_id'].apply(ast.literal_eval)
+    return PotentialDataframe
+
+def SavePotentialDataframe(PotentialDataFrame,save_dir):
+    PotentialDataFrame.to_csv(os.path.join(save_dir,'PotentialDataFrame.csv'))    
+
+def GetSavedPotentialDF(save_dir):
+    return pd.read_csv(os.path.join(save_dir,'PotentialDataFrame.csv'))
 
 def OD2matrix(DfGrid,direction_matrix,gridIdx2ij,lattice,grid):
     '''
