@@ -2,6 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import numba
 import pandas as pd
+from shapely.geometry import Point
 
 ##--------------------------------------- GEOMETRIC FACTS ---------------------------------------##
 
@@ -37,9 +38,12 @@ def ComputeCM(grid,coords_center):
     return np.mean(grid['population'].to_numpy()[:,np.newaxis]*(np.column_stack((grid['centroidx'].values, grid['centroidy'].values)) - np.tile(coords_center,(len(grid),1))),axis = 0)
 
 
-def polar_coordinates(point, center, r_step, theta_step):
+def polar_coordinates(point, center):
     # Calculate r    
-    point = np.array(point.coords)[0]
+    if isinstance(point,Point):
+        point = np.array(point.coords)[0]
+    else:
+        pass
     y = point[1] - center[1]#ProjCoordsTangentSpace(center[0],center[1],point[0],point[1])
     x = point[0] - center[0]
     r = np.sqrt(x**2 + y**2)/1000
@@ -52,6 +56,19 @@ def polar_coordinates(point, center, r_step, theta_step):
 #    r = round(r / r_step) * r_step
 #    theta = round(theta / theta_step) * theta_step
     return r, theta
+
+
+def ExtractCenterByPopulation(grid):
+    assert 'population' in grid.columns
+    population = grid['population'].copy()
+    center_idx = np.argmax(population)
+    coords_center = np.array([grid['centroidx'][center_idx],grid['centroidy'][center_idx]]) 
+    return coords_center,center_idx
+
+def ExtractKeyFromValue(dict_,value):
+    for key, val in dict_.items():
+        if val == value:
+            return key
 
 
 
@@ -73,7 +90,7 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         dd = df_distance.loc[maski]
         maskj = [j in IndexEdge for j in dd['j']]
         dd = dd.loc[maskj]        
-        result_vector = np.ones(len(dd))*SumPot/NumGridEdge
+        result_vector = np.ones(len(dd))*1/NumGridEdge
     else:
         maski = [i in IndexEdge for i in df_distance['i']]
         dd = df_distance.loc[maski]
@@ -82,8 +99,7 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         PD = PotentialDataframe.loc[PotentialDataframe['index'].isin(IndexEdge)]
         result_vector = []
         for _, value in enumerate(PD['V_out'].values):
-            result_vector.extend([value] * (len(PD)))
-
+            result_vector.extend([value/SumPot] * (len(PD)))
     return dd['distance'].to_numpy(dtype = np.float32),np.array(result_vector).astype(np.float32)
 @numba.jit(parallel = True)
 def ComputeJitV(distance_vector,potential_vector):
@@ -91,7 +107,7 @@ def ComputeJitV(distance_vector,potential_vector):
         print('distance_vector:',len(distance_vector))
         print('potential_vector:',len(potential_vector))
         raise ValueError('distance_vector and potential_vector must have the same length')
-    return np.sum(distance_vector*potential_vector)    
+    return np.sum(distance_vector*potential_vector)/len(distance_vector)    
 
 def ComputePI(V,MaxV):
     return 1 - V/MaxV
