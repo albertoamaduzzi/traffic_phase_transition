@@ -397,11 +397,11 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
                 count += 1
     idx = np.where(Fluxes != 0)
     Fluxes = Fluxes[idx]
-    idx = np.where(Massi != 0)
+#    idx = np.where(Massi != 0)
     Massi = Massi[idx]
-    idx = np.where(Massj != 0)
+#    idx = np.where(Massj != 0)
     Massj = Massj[idx]
-    idx = np.where(Fluxes != 0)
+#    idx = np.where(Fluxes != 0)
     DistanceVector = DistanceVector[idx]
     VespignaniVector = [Massi,Massj,DistanceVector]
     return VespignaniVector,Fluxes

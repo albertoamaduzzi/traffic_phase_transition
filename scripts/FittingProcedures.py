@@ -28,7 +28,7 @@ def multilinear4variables(x, a,b,c,log_d):
                 1) log_d: -> k in Ramasco Paper
                 2) a: exponent mass i
                 3) b: exponent mass j
-                4) c: exp(1/d0)                        
+                4) c: exp(-1/d0)                        
     '''
     return a * x[0] + b * x[1] + c * x[2] + log_d
 
