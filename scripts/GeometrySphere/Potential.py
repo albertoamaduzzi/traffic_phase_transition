@@ -663,7 +663,7 @@ def filter_within_percentage(arr, lower_percentile, upper_percentile):
 
 ##-------------------------------------------- PLOTS ----------------------------------------------------------#
 
-def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,label_potential = 'V_in',label_fluxes = 'Tj'):
+def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti'):
     '''
         NOTE:
             label_potential:    V_in, V_out
