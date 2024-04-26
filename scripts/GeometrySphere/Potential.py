@@ -663,7 +663,7 @@ def filter_within_percentage(arr, lower_percentile, upper_percentile):
 
 ##-------------------------------------------- PLOTS ----------------------------------------------------------#
 
-def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti'):
+def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True):
     '''
         NOTE:
             label_potential:    V_in, V_out
@@ -686,14 +686,20 @@ def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_pot
         pass
     else:
         raise KeyError(label_potential,' Neither in grid nor potential columns: ',grid.columns,PotentialDataframe.columns)
-    grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'viridis',edgecolor='black', alpha=0.3)
-    grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
-    grid_cbar.set_label('{}'.format(label_potential), rotation=270, labelpad=15)
+    if plot_mass:
+        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'viridis',edgecolor='black', alpha=0.3)
+        grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
+        grid_cbar.set_label('{}'.format(label_potential), rotation=270, labelpad=15)
+    else:
+        pass
     VF = np.stack(VectorField[label_fluxes].to_numpy(dtype = np.ndarray))
     VF_norm = np.linalg.norm(VF, axis=1)
     VF_normalized = np.stack(np.array([VF[i] / VF_norm[i] if VF_norm[i] !=0 else [0, 0] for i in range(len(VF_norm))]))
-    quiver_plot = ax.quiver(centroid_coords[:,0], centroid_coords[:,1], VF_normalized[:,0], VF_normalized[:,1],
-            VF_norm, cmap='inferno', angles='xy', scale_units='xy', scale=50, width=0.005,headwidth=1, headlength=2)
+    mask = [True if VF_norm[i]!=0 else False for i in range(len(VF_norm))]
+    quiver_plot = ax.quiver(centroid_coords[mask,0], centroid_coords[mask,1], VF_normalized[mask,0], VF_normalized[mask,1],
+            VF_norm[mask], cmap='inferno_r', angles='xy', scale_units='xy', scale=60, width=0.005,headwidth=1, headlength=3)
+#    quiver_plot = ax.quiver(centroid_coords[:,0], centroid_coords[:,1], VF_normalized[:,0], VF_normalized[:,1],
+#            VF_norm, cmap='inferno', angles='xy', scale_units='xy', scale=50, width=0.005,headwidth=1, headlength=2)
     quiver_cbar = plt.colorbar(quiver_plot, ax=ax)
     quiver_cbar.set_label('Normalized Vector Magnitude', rotation=270, labelpad=15)
     ax.set_title('Vector Field {} Fluxes'.format(labelf2title[label_fluxes]))

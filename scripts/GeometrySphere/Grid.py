@@ -18,6 +18,7 @@ import time
 import geopandas as gpd
 import numpy as np
 import shapely as shp
+from shapely.geometry import Point, Polygon, MultiPolygon, LineString
 from GeometrySphere import ComputeAreaSquare
 import networkx as nx
 from PolygonSettings import *
@@ -263,7 +264,21 @@ def ODGrid(gridIdx2dest,
     df = pd.DataFrame({'origin':orig,'destination':dest,'number_people':number_people,'(i,j)O':idxorig,'(i,j)D':idxdest})
     return df
 
+##---------------------- INTERIOR AND BOUNDARY ----------------------
+def GetBoundariesInterior(grid,SFO_obj):
+    boundary = gpd.overlay(SFO_obj.gdf_polygons, SFO_obj.gdf_polygons, how='union',keep_geom_type=False).unary_union
+    # CREATE BOUNDARY LINE
+    if isinstance(boundary, Polygon):
+        boundary_line = LineString(boundary.exterior.coords)
+    elif isinstance(boundary, MultiPolygon):
+        exterior_coords = []
+        for polygon in boundary.geoms:
+            exterior_coords.extend(polygon.exterior.coords)
+        boundary_line = LineString(exterior_coords)
 
+    grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
+    grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
+    return grid
 
 
 
