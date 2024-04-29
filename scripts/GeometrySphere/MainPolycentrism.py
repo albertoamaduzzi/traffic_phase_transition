@@ -29,8 +29,8 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
         PlotFluxes(grid,Tij,SFO_obj,'/home/aamad/Desktop/phd/berkeley/traffic_phase_transition/data/carto/BOS',fraction_fluxes)
         print('PIPELINE MODIFICATION FLUXES starting...')
     InfoConfigurationPolicentricity = InitConfigurationPolicentricity(num_peaks,InfoConfigurationPolicentricity,grid,Tij)
-    new_population,index_centers = GenerateRandomPopulation(grid,num_peaks,total_population,InfoCenters)
-    Modified_Fluxes = GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux)
+    new_population,index_centers = GenerateRandomPopulation(grid,num_peaks,total_population,InfoCenters,verbose)
+    Modified_Fluxes = GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux,verbose)
     InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people'] = Modified_Fluxes
     InfoConfigurationPolicentricity[num_peaks]['grid']['population'] = new_population    
     # Compute new vector field and Potential with relative UCI
@@ -66,15 +66,14 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
         print('After Population Generation and Gravity:')
         PrintInfoFluxPop(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'])
         print('************PLOTTING************')
-        dir_grid = GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,UCI)
-        PlotFluxes(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'],SFO_obj,dir_grid,fraction_fluxes)
+        dir_grid = GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,InfoCenters['covariance_settings']['covariances']['cvx'],InfoCenters['center_settings']['type'],UCI)
+        PlotFluxes(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'],SFO_obj,dir_grid,fraction_fluxes,verbose)
         PlotPositionCenters(grid,SFO_obj,index_centers,dir_grid)
-        PlotNewPopulation(InfoConfigurationPolicentricity[num_peaks]['grid'],   SFO_obj,dir_grid)
+        PlotNewPopulation(InfoConfigurationPolicentricity[num_peaks]['grid'], SFO_obj,dir_grid)
         PlotOldNewFluxes(InfoConfigurationPolicentricity[num_peaks]['Tij'],Tij)
-        PlotFluxes(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'],SFO_obj,dir_grid)
-        PlotVFPotMass(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],InfoConfigurationPolicentricity[num_peaks]['vector_field'],dir_grid,label_potential = 'population',label_fluxes = 'Ti')
-        PotentialContour(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],SFO_obj,dir_grid)
-        PotentialSurface(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid)
+        PlotVFPotMass(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],InfoConfigurationPolicentricity[num_peaks]['vector_field'],dir_grid,'population','Ti',verbose)
+        PotentialContour(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],SFO_obj,dir_grid,verbose)
+        PotentialSurface(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid,verbose)
         PlotRotorDistribution(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid)
-        PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose = False)
+        PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,verbose)
     return InfoConfigurationPolicentricity

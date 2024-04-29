@@ -25,13 +25,6 @@ def FilterPopulation(grid):
     index = filtered_grid.index
     return population,centroidx,centroidy,index,filtered_grid
 
-def ExtractCenterByPopulation(grid):
-    assert 'population' in grid.columns
-    population = grid['population'].copy()
-    center_idx = np.argmax(population)
-    coords_center = np.array([grid['centroidx'][center_idx],grid['centroidy'][center_idx]]) 
-    return coords_center
-
 def ComputeCM(grid,coords_center):
     '''
         This function computes the center of mass of the map
@@ -52,11 +45,22 @@ def polar_coordinates(point, center):
     return r, theta
 
 
-def ExtractCenterByPopulation(grid):
+def ExtractCenterByPopulation(grid,verbose = False):
+    '''
+        This code defines a function ExtractCenterByPopulation that takes a pandas DataFrame grid as input.
+        It asserts that the DataFrame has a column named 'population'.
+        It then creates a copy of the 'population' column and finds the index of the maximum value in it. 
+        It uses this index to extract the corresponding values from the 'centroidx' and 'centroidy' columns, 
+        and returns them as a numpy array coords_center along with the index center_idx.
+    '''
     assert 'population' in grid.columns
     population = grid['population'].copy()
     center_idx = np.argmax(population)
     coords_center = np.array([grid['centroidx'][center_idx],grid['centroidy'][center_idx]]) 
+    if verbose:
+        print("++++++++ Extract Center By Population ++++++++")
+        print("Grid with Highest Population: ",center_idx)
+        print('Center coords: ',coords_center)
     return coords_center,center_idx
 
 def ExtractKeyFromValue(dict_,value):
@@ -206,12 +210,17 @@ def ComputeUCI(grid,PotentialDataframe,df_distance,verbose = True):
             num_peaks: int -> number of peaks (centers)
         Description:
             Compute the UCI for the given number of centers.
+            NOTE: 
+                The UCI is computed just on the fraction of Cells that are inside the geometry.
+                In particular the Lorenz Centers.
         
     '''
     SumPot = PotentialDataframe['V_out'].sum()
     NumGridEdge = grid[grid['relation_to_line']=='edge'].shape[0]
     PI = LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe)
-    result_indices,angle,cumulative,Fstar = LorenzCenters(PotentialDataframe['V_out'].to_numpy())
+    MaskOutside = [True if (row['position'] == 'outside' or row['position'] == 'edge') else False for i,row in grid.iterrows()]
+    PotentialFiltered = [PotentialDataframe.iloc[i]['V_out'] if MaskOutside[i] else 0 for i in range(len(MaskOutside))] 
+    result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(PotentialFiltered))
     LC = Fstar/len(cumulative)
     UCI = PI*LC
     if verbose:
@@ -239,7 +248,7 @@ def StoreConfigurationsPolicentricity(new_population, Modified_Fluxes,New_Vector
 
 
 
-def GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,UCI):
+def GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,cov,distribution_type,UCI):
     dir_grid = os.path.join(TRAFFIC_DIR,'data','carto',name,'OD')
     if not os.path.exists(dir_grid):
         os.mkdir(dir_grid)
@@ -247,6 +256,12 @@ def GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,UCI):
     if not os.path.exists(dir_grid):
         os.mkdir(dir_grid)
     dir_grid = os.path.join(dir_grid,str(num_peaks))
+    if not os.path.exists(dir_grid):
+        os.mkdir(dir_grid)
+    dir_grid = os.path.join(dir_grid,str(cov))
+    if not os.path.exists(dir_grid):
+        os.mkdir(dir_grid)
+    dir_grid = os.path.join(dir_grid,distribution_type)
     if not os.path.exists(dir_grid):
         os.mkdir(dir_grid)
     dir_grid = os.path.join(dir_grid,'UCI_{}'.format(round(UCI,3)))

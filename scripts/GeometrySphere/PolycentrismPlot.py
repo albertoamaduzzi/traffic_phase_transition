@@ -19,16 +19,14 @@ def PrintInfoFluxPop(grid,Tij):
 def PlotOldNewFluxes(Tij_new,Tij,verbose = False):
     n,bins = np.histogram(Tij_new['number_people'].loc[Tij_new['number_people']>0],bins = 100)
     n1,bins1 = np.histogram(Tij['number_people'].loc[Tij['number_people']>0],bins = 100)
-    plt.scatter(bins[:-1],n)
-    plt.scatter(bins1[:-1],n1)
-    plt.yscale('log')
-    plt.legend(['Fitted','Original'])
-    plt.title('DIstribution fluxes fitted')
-    if verbose:
-        print("----------------------------------")
-        plt.show()
-    plt.hist(Tij_new['number_people'],bins = 20)
-    plt.title('DIstribution fluxes fitted')
+    fig,(ax0,ax1) = plt.subplots(ncols=2,figsize=(10, 10))
+    ax0.scatter(bins[:-1],n)
+    ax0.scatter(bins1[:-1],n1)
+    ax0.set_yscale('log')
+    ax0.legend(['Fitted','Original'])
+    ax0.set_title('Distribution fluxes fitted')
+    ax1.hist(Tij_new['number_people'],bins = 20)
+    ax1.set_title('DIstribution fluxes fitted')
     if verbose:
         plt.show()
 
@@ -48,7 +46,7 @@ def PlotNewPopulation(grid,SFO_obj,dir_grid,verbose = False):
     grid.plot(column = 'population', cmap='Greys', facecolor = 'none',alpha = 0.2)
     contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                     grid['geometry'].apply(lambda geom: geom.centroid.y), 
-                                    grid['population'], cmap='spring', alpha=0.5)
+                                    grid['population'], cmap='viridis', alpha=0.5)
 
     cbar = plt.colorbar(contour_filled)
     cbar.set_label('Population')
@@ -57,6 +55,9 @@ def PlotNewPopulation(grid,SFO_obj,dir_grid,verbose = False):
     ax.set_ylabel('Latitude')
     plt.savefig(os.path.join(dir_grid,'Population_Distribution.png'),dpi = 200)
     if verbose:
+        print('+++++ Plot Population Distribution +++++')
+        print('Minimum population: ',min(grid['population'])," Maximum population: ",max(grid['population']))
+
         plt.show()
 
 def PlotFluxes(grid,Tij,SFO_obj,dir_grid,top_fluxes = 50,verbose=False):
@@ -69,6 +70,7 @@ def PlotFluxes(grid,Tij,SFO_obj,dir_grid,top_fluxes = 50,verbose=False):
     fluxes = highest_row['number_people'].to_numpy()/max(highest_row['number_people'].to_numpy())
     norm = plt.Normalize(fluxes.min(), fluxes.max())
     if verbose:
+        print("+++++ Plot Fluxes +++++")
         print('Type origin: ',type(highest_i))
         print('Type destination: ',type(highest_j))
         print('Type fluxes: ',type(fluxes))
@@ -83,15 +85,23 @@ def PlotFluxes(grid,Tij,SFO_obj,dir_grid,top_fluxes = 50,verbose=False):
             print('y of j: ',grid.loc[grid['index']==highest_j[grid_index]]['centroidy'].values[0])
         pointi = [grid.loc[grid['index']==highest_i[grid_index]]['centroidx'].values[0],grid.loc[grid['index']==highest_i[grid_index]]['centroidy'].values[0]]
         pointj = [grid.loc[grid['index']==highest_j[grid_index]]['centroidx'].values[0],grid.loc[grid['index']==highest_j[grid_index]]['centroidy'].values[0]]
+        if pointi == pointj:
+            ax.scatter(pointi[0],pointi[1],marker = 'o',color = 'r')
         ax.plot([pointi[0], pointj[0]], 
              [pointi[1], pointj[1]], 
              color=plt.cm.viridis(norm(fluxes[grid_index])), alpha=0.5, linewidth=4)
     sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
-    sm.set_array([])
+    sm.set_array([])    
     plt.colorbar(sm, label='Flux',ax=plt.gca())         
     plt.savefig(os.path.join(dir_grid,'Fluxes.png'),dpi = 200)
-    if verbose:
+    if verbose:        
+        gammas = [1,5,10,20,30,50,100]
+        for gamma in gammas:
+            print("Number of people in grid with flux > ",gamma,": ",(Tij['number_people'].to_numpy()>gamma).sum())
+            print("Number of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma]))
+            print("Fraction of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma])/len(Tij['number_people'].to_numpy()))
         plt.show()
+        
 
 def PotentialContour(grid,PotentialDataframe,SFO_obj,dir_grid,verbose = False):
     # Assuming you have a GeoDataFrame named 'grid' with a 'geometry' column containing polygons and a 'potential' column
@@ -127,6 +137,9 @@ def PotentialContour(grid,PotentialDataframe,SFO_obj,dir_grid,verbose = False):
 
 def PotentialSurface(grid,SFO_obj,PotentialDataframe,dir_grid,verbose = False):
     # Assuming you have a GeoDataFrame named 'grid' with a 'geometry' column containing polygons and a 'potential' column
+    '''
+        Draws the Potential surface considering just the potential inside and discarding the one outside.
+    '''
     if 'potential' in grid.columns:
         pass
     else:
@@ -135,6 +148,10 @@ def PotentialSurface(grid,SFO_obj,PotentialDataframe,dir_grid,verbose = False):
     y = np.linspace(min(grid.centroidy), max(grid.centroidy), len(np.unique(grid['i'])))
     X, Y = np.meshgrid(x, y)
     Z = grid['potential'].values.reshape((len(y),len(x)))# Check the lengths of x, y, and the potential values array
+    # Set Potential Null From Outside
+    PositionOutside = grid['position'].values.reshape((len(y),len(x)))
+    MaskOutside = [[True if PositionOutside[j][i] == 'inside' else False for i in range(len(x))] for j in range(len(y))]
+    Z[MaskOutside] = 0
     # Create a contour plot
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111, projection='3d')
