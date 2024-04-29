@@ -7,7 +7,17 @@ def GetMaxIndicesGridFromGrid(grid):
     return max(grid['i']),max(grid['j'])
 
 
+
 def ConvertTij2Matrix(Tij,grid):
     imax,jmax = GetMaxIndicesGridFromGrid(grid)
     MatrixTij = np.array(Tij['number_people'],dtype = np.float32).reshape((imax+1,jmax+1))
     return MatrixTij
+
+def EstimateGershgoring(MatrixTij):
+    '''
+        Gershgoring's method to estimate the area of the eigenvalue of a matrix (This case the transition of the master equation)
+        For each:
+            Re {eigval[i]} in MatrixTij[i,i] +  sum {j!=i} abs(MatrixTij[i,j]) 
+    '''
+    RealBoundEigenvalues = [np.abs(MatrixTij[i,i]) + np.sum([np.abs(MatrixTij[i,j]) for j in range(i+1,MatrixTij.shape[0])]) for i in range(MatrixTij.shape[0])] 
+    return RealBoundEigenvalues

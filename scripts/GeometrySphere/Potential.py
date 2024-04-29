@@ -512,7 +512,6 @@ def GetPotentialLattice(lattice,VectorField):
     nx.set_node_attributes(lattice, 0, 'index')
     nx.set_node_attributes(lattice, 0, 'rotor_z_out')
     nx.set_node_attributes(lattice, 0, 'rotor_z_in')
-
     max_i = max(ast.literal_eval(node_str)[0] for node_str in lattice.nodes)
     max_j = max(ast.literal_eval(node_str)[1] for node_str in lattice.nodes)
     for node_str in lattice.nodes:    
@@ -663,7 +662,7 @@ def filter_within_percentage(arr, lower_percentile, upper_percentile):
 
 ##-------------------------------------------- PLOTS ----------------------------------------------------------#
 
-def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True):
+def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True,verbose = False):
     '''
         NOTE:
             label_potential:    V_in, V_out
@@ -687,7 +686,7 @@ def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_pot
     else:
         raise KeyError(label_potential,' Neither in grid nor potential columns: ',grid.columns,PotentialDataframe.columns)
     if plot_mass:
-        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'viridis',edgecolor='black', alpha=0.3)
+        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'Greys',edgecolor='black', alpha=0.3)
         grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
         grid_cbar.set_label('{}'.format(label_potential), rotation=270, labelpad=15)
     else:
@@ -704,3 +703,5 @@ def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_pot
     quiver_cbar.set_label('Normalized Vector Magnitude', rotation=270, labelpad=15)
     ax.set_title('Vector Field {} Fluxes'.format(labelf2title[label_fluxes]))
     plt.savefig(os.path.join(dir_grid,'{0}Flux{1}.png'.format(labelf2title[label_fluxes],label2save[label_potential])),dpi = 200)
+    if verbose:
+        plt.show()

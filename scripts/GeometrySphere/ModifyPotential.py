@@ -28,27 +28,33 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
         grid['coords'] = grid.apply(lambda x: ProjCoordsTangentSpace(x['centroidx'],x['centroidy'],coords_center[0],coords_center[1]),axis = 1)
         grid['distance_from_center'] = grid.apply(lambda x: polar_coordinates(np.array([x['centroidx'],x['centroidy']]),np.array(x['coords']))[0],axis = 1)
     index_centers = []
-    
     scale = np.mean(grid.loc[grid['is_populated']]['distance_from_center'])
     populated_grid = grid.loc[grid['is_populated']]
     # PICK RANDOMLY THE CENTERS (with exponentially decreasing probability in distance from center)
     random_values = np.random.exponential(scale,num_peaks)
     _, bin_edges = np.histogram(populated_grid['distance_from_center'].to_numpy(), bins=30)
+    if verbose:
+        print("++++++++++++ Generate Index Centers ++++++++++++")
+        print("Number of Populated Grids: ",len(populated_grid))
+        print("Average distance from Center: ",scale)
+        print("Distance from Center Extracted: ")
+        for rv in random_values:
+            print(rv) 
     for rv in random_values:
         if rv > bin_edges[-1]:
-            while(rv >= bin_edges[-1]):
+            while(rv > bin_edges[-1]):
                 rv = np.random.exponential(scale)
 #                print('extracting rv: ',rv)
                 bin_index = np.digitize(rv, bin_edges)
 #                print('bin index: ',bin_index)     
-                filtered_grid = populated_grid[(populated_grid['distance_from_center'] >= bin_edges[bin_index - 1])] 
-                filtered_grid = filtered_grid[filtered_grid['distance_from_center'] < bin_edges[bin_index]]   
-                if verbose:
-                    print('Distance from center extracted: ',rv,'Number of grids available: ',len(filtered_grid))
+            filtered_grid = populated_grid[(populated_grid['distance_from_center'] >= bin_edges[bin_index - 1])] 
+            filtered_grid = filtered_grid[filtered_grid['distance_from_center'] < bin_edges[bin_index]]   
+            if verbose:
+                print('Distance from center extracted: ',rv,'Number of grids available: ',len(filtered_grid))
         else:
             bin_index = np.digitize(rv, bin_edges)
 #            print('bin index: ',bin_index)  
-            while(bin_index >= bin_edges[-1]):
+            while(bin_index > bin_edges[-1]):
                 bin_index = np.digitize(rv, bin_edges)
             filtered_grid = populated_grid[(populated_grid['distance_from_center'] >= bin_edges[bin_index - 1])] 
             filtered_grid = filtered_grid[filtered_grid['distance_from_center'] < bin_edges[bin_index]]        
@@ -65,7 +71,7 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
 
     return index_centers
 
-def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random = False):
+def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random = False,verbose = False):
     '''
         Input:
             index_centers: list of indices of the centers. (int: 0,...,Ngrids)
@@ -77,31 +83,48 @@ def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random
             That is, each center is equal to the other one in terms of covariance.
             '''
     covariances = []
+    if verbose:
+        print('+++++++++ Setting Covariances ++++++++')
     if Isotropic:
         if Random:
             for i in range(len(index_centers)):
                 cv = np.random.uniform(2,15)
-                rvs = [[cv,0],[cv,0]]
+                rvs = [[cv,0],[0,cv]]
                 covariances.append(rvs)
+            if verbose:
+                print('Isotropic and Random')
+                for i in range(len(index_centers)):
+                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
         else:
             assert 'cvx' in cov.keys()
             for i in range(len(index_centers)):
                 cv = cov['cvx']
-                rvs = [[cv,0],[cv,0]]
+                rvs = [[cv,0],[0,cv]]
                 covariances.append(rvs)
-
+            if verbose:
+                print('Isotropic and Not Random')
+                for i in range(len(index_centers)):
+                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
     else:
         if Random:
             for i in range(len(index_centers)):
                 rvs = [[np.random.uniform(2,15),0],[0,np.random.uniform(2,15)]]
                 covariances.append(rvs)
+            if verbose:
+                print('Not Isotropic and Random')
+                for i in range(len(index_centers)):
+                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
         else:
             assert 'cvx' in cov.keys() and 'cvy' in cov.keys()
             for i in range(len(index_centers)):
                 cvx = cov['cvx']
                 cvy = cov['cvy']
-                rvs = [[cvx,0],[cvy,0]]
+                rvs = [[cvx,0],[0,cvy]]
                 covariances.append(rvs)
+            if verbose:
+                print('Not Isotropic and Not Random')
+                for i in range(len(index_centers)):
+                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
 
 
     return covariances
@@ -120,7 +143,7 @@ def ComputeNewPopulation(grid,index_centers,covariances,total_population,Distrib
     centers = grid.loc[index_centers][['centroidx','centroidy']].to_numpy()
     count_center = 0
     if verbose:
-        print('****** POPULATION DISTRIBUTION ******')
+        print('++++++++++ POPULATION DISTRIBUTION +++++++++')
         print("Distribution: ",Distribution)
         print('Covariance -> x {0}, y {1}'.format(covariances[count_center][0][0],covariances[count_center][1][1]))
     for center in centers:
@@ -134,12 +157,12 @@ def ComputeNewPopulation(grid,index_centers,covariances,total_population,Distrib
             else:
                 new_population[i] = 0
         count_center += 1
-    if verbose:
-        print('**************** END NEW POPULATION **********************')
     return new_population    
 
 def GenerateRandomPopulation(grid,num_peaks,total_population,args = {'center_settings': {"type":"exponential"},
-                                                                      'covariance_settings':{"covariances":{"cvx":5,"cvy":5}
+                                                                      'covariance_settings':{"covariances":{"cvx":5,"cvy":5},
+                                                                                             "Isotropic": True,
+                                                                                             "Random": False
                                                                                              }
                                                                       },verbose = False):
     '''
@@ -170,8 +193,8 @@ def GenerateRandomPopulation(grid,num_peaks,total_population,args = {'center_set
     # Check Allowed Keys
     assert args['center_settings']['type'] in allowed_keys_center_type, "center_settings['type'] must be in: {}".format(allowed_keys_center_type)
     # Compute
-    index_centers = GenerateIndexCenters(grid,num_peaks)
-    covariances = SetCovariances(index_centers,args['covariance_settings']['covariances'])
+    index_centers = GenerateIndexCenters(grid,num_peaks,verbose)
+    covariances = SetCovariances(index_centers,args['covariance_settings']['covariances'],args["covariance_settings"]["Isotropic"],args["covariance_settings"]["Random"],verbose)
     new_population = ComputeNewPopulation(grid,index_centers,covariances,total_population,args["center_settings"]["type"],verbose)    
     Factor = np.sum(grid['population'])/np.sum(new_population)
     new_population = new_population*Factor
@@ -213,7 +236,7 @@ def GravitationalModel(population,df_distance,k,alpha,beta,d0):
 #    kMiMjedij = [k*population[i]**(alpha)*population[j]**(beta)*np.exp(-df_distance[i*len(population) + j]/d0) for i in range(len(population)) for j in range(len(population))]
     return kMiMjedij
 
-def GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux):
+def GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux,verbose = False):
     '''
         Generate the new fluxes according to the gravitational model and scale them down to the fluxes measured in the data.
     '''
@@ -223,9 +246,16 @@ def GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux
         Modified_Fluxes =  GravitationalModel(new_population.astype(np.float32),df_distance['distance'].to_numpy(dtype = np.float32),np.float32(k),np.float32(alpha),np.float32(beta),np.float32(d0))
     Multiplicator = total_flux/Modified_Fluxes.sum()
     Modified_Fluxes = Modified_Fluxes*Multiplicator
+    if verbose:
+        print("Multiplicator: ",Multiplicator)
+        gammas = [1,5,10,20,30,50,100]
+        for gamma in gammas:
+            print("Number of people in grid with flux > ",gamma,": ",(Modified_Fluxes>gamma).sum())
+            print("Number of couples of grids with flux > ",gamma,": ",len(Modified_Fluxes[Modified_Fluxes>gamma]))
+            print("Fraction of couples of grids with flux > ",gamma,": ",len(Modified_Fluxes[Modified_Fluxes>gamma])/len(Modified_Fluxes))
     return Modified_Fluxes
 
-def ComputeNewVectorField(Tij,df_distance,verbose = True):
+def ComputeNewVectorField(Tij,df_distance,verbose = False):
     t0 = time.time()
     New_Vector_Field = GetVectorField(Tij,df_distance)
     t1 = time.time()
@@ -233,7 +263,7 @@ def ComputeNewVectorField(Tij,df_distance,verbose = True):
         print('Time to compute the vector field: ',t1 - t0)
     return New_Vector_Field
 
-def ComputeNewPotential(New_Vector_Field,lattice,grid,verbose = True):
+def ComputeNewPotential(New_Vector_Field,lattice,grid,verbose = False):
     t0 = time.time()
     lattice = GetPotentialLattice(lattice,New_Vector_Field)
     lattice = SmoothPotential(lattice)
