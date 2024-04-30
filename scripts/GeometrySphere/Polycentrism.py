@@ -219,7 +219,7 @@ def ComputeUCI(grid,PotentialDataframe,df_distance,verbose = True):
     NumGridEdge = grid[grid['relation_to_line']=='edge'].shape[0]
     PI = LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe)
     MaskOutside = [True if (row['position'] == 'outside' or row['position'] == 'edge') else False for i,row in grid.iterrows()]
-    PotentialFiltered = [PotentialDataframe.iloc[i]['V_out'] if MaskOutside[i] else 0 for i in range(len(MaskOutside))] 
+    PotentialFiltered = [PotentialDataframe.iloc[i]['V_out'] if not MaskOutside[i] else 0 for i in range(len(MaskOutside))] 
     result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(PotentialFiltered))
     LC = Fstar/len(cumulative)
     UCI = PI*LC
