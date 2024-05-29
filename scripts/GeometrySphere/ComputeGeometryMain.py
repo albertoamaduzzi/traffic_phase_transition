@@ -65,11 +65,11 @@ def main(NameCity,TRAFFIC_DIR):
                                                                             resolution = resolution)
         
         
-
-        # ADD FILES TO UPLOAD
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon.geojson'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon.geojson'))
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon2origindest.json'))
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'origindest2hexagon.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'origindest2hexagon.json'))
+        if socket.gethostname()!='artemis.ist.berkeley.edu':
+            # ADD FILES TO UPLOAD
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon.geojson'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon.geojson'))
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon2origindest.json'))
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'origindest2hexagon.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'origindest2hexagon.json'))
     
     GeometricalInfo.gdf_polygons = getPolygonPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.gdf_polygons,NameCity)
     SavePolygon(GeometricalInfo.save_dir_local,GeometricalInfo.gdf_polygons)
@@ -77,20 +77,20 @@ def main(NameCity,TRAFFIC_DIR):
     for grid_size in grid_sizes:
         # Grid Computations and Save
         GeometricalInfo.grid = GetGrid(grid_size,
-                                       GeometricalInfo.bounding_box,
-                                       GeometricalInfo.crs,
-                                       GeometricalInfo.save_dir_local)
+                                    GeometricalInfo.bounding_box,
+                                    GeometricalInfo.crs,
+                                    GeometricalInfo.save_dir_local)
         GeometricalInfo.grid = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.grid,'grid',NameCity)
         GeometricalInfo.lattice = GetLattice(GeometricalInfo.grid,grid_size,GeometricalInfo.bounding_box,GeometricalInfo.save_dir_local)
         SaveGrid(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.grid)
         SaveLattice(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.lattice)
         # Map Grid2OD and OD2Grid
         GeometricalInfo.OD2grid,GeometricalInfo.grid2OD = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
-                                                                      GraphFromPhml = GeometricalInfo.GraphFromPhml,
-                                                                      NameCity = GeometricalInfo.city,
-                                                                      GeometryName ='grid',
-                                                                      save_dir_local = GeometricalInfo.save_dir_local,
-                                                                      resolution = grid_size)
+                                                                    GraphFromPhml = GeometricalInfo.GraphFromPhml,
+                                                                    NameCity = GeometricalInfo.city,
+                                                                    GeometryName ='grid',
+                                                                    save_dir_local = GeometricalInfo.save_dir_local,
+                                                                    resolution = grid_size)
         direction_matrix, bool_ = GetDirectionMatrix(GeometricalInfo.save_dir_local,grid_size)
         if bool_:
             pass
@@ -100,11 +100,12 @@ def main(NameCity,TRAFFIC_DIR):
             SaveDirectionDistanceMatrix(GeometricalInfo.save_dir_local,grid_size,direction_distance_matrix)
         
         # ADD FILES TO UPLOAD
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'grid.geojson'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'grid.geojson'))
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'grid2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'grid2origindest.json'))
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'origindest2grid.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'origindest2grid.json')) 
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'centroid_lattice.graphml'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'centroid_lattice.graphml'))
-        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.csv'))
+        if socket.gethostname()!='artemis.ist.berkeley.edu':
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'grid.geojson'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'grid.geojson'))
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'grid2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'grid2origindest.json'))
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'origindest2grid.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'origindest2grid.json')) 
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'centroid_lattice.graphml'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'centroid_lattice.graphml'))
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.csv'))
     ## ------------------------- INITIALIZE RING 2 OD ------------------------- ##
     if 0==1:
         for n_ring in n_rings:
@@ -121,10 +122,11 @@ def main(NameCity,TRAFFIC_DIR):
                                                                         GeometryName ='ring',
                                                                         save_dir_local = GeometricalInfo.save_dir_local,
                                                                         resolution = n_ring)
+            if socket.gethostname()!='artemis.ist.berkeley.edu':
             # ADD FILES TO UPLOAD
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'ring.geojson'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'ring.geojson'))
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'ring2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'ring2origindest.json'))
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'origindest2ring.json'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'origindest2ring.json'))
+                GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'ring.geojson'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'ring.geojson'))
+                GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'ring2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'ring2origindest.json'))
+                GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'origindest2ring.json'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'origindest2ring.json'))
     ## -------------------------- FMA FILES -------------------------- ##
     AdjustDetailsBeforeConvertingFma2Csv(GeometricalInfo)
     for file in os.listdir(os.path.join(GeometricalInfo.ODfma_dir)):
@@ -154,13 +156,14 @@ def main(NameCity,TRAFFIC_DIR):
                                         offset = 6,
                                         seconds_in_minute = 60,
                                         )
-                    GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(round(grid_size,3)),'ODgrid.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(round(grid_size,3)),'ODgrid.csv'))
-                    print('R Output: ',ROutput)
-                    for R in ROutput:
-                        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))),os.path.join(GeometricalInfo.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))) )
-    for localfile in GeometricalInfo.Files2Upload.keys():
-        serverfile = GeometricalInfo.Files2Upload[localfile]
-        Upload2ServerPwd(localfile,serverfile)
+                    if socket.gethostname()!='artemis.ist.berkeley.edu':
+                        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(round(grid_size,3)),'ODgrid.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(round(grid_size,3)),'ODgrid.csv'))
+                        print('R Output: ',ROutput)
+                        for R in ROutput:
+                            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))),os.path.join(GeometricalInfo.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))) )
+ #   for localfile in GeometricalInfo.Files2Upload.keys():
+ #       serverfile = GeometricalInfo.Files2Upload[localfile]
+ #       Upload2ServerPwd(localfile,serverfile)
 
 
 if __name__=='__main__':
@@ -175,7 +178,7 @@ if __name__=='__main__':
         TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
     else:
         TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
-    list_cities = ['BOS']#os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
+    list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     for argument in arguments:
         main(*argument)

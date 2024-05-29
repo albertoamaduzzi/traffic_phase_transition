@@ -190,6 +190,8 @@ def OD_from_fma(polygon2OD,
         if os.path.isfile(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(multiplicative_factor*R)))):
             cprint(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(multiplicative_factor*R))),'cyan')
             ROutput.append(int(multiplicative_factor*R))
+            df = pd.DataFrame({})
+            df1 = pd.DataFrame({})
             continue
         else:
             gridIdx2dest = GridIdx2OD(grid)    

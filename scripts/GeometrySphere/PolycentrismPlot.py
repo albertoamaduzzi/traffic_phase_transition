@@ -217,3 +217,17 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose
 
 
 ##-------- ##
+
+def PlotDistributionDistance(Tij,distance_df):
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    merged_df = pd.merge(Tij, distance_df, on=['origin', 'destination'])
+    TijDifferent0 = merged_df["number_people"].loc[merged_df["number_people"]>0] 
+    # Repeat the distance value 'number_people' times for each row
+    TijDifferent0['repeated_distance'] = TijDifferent0.apply(lambda row: [row['distance']] * row['number_people'], axis=1)
+    # Transform the Series of lists into a single Series
+    distance_vector = TijDifferent0['repeated_distance'].explode().reset_index(drop=True)    
+    ax.hist(distance_vector['reapeted_distance'],bins = 50, color = 'blue',label = 'Distance')
+    ax.set_title('Distance Distribution')
+    ax.set_xlabel('Distance')
+    ax.set_ylabel('Count')
+    plt.show()
