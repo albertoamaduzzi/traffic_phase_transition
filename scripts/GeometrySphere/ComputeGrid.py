@@ -10,6 +10,7 @@ from Hexagon import *
 from Grid import *
 from multiprocessing import Pool
 import socket
+
 if socket.gethostname()=='artemis.ist.berkeley.edu':
     sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
     sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','PreProcessing'))
@@ -52,10 +53,11 @@ def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'origindest2grid.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'origindest2grid.json')) 
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'centroid_lattice.graphml'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'centroid_lattice.graphml'))
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.csv'))
-    MakeDir(GeometricalInfo.save_dir_server,'grid')
-    MakeDir(os.path.join(GeometricalInfo.save_dir_server,'grid'),str(grid_size))
-    for file in GeometricalInfo.Files2Upload:
-        Upload2ServerPwd(file,GeometricalInfo.Files2Upload[file],GeometricalInfo.config_dir_local)
+    if not socket.gethostname()=='artemis.ist.berkeley.edu':
+        MakeDir(GeometricalInfo.save_dir_server,'grid')
+        MakeDir(os.path.join(GeometricalInfo.save_dir_server,'grid'),str(grid_size))
+        for file in GeometricalInfo.Files2Upload:
+            Upload2ServerPwd(file,GeometricalInfo.Files2Upload[file],GeometricalInfo.config_dir_local)
 
 
 def ComputeGrid(NameCity,TRAFFIC_DIR):
@@ -63,7 +65,7 @@ def ComputeGrid(NameCity,TRAFFIC_DIR):
     print('TRAFFIC_DIR: ',TRAFFIC_DIR)
     GeometricalInfo = GeometricalSettingsSpatialPartition(NameCity,TRAFFIC_DIR)
     GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,8)
-    grid_sizes = list(np.arange(0.02,0.1,0.01))
+    grid_sizes = [0.02]#list(np.arange(0.02,0.1,0.01))
     ParametersGridParallel = [(GeometricalInfo,grid_size,NameCity) for grid_size in grid_sizes]
     for grid_size in grid_sizes:
         AllStepsGrid(GeometricalInfo,grid_size,NameCity)
@@ -78,7 +80,7 @@ if __name__=='__main__':
         TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
     else:
         TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
-    list_cities = ['BOS']#os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
+    list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     for arg in arguments:
         ComputeGrid(*arg)

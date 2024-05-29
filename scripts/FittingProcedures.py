@@ -1,10 +1,16 @@
+try:
+    import pymc3 as pm
+    FoundPyMC3 = True
+except:
+    print('PyMC3 not installed')
+    FoundPyMC3 = False
+from scipy.special import gamma
 from scipy.optimize import curve_fit,minimize
 from scipy import stats
 from scipy.stats import powerlaw as pl
 import numpy as np
 import sys
 sys.path.append('~/berkeley/traffic_phase_transition/scripts/GeometrySphere')
-
 
 # FUCNTIONS FOR FITTING
 def powerlaw(x, amp, index):
@@ -32,6 +38,14 @@ def multilinear4variables(x, a,b,c,log_d):
     '''
     return a * x[0] + b * x[1] + c * x[2] + log_d
 
+def lognormal(x, mean, sigma):
+    return (np.exp(-(np.log(x) - mean)**2 / (2 * sigma**2)) / (x * sigma * np.sqrt(2 * np.pi)))
+
+def gamma_(x, shape, scale):
+    return ((x**(shape - 1)) * np.exp(-x / scale)) / (scale**shape * gamma(shape))
+
+def weibull(x, shape, scale):
+    return (shape / scale) * (x / scale)**(shape - 1) * np.exp(-(x / scale)**shape)
 # LOSS FUNCTIONS
 def quadratic_loss_function(y_predict, y_measured):
     return np.sum((y_predict-y_measured)**2)
@@ -92,4 +106,6 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
     print('Message: ',result_powerlaw.message)
     return fit
 
-    
+if FoundPyMC3:
+    def FitWithPymc(x,y,label):
+        return x,y,label

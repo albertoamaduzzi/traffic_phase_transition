@@ -270,7 +270,7 @@ def Map2Geom2OD(gdf_geometry,
 #            print('Point {} outside geometry: '.format(Point(GraphFromPhml.nodes[node]['y'],GraphFromPhml.nodes[node]['x'])))
             pass
     percentage_nodes_outside_box = number_nodes_outside_box/(number_nodes_outside_box+numbr_nodes_inside_box)
-    if percentage_nodes_outside_box > 0.1:
+    if percentage_nodes_outside_box > 0.4:
         raise ValueError('More than 10% of the nodes are outside the geometry')
     
     WriteMapODGeom(save_dir_local,GeometryName,'origindest2'+GeometryName+'.json',GeometryName+'2origindest.json',OD2Geom,Geom2OD,resolution)

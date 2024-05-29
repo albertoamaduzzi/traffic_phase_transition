@@ -145,7 +145,7 @@ def GetDirectionMatrix(save_dir_local,grid_size):
         return None,False
 
 
-def ComputeDirectionMatrix(grid):
+def ComputeDirectionMatrix(grid,verbose = True):
     '''
         Input:
             grid: GeoDataFrame -> grid of points
@@ -153,14 +153,30 @@ def ComputeDirectionMatrix(grid):
             direction_matrix: dict -> {(idxj,idxj): [xj-xi/norm(xj-xi,yj-yi),yj-yi/norm(xj-xi,yj-yi)]}
         NOTE: The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
     '''
+    if verbose:
+        print("Computing Direction Matrix")
+        print("Size grid: ",len(grid))
+    t0 = time.time()
     direction_matrix = {i: {j: np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])/np.linalg.norm(np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])) for j in range(len(grid))} for i in range(len(grid))}
+    t1 = time.time()
+    if verbose:
+        print("Time to compute Direction Matrix: ",t1-t0)
+        print("Size direction Matrix: ",len(direction_matrix))
+    t0 = time.time()
     distance_matrix = {i: {j: hs.haversine((grid.iloc[i]['centroidy'],grid.iloc[i]['centroidx']),(grid.iloc[j]['centroidy'],grid.iloc[j]['centroidx'])) for j in range(len(grid))} for i in range(len(grid))}
+    t1 = time.time()
+    if verbose:
+        print("Time to compute Distance Matrix: ",t1-t0)
+        print("Size distance Matrix: ",len(distance_matrix))
     return direction_matrix,distance_matrix 
-'''
-def DirectionDistance2Df(direction_matrix,distance_matrix):
+
+def DirectionDistance2Df(direction_matrix,distance_matrix,verbose = True):
     rows = []
     columns = ['i', 'j', 'dir_vector', 'distance']
-
+    if verbose:
+        print("Direction matrix to DataFrame:")
+        print("Size direction Matrix: ",len(direction_matrix))
+        print("Size distance Matrix: ",len(distance_matrix))
     # Iterate over the direction and distance matrices to construct DataFrame rows
     for i, dir_row in direction_matrix.items():
         for j, dir_vector in dir_row.items():
@@ -168,19 +184,8 @@ def DirectionDistance2Df(direction_matrix,distance_matrix):
             rows.append([i, j, dir_vector, distance])
     # Create DataFrame
     df = pd.DataFrame(rows, columns=columns)
-    return df
-'''
-def DirectionDistance2Df(direction_matrix,distance_matrix):
-    rows = []
-    columns = ['i', 'j', 'dir_vector', 'distance']
-
-    # Iterate over the direction and distance matrices to construct DataFrame rows
-    for i, dir_row in direction_matrix.items():
-        for j, dir_vector in dir_row.items():
-            distance = distance_matrix[i][j]
-            rows.append([i, j, dir_vector, distance])
-    # Create DataFrame
-    df = pd.DataFrame(rows, columns=columns)
+    if verbose:
+        print("Size DataFrame: ",len(df))
     return df
 
 
@@ -265,7 +270,7 @@ def ODGrid(gridIdx2dest,
     return df
 
 ##---------------------- INTERIOR AND BOUNDARY ----------------------
-def GetBoundariesInterior(grid,SFO_obj):
+def GetBoundariesInterior(grid,SFO_obj,verbose = True):
     boundary = gpd.overlay(SFO_obj.gdf_polygons, SFO_obj.gdf_polygons, how='union',keep_geom_type=False).unary_union
     # CREATE BOUNDARY LINE
     if isinstance(boundary, Polygon):
@@ -275,9 +280,25 @@ def GetBoundariesInterior(grid,SFO_obj):
         for polygon in boundary.geoms:
             exterior_coords.extend(polygon.exterior.coords)
         boundary_line = LineString(exterior_coords)
-
+    if verbose:
+        print("Get Boundaries: ")
+        print("Boundary Type: ",type(boundary))
+        try:
+            print("Boundary Head: ",boundary.head())
+        except:
+            pass
+        try:
+            print("Boundary Line Head: ",boundary_line.head())
+        except: 
+            pass
+        print("Boundary Line Type: ",type(boundary_line))
     grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
     grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
+    if verbose:
+        try:
+            print("Grid Head: ",grid.head())
+        except:
+            pass
     return grid
 
 

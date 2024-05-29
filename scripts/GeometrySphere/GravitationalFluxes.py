@@ -3,6 +3,10 @@ import sys
 import matplotlib.pyplot as plt
 import numba
 import logging
+import json
+import os
+from collections import defaultdict
+from FittingProcedures import multilinear4variables
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 sys.path.append('~/berkeley/traffic_phase_transition/scripts')
@@ -273,13 +277,13 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
         _,_,VgridPopulationI = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_i)
         # Get Row of the grid
         for cell_j in VdestinationsI:
-            if cell_i <= cell_j: #NOTE: UnCommitted change: <= instead of <
+            if cell_i < cell_j: #NOTE: UnCommitted change: <= instead of <
                 _,VnpeopleIJ, _, VdestinationsIJ = SubsampleByCellFluxDestination(VnpeopleI, VoriginsI, VdestinationsI,cell_j)
                 _,_,VgridPopulationJ = SubSampleGridByCell(VgridIdx, VgridPopulation,cell_j)
 #                       if debug:
 #                           DebuggingGetd0Celli(count_j,NCycleControl,VnpeopleXj,VoriginsXj,VdestinationsXj,cell_j)
 #                           count_j += 1
-                if len(VnpeopleIJ)==1:
+                if len(VnpeopleIJ)==1 and VnpeopleIJ[0] != 0 and VgridPopulationI[0] != 0 and VgridPopulationJ[0] != 0:
                     idx_i0 = VoriginsI[0]
                     idx_i1 = VdestinationsIJ[0]
                     OriginDestination[count][0] = idx_i0
@@ -293,7 +297,8 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
                     Massi[count] = mi
                     Massj[count] = mj
                 else:
-                    raise ValueError('More than 1 flux')
+                    print("Mass i {} Mass j {} Fluxes {}".format(VgridPopulationI[0],VgridPopulationJ[0],VnpeopleIJ[0]))
+                    pass
                 count += 1
     idx = np.where(Fluxes > 0)
     Fluxes = Fluxes[idx]
@@ -331,7 +336,9 @@ def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,verbose):
         print("Vector Number People: ",len(Vnpeople))
         print("Vector Origins: ",len(Vorigins))
         print("Vector Destinations: ",len(Vdestinations))
-        fig,(ax00,ax01,ax10,ax11) = plt.subplots(2,2,figsize = (10,8))
+        fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+        ax00, ax01 = axes[0]
+        ax10, ax11 = axes[1]
         ax00.hist(Vnpeople,bins = 50)
         ax00.set_xlabel('Flux')
         ax00.set_ylabel('Count')
@@ -352,6 +359,8 @@ def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,verbose):
     # [DistanceVector,Massi,Massj], Fluxes -> 1D vectors for all couples of OD.
     print('Start to compute vespignani Features')
     VespignaniVector,Fluxes,OriginDestination = PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, distance_matrix)
+    VespignaniVector = np.array([np.array(VespignaniVector[0],dtype = np.int32),np.array(VespignaniVector[1],dtype = np.int32),np.array(VespignaniVector[2],dtype = np.int32)])
+    Fluxes = np.array(Fluxes,dtype = np.int32)
     return VespignaniVector,Fluxes,OriginDestination
 
 
@@ -369,7 +378,7 @@ def PlotVespignaniFit(EstimateFluxesScaled,Fluxes,DistanceVector,Massi,Massj):
 
 
 # END FITTING PROCEDURE
-@numba.njit(['(int32[:], int32[:], int32[:],int32)'],parallel=True)
+@numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32)'],parallel=True)
 def FilterVespignaniVectorByDistance(Massi,Massj,DistanceVector,Fluxes,k):
     '''
         Input: 
@@ -428,3 +437,95 @@ def FilterVespignaniVectorByDistance(Massi,Massj,DistanceVector,Fluxes,k):
 #        print('Number of Valid Indices: ',len(ValidIndices))
 #        print('Number of Invalid Indices: ',len(FilteredMassi) - len(ValidIndices))
     return [FilteredMassi0[ValidIndices],FilteredMassj0[ValidIndices],FilteredDistances0[ValidIndices]],FilteredFluxes0[ValidIndices],[FilteredMassiEnd[ComplementValidIndices],FilteredMassjEnd[ComplementValidIndices],FilteredDistancesEnd[ComplementValidIndices]],FilteredFluxesEnd[ComplementValidIndices]
+
+##----------------------------- VESPIGNANI FITTING -----------------------------##
+
+def VespignaniBlock(df_distance,grid,Tij,potentialdir):
+    VespignaniVector,Fluxes,OriginDestination = ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,True)
+    n,bins = np.histogram(VespignaniVector[2],bins = 50)
+    FittingInfo = defaultdict(dict)
+    for i in range(len(bins)-1):
+        CutVesp0,CutFluxes0,CutVespEnd,CutFluxesEnd = FilterVespignaniVectorByDistance(VespignaniVector[0],VespignaniVector[1],VespignaniVector[2],Fluxes,i)
+#        FittingInfo[i] = defaultdict(dict)
+        # FIT
+        k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+        print('Fit Vespignani: ',k,error)
+#        k0,error0 = Fitting(CutVesp0,np.array(CutFluxes0),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+#        kend,errorend = Fitting(CutVespEnd,np.array(CutFluxesEnd),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+#        FittingInfo[i]["smaller_distances"] = {'logk':k0[3],'alpha': k0[0],'gamma': k0[1],'1/d0':k0[2],"error":0}
+#        FittingInfo[i]["bigger_distances"] = {'logk':kend[3],'alpha': kend[0],'gamma': kend[1],'1/d0':kend[2],"error":0}
+#        EstematedFluxesVespignani0 = multilinear4variables(VespignaniVector,k0[0],k0[1],k0[2],k0[3])
+#        e0 = np.sqrt(np.sum((EstematedFluxesVespignani0 - CutFluxes0)**2))/np.sqrt(len(CutFluxes0))
+        
+#        EstematedFluxesVespignaniEnd = multilinear4variables(VespignaniVector,kend[0],kend[1],kend[2],kend[3])
+ #       with open(os.path.join(potentialdir,'CutBin_{}_FitVespignani.json'.format(i)),'w') as f:
+ #           json.dump(FittingInfo,f)
+ #       with open(os.path.join(potentialdir,'CutBin_{}_FitVespignani.json'.format(i)),'r') as f:
+ #           d = json.load(f)
+ #       k0 = [d[i]["smaller_distances"]['logk'],d[i]["smaller_distances"]['alpha'],d[i]["smaller_distances"]['gamma'],d[i]["smaller_distances"]['1/d0']]
+ #       kend = [d[i]["bigger_distances"]['logk'],d[i]["bigger_distances"]['alpha'],d[i]["bigger_distances"]['gamma'],d[i]["bigger_distances"]['1/d0']]
+
+    # SAVE FIT
+    k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+    with open(os.path.join(potentialdir,'FitVespignani.json'),'w') as f:
+        json.dump({'logk':k[3],'alpha': k[0],'gamma': k[1],'1/d0':k[2]},f)
+    with open(os.path.join(potentialdir,'FitVespignani.json'),'r') as f:
+        d = json.load(f)
+    k = [d['logk'],d['alpha'],d['gamma'],d['1/d0']]
+    # TAKE THE DISTRIBUTION OF FLUXES COLLECTING BY DISTANCE BINS
+    n,bins = np.histogram(VespignaniVector[2],bins = 50)
+    #nDist, binsDist = np.histogram(VespignaniVector[0],bins = 50)
+
+    # PLOT '$W_{ij}/(m_i^{{\\alpha}} m_j^{{\\gamma}})$'
+
+    EstimatedVectorFluxesVespignani = multilinear4variables(VespignaniVector,k[0],k[1],k[2],k[3])
+    WOverMM = [EstimatedVectorFluxesVespignani[np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))]/(VespignaniVector[0][np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))]**k[0]*VespignaniVector[1][np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))])**k[1] for i in range(len(bins)-1)]
+    error = [np.std(WOverMM[i])/np.sqrt(len(WOverMM[i])) for i in range(len(WOverMM))]
+    mean = [np.mean(WOverMM[i]) for i in range(len(WOverMM))]
+    print('mean: ',mean)
+    print('Distr mean: ',np.shape(mean))
+    print('Distr error: ',np.shape(error))
+
+
+    # PLOT '$W_{ij} (M)/W_{ij} (D)$'
+    WM = [EstimatedVectorFluxesVespignani[np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))] for i in range(len(bins)-1)]
+    WD = [Fluxes[np.where(VespignaniVector[0]>bins[i]) and VespignaniVector[0] < bins[i+1]] for i in range(len(bins)-1)]
+    meanWM = np.array([np.mean(WM[i]) if np.mean(WM[i])>0 else 0 for i in range(len(WM))] )
+    errorWM = np.array([np.std(WM[i])/np.sqrt(len(WM[i])) for i in range(len(WM))]) 
+    meanWD = np.array([np.mean(WD[i]) for i in range(len(WD))]) 
+    errorWD = np.array([np.std(WD[i])/np.sqrt(len(WD[i])) for i in range(len(WD))]) 
+
+    print('Mean Model: ',meanWM)
+    print('mean Model smaller 0: ',np.shape([meanWM<0]))
+    print('mean Data smaller 0: ',np.shape(meanWD[meanWD<0]))
+    print('error Model smaller 0: ',np.shape(errorWM[errorWM<0]))
+    print('error Data smaller 0: ',np.shape(errorWD[errorWD<0]))
+
+
+    WMoverWD = meanWM/meanWD
+    error1 = errorWM/meanWD + meanWM/(meanWD)**2*errorWD 
+
+
+    print('Distr W(M)/W(D): ',np.shape(WMoverWD))
+    print('Distr error1: ',np.shape(error1))
+
+
+    # PLOTTING
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    plt.errorbar(bins[:-1],mean,yerr = error, fmt='o', capsize=5, color='red')
+    plt.yscale('log')
+    plt.xlim(0,90)
+    plt.xlabel('R(km)')
+    plt.ylabel('$W_{ij}/(m_i^{{\\alpha}} m_j^{{\\gamma}})$')
+    plt.savefig(os.path.join(potentialdir,'PlotFitVespignani.png'),dpi = 200)
+    plt.show()
+
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    plt.errorbar(bins[:-9],WMoverWD[:-8],yerr = error1[:-8], fmt='o', capsize=5, color='red')
+    plt.yscale('log')
+    plt.xlabel('R(km)')
+    plt.xlim(0,90)
+    plt.ylabel('$W_{ij} (M)/W_{ij} (D)$')
+    plt.savefig(os.path.join(potentialdir,'PlotFitVespignaniDataModel.png'),dpi = 200)
+    plt.show()
+

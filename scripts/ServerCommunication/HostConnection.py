@@ -11,6 +11,7 @@ import json
 import sys
 import subprocess
 import time
+import socket
 # SETTING GLOBAL VARIABLES
 
 if socket.gethostname()=='artemis.ist.berkeley.edu':
