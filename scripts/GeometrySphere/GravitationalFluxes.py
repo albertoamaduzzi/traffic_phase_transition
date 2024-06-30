@@ -297,7 +297,7 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
                     Massi[count] = mi
                     Massj[count] = mj
                 else:
-                    print("Mass i {} Mass j {} Fluxes {}".format(VgridPopulationI[0],VgridPopulationJ[0],VnpeopleIJ[0]))
+                    #print("Mass i {} Mass j {} Fluxes {}".format(VgridPopulationI[0],VgridPopulationJ[0],VnpeopleIJ[0]))
                     pass
                 count += 1
     idx = np.where(Fluxes > 0)
