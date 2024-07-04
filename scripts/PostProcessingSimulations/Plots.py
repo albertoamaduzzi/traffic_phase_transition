@@ -38,24 +38,27 @@ def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFi
         gplt.sankey(
             TrafficGdf,
             scale= TrafficLevel,
-            limits=(0.1, 10),
+            limits=(0.1, 3),
             hue= TrafficLevel,
             cmap = 'inferno',
             norm = LogNorm(),
             ax=ax  # Use the created axes
         )
+        sm = plt.cm.ScalarMappable(cmap='inferno', norm=LogNorm(vmin=min(TrafficGdf[TrafficLevel].to_numpy()), vmax=max(TrafficGdf[TrafficLevel].to_numpy())))
+
     else:
         gplt.sankey(
             TrafficGdf,
             scale= TrafficLevel,
-            limits=(0.1, 10),
+            limits=(0.1, 3),
             hue= TrafficLevel,
             cmap = 'inferno',
             ax=ax  # Use the created axes
         )
+        sm = plt.cm.ScalarMappable(cmap='inferno', norm=plt.Normalize(vmin=min(TrafficGdf[TrafficLevel].to_numpy()), vmax=max(TrafficGdf[TrafficLevel].to_numpy())))
+
     cax = fig.add_subplot(gs[0,1])
     # Create a ScalarMappable object for the colorbar
-    sm = plt.cm.ScalarMappable(cmap='inferno', norm=LogNorm(vmin=TrafficGdf[TrafficLevel].min(), vmax=TrafficGdf[TrafficLevel].max()))
     # Empty array for the data range
     sm.set_array([])
     # Add the colorbar to the figure
