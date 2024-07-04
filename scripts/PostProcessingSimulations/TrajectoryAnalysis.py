@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 from collections import defaultdict
+from GeoJsonFunctions import *
 from OutputStats import *
 
 BASE_PATH = "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/"
@@ -17,14 +18,26 @@ class Polycentrism2TrafficAnalyzer:
         self.BaseDir = config['output_simulation_dir']
         self.GraphmlFile = config['graphml_file']
         self.R2UCI2OutputStats = defaultdict()
-        for R in config.keys():
-            if R != 'name' and R != 'delta_t' and R != 'output_simulation_dir' and R != 'graphml_file':
-                self.R2UCI2OutputStats[R] = defaultdict()
-                for UCI in config[R].keys():
-                    self.R2UCI2OutputStats[R][UCI] = OutputStats(R,UCI,config)        
+        # FLAGS
+        self.GetGeoJsonBool = False
+        self.GetGeoJson()
+        for UCI in config.keys():
+            if UCI != 'name' and UCI != 'delta_t' and UCI != 'output_simulation_dir' and UCI != 'graphml_file':
+                self.R2UCI2OutputStats[UCI] = defaultdict()
+                for R in config[UCI].keys():
+                    self.R2UCI2OutputStats[UCI][R] = OutputStats(R,UCI,config,self.GeoJsonEdges)   
+                    self.R2UCI2OutputStats[UCI][R].PlotUnloadCurve()
+
         pass
 
 
+    def GetGeoJson(self):
+        """
+            Description:
+                GeoJsonEdges: gpd.DataFrame -> u,v, uv, geometry, highway, lanes, maxspeed, capacity
+        """
+        self.GeoJsonNodes,self.GeoJsonEdges,self.GetGeoJsonBool = GetGeopandas(self.GraphmlFile)
+        self.GeoJsonEdges = CleanGeojson(self.GeoJsonEdges)
 
 
 

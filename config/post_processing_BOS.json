@@ -1,0 +1,758 @@
+{
+    "output_simulation_dir": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output",
+    "delta_t": 15,
+    "name": "BOS",
+    "graphml_file": "/home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/BOS_new_tertiary_simplified.graphml",
+    "0.666": {
+        "152": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.666_0_people7to24.csv"
+        },
+        "162": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.666_0_people7to24.csv"
+        },
+        "170": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.666_0_people7to24.csv"
+        },
+        "172": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.666_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.666_0_route7to24.csv"
+        },
+        "175": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.666_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.666_0_route7to24.csv"
+        },
+        "177": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.666_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.666_0_route7to24.csv"
+        },
+        "180": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_180_UCI_0.666_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_180_UCI_0.666_0_route7to24.csv"
+        },
+        "185": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.666_0_people7to24.csv"
+        },
+        "190": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_190_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_190_UCI_0.666_0_people7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.666_0_people7to24.csv"
+        },
+        "195": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.666_0_people7to24.csv"
+        },
+        "197": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.666_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.666_0_people7to24.csv"
+        }
+    },
+    "0.678": {
+        "150": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.678_0_route7to24.csv"
+        },
+        "155": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.678_0_people7to24.csv"
+        },
+        "157": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.678_0_route7to24.csv"
+        },
+        "162": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.678_0_people7to24.csv"
+        },
+        "165": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_165_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_165_UCI_0.678_0_people7to24.csv"
+        },
+        "167": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.678_0_people7to24.csv"
+        },
+        "170": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.678_0_route7to24.csv"
+        },
+        "172": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.678_0_route7to24.csv"
+        },
+        "180": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_180_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_180_UCI_0.678_0_route7to24.csv"
+        },
+        "182": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.678_0_people7to24.csv"
+        },
+        "185": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.678_0_people7to24.csv"
+        },
+        "187": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.678_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.678_0_people7to24.csv"
+        },
+        "192": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.678_0_route7to24.csv"
+        },
+        "195": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.678_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.678_0_route7to24.csv"
+        }
+    },
+    "0.708": {
+        "152": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.708_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.708_0_people7to24.csv"
+        },
+        "155": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.708_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.708_0_route7to24.csv"
+        },
+        "157": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.708_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.708_0_route7to24.csv"
+        },
+        "167": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.708_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.708_0_people7to24.csv"
+        },
+        "170": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.708_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.708_0_people7to24.csv"
+        },
+        "172": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.708_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.708_0_people7to24.csv"
+        },
+        "177": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.708_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.708_0_people7to24.csv"
+        },
+        "187": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.708_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.708_0_route7to24.csv"
+        },
+        "197": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.708_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.708_0_route7to24.csv"
+        }
+    },
+    "0.719": {
+        "150": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.719_0_route7to24.csv"
+        },
+        "152": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.719_0_route7to24.csv"
+        },
+        "159": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.719_0_route7to24.csv"
+        },
+        "164": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.719_0_route7to24.csv"
+        },
+        "177": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.719_0_people7to24.csv"
+        },
+        "179": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.719_0_route7to24.csv"
+        },
+        "182": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.719_0_people7to24.csv"
+        },
+        "184": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.719_0_people7to24.csv"
+        },
+        "187": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.719_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.719_0_route7to24.csv"
+        },
+        "189": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.719_0_people7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.719_0_people7to24.csv"
+        },
+        "197": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.719_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.719_0_people7to24.csv"
+        }
+    },
+    "0.724": {
+        "155": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.724_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.724_0_route7to24.csv"
+        },
+        "160": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_160_UCI_0.724_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_160_UCI_0.724_0_people7to24.csv"
+        },
+        "162": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.724_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.724_0_route7to24.csv"
+        },
+        "167": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.724_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.724_0_people7to24.csv"
+        },
+        "175": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.724_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.724_0_route7to24.csv"
+        }
+    },
+    "0.73": {
+        "150": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.73_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.73_0_route7to24.csv"
+        },
+        "152": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.73_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.73_0_route7to24.csv"
+        },
+        "155": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.73_0_people7to24.csv"
+        },
+        "157": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.73_0_people7to24.csv"
+        },
+        "182": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.73_0_people7to24.csv"
+        },
+        "184": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.73_0_people7to24.csv"
+        },
+        "189": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.73_0_people7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.73_0_people7to24.csv"
+        },
+        "194": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.73_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.73_0_people7to24.csv"
+        }
+    },
+    "0.731": {
+        "150": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.731_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.731_0_people7to24.csv"
+        },
+        "152": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_152_UCI_0.731_0_route7to24.csv"
+        },
+        "155": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.731_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.731_0_people7to24.csv"
+        },
+        "162": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.731_0_route7to24.csv"
+        },
+        "164": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.731_0_route7to24.csv"
+        },
+        "169": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.731_0_route7to24.csv"
+        },
+        "174": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.731_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.731_0_people7to24.csv"
+        },
+        "182": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.731_0_route7to24.csv"
+        },
+        "187": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.731_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.731_0_route7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.731_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.731_0_people7to24.csv"
+        },
+        "197": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.731_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.731_0_people7to24.csv"
+        }
+    },
+    "0.739": {
+        "150": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.739_0_route7to24.csv"
+        },
+        "155": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.739_0_route7to24.csv"
+        },
+        "157": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.739_0_route7to24.csv"
+        },
+        "159": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.739_0_people7to24.csv"
+        },
+        "162": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.739_0_route7to24.csv"
+        },
+        "164": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.739_0_route7to24.csv"
+        },
+        "167": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.739_0_people7to24.csv"
+        },
+        "169": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.739_0_people7to24.csv"
+        },
+        "172": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.739_0_route7to24.csv"
+        },
+        "174": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.739_0_route7to24.csv"
+        },
+        "177": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.739_0_route7to24.csv"
+        },
+        "179": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.739_0_people7to24.csv"
+        },
+        "184": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.739_0_people7to24.csv"
+        },
+        "187": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.739_0_people7to24.csv"
+        },
+        "189": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.739_0_route7to24.csv"
+        },
+        "192": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.739_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.739_0_route7to24.csv"
+        },
+        "194": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.739_0_people7to24.csv"
+        },
+        "197": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.739_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.739_0_people7to24.csv"
+        }
+    },
+    "0.755": {
+        "150": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.755_0_people7to24.csv"
+        },
+        "155": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_155_UCI_0.755_0_people7to24.csv"
+        },
+        "157": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.755_0_route7to24.csv"
+        },
+        "159": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_159_UCI_0.755_0_people7to24.csv"
+        },
+        "162": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_162_UCI_0.755_0_people7to24.csv"
+        },
+        "164": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_164_UCI_0.755_0_route7to24.csv"
+        },
+        "167": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.755_0_people7to24.csv"
+        },
+        "169": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_169_UCI_0.755_0_people7to24.csv"
+        },
+        "172": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.755_0_people7to24.csv"
+        },
+        "174": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_174_UCI_0.755_0_route7to24.csv"
+        },
+        "177": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.755_0_people7to24.csv"
+        },
+        "179": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_179_UCI_0.755_0_route7to24.csv"
+        },
+        "184": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_184_UCI_0.755_0_people7to24.csv"
+        },
+        "187": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.755_0_route7to24.csv"
+        },
+        "189": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_189_UCI_0.755_0_route7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.755_0_people7to24.csv"
+        },
+        "194": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.755_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_194_UCI_0.755_0_route7to24.csv"
+        },
+        "197": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.755_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.755_0_people7to24.csv"
+        }
+    },
+    "0.759": {
+        "150": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_150_UCI_0.759_0_route7to24.csv"
+        },
+        "157": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_157_UCI_0.759_0_people7to24.csv"
+        },
+        "165": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_165_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_165_UCI_0.759_0_people7to24.csv"
+        },
+        "167": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_167_UCI_0.759_0_route7to24.csv"
+        },
+        "170": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_170_UCI_0.759_0_people7to24.csv"
+        },
+        "172": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_172_UCI_0.759_0_people7to24.csv"
+        },
+        "175": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_175_UCI_0.759_0_route7to24.csv"
+        },
+        "177": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_177_UCI_0.759_0_people7to24.csv"
+        },
+        "182": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_182_UCI_0.759_0_people7to24.csv"
+        },
+        "185": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_185_UCI_0.759_0_route7to24.csv"
+        },
+        "187": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_187_UCI_0.759_0_people7to24.csv"
+        },
+        "192": {
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.759_0_route7to24.csv",
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_192_UCI_0.759_0_people7to24.csv"
+        },
+        "195": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_195_UCI_0.759_0_route7to24.csv"
+        },
+        "197": {
+            "start_time": "7",
+            "end_time": "24",
+            "people_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.759_0_people7to24.csv",
+            "route_file": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/R_197_UCI_0.759_0_route7to24.csv"
+        }
+    }
+}
