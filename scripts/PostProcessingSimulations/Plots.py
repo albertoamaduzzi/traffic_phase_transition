@@ -8,6 +8,7 @@ from matplotlib.colors import LogNorm
 from matplotlib.gridspec import GridSpec
 import imageio
 
+# Unloading Curve
 def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
     '''
         Input:
@@ -30,6 +31,7 @@ def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
     plt.savefig(FileName,dpi = 200)
     plt.show()
 
+# Hopefully traffic in the road network
 def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFile,Title,dpi = 300,IsLognorm = False):
     fig = plt.figure(figsize=(10, 8), dpi=dpi)
     gs = GridSpec(1, 2, width_ratios=[20, 1])
@@ -71,6 +73,7 @@ def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFi
     plt.show()
     return PlotFile
 
+# Animation traffic in the road network
 def AnimateNetworkTraffic(PlotFiles,AnimationFile,TrafficGdf,TrafficLevel,ColorBarExplanation,Title,dpi = 300,IsLognorm = False):
     images = []
     for PlotFile in PlotFiles:
@@ -78,4 +81,28 @@ def AnimateNetworkTraffic(PlotFiles,AnimationFile,TrafficGdf,TrafficLevel,ColorB
         images.append(imageio.imread(PlotFile))
     imageio.mimsave(AnimationFile, images, duration = 0.5)
     return 'movie.gif'
+
+
+# Fondamental Diagram
+def PlotAverageFondamentalDiagram(MFD2Plot):
+    print("Plotting MFD:\n")
+    fig, ax = plt.subplots(1,1,figsize = (10,8))
+    ax.plot(binsPop[1:],binsAvSpeed)
+    ax.fill_between(np.array(binsPop[1:]),
+                        np.array(binsAvSpeed) - np.array(binsSqrt), 
+                        np.array(binsAvSpeed) + np.array(binsSqrt), color='gray', alpha=0.2, label='Std')
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    ax.text(0.05, 0.95, text, transform=plt.gca().transAxes, fontsize=10,
+    verticalalignment='top', bbox=props)
+    ax.set_title(Title)
+    ax.set_xlabel("number people")
+    ax.set_ylabel("speed (km/h)")
+    plt.savefig(os.path.join(SaveDir,NameFile),dpi = 200)
+    plt.close()
+    
+    fig,ax = plt.subplots(1,1,figsize = (15,15))
+    ax.plot(MFD2Plot["avg_v(mph)"],MFD2Plot["NumberPeople"])
+    ax.set_xlabel('Average Speed [mph]')
+    ax.set_ylabel('Number of People')
+    plt.show()
 
