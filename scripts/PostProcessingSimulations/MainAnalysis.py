@@ -18,7 +18,8 @@ if __name__=='__main__':
         else:
             BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",City,"Output")
         Config = GenerateConfig(BaseData,Config,City)
-        City2Config[City] = GenerateConfig(BaseData,City2Config[City],City)    
+        City2Config[City] = GenerateConfig(BaseData,City2Config[City],City)  
+        PCTA = Polycentrism2TrafficAnalyzer(Config)  
         with open(os.path.join(BaseConfig,'post_processing_' + City +'.json'),'w') as f:
             json.dump(Config,f,indent=4)
     with open(os.path.join(BaseConfig,'post_processing_all.json'),'w') as f:
