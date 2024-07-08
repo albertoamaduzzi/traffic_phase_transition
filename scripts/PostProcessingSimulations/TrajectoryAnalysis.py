@@ -25,8 +25,11 @@ class Polycentrism2TrafficAnalyzer:
             if UCI != 'name' and UCI != 'delta_t' and UCI != 'output_simulation_dir' and UCI != 'graphml_file':
                 self.R2UCI2OutputStats[UCI] = defaultdict()
                 for R in config[UCI].keys():
-                    self.R2UCI2OutputStats[UCI][R] = OutputStats(R,UCI,config,self.GeoJsonEdges)   
-                    self.R2UCI2OutputStats[UCI][R].PlotUnloadCurve()
+                    OS = OutputStats(R,UCI,config,self.GeoJsonEdges)
+                    OS.ComputeTime2Road2Traveller()
+                    OS.PlotUnloadCurve()
+                    OS.AnimateNetworkTraffic()
+                    self.R2UCI2OutputStats[UCI][R] =  OS
 
         pass
 
