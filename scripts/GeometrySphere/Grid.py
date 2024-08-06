@@ -291,7 +291,6 @@ def GetBoundariesInterior(grid,SFO_obj,verbose = True):
             print("Boundary Line Head: ",boundary_line.head())
         except: 
             pass
-        print("Boundary Line Type: ",type(boundary_line))
     grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
     grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
     if verbose:

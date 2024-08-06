@@ -113,31 +113,30 @@ class OutputStats:
             StrUsersId = "p"
             StrNumberPeople = "NumberPeople"
             # vec(Time): vec(Road): vec(StrSpeed),vec(StrUsersId),StrNumberPeople
-            self.Time2Road2MFDNotProcessed = Init_Time2Road2MFDNotProcessed(self.HourTimeArray,self.GeoJsonEdges["uv"].to_list(dtype = int),StrSpeed,StrUsersId,StrNumberPeople)
+            IntRoads = [int(value) for value in self.GeoJsonEdges["uv"].to_list()]
+            self.Time2Road2MFDNotProcessed = Init_Time2Road2MFDNotProcessed(self.HourTimeArray,IntRoads,StrSpeed,StrUsersId,StrNumberPeople)
             self.Time2Road2MFD = Init_Time2Road2MFD(self.Time2Road2MFDNotProcessed,StrSpeed,StrNumberPeople)
-            for t  in range(len(self.IntTimeArray)):    
+            for t  in range(len(self.IntTimeArray)-1):    
                 # People in Array at time t
                 DfPeopleInNetAtTimet = FilterDfPeopleInNetInTSlice(self.IntTimeArray[t],self.IntTimeArray[t+1],self.DfPeople,"time_departure","last_time_simulated")
                 # Add time_departure: int last_time_simulated: int avg_v(mph): float time: np.array
                 self.DfRoute,self.Column2IndexDfRoute = AddTimeList2DfRoute(self.DfRoute,self.DfPeople)
                 # People in the network at time t NOTE: route df
                 user_ids_in_net = DfPeopleInNetAtTimet[StrUsersId].to_list()
-                DfRouteInInterval = self.DfRoute.filter(pl.col(StrUsersId).is_in(user_ids_in_net))
-                print("self.IntTimeArray[t]",self.IntTimeArray[t])
-                for Personrow in DfRouteInInterval.rows():
-                    print("personrow",Personrow)
-                    Roads = ast.literal_eval(Personrow[self.Column2IndexDfRoute["route"]])
-                    for Road in Roads:
-                        print("Road ",Road)
-                        print("self.TimeHourArray[t] ",self.HourTimeArray[t])
-                        print("StrUsersId ",StrUsersId)
-                        print("StrSpeed ",StrSpeed)
-                        # Time: Road
-                        self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road][StrUsersId].append(Personrow[StrUsersId]) 
-                        self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road].append(Personrow[StrSpeed])
-                        self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road][StrNumberPeople] += len(DfRouteInInterval)
+                if len(user_ids_in_net) != 0:
+                    DfRouteInInterval = self.DfRoute.filter(pl.col(StrUsersId).is_in(user_ids_in_net))
+                    for Personrow in DfRouteInInterval.rows():
+                        Roads = ast.literal_eval(Personrow[self.Column2IndexDfRoute["route"]])
+                        Id_ = Personrow[self.Column2IndexDfRoute[StrUsersId]]
+                        for Road in Roads:
+                            # Time: Road
+                            self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road][StrUsersId].append(Id_) 
+                            self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road][StrSpeed].append(Road)
+                            self.Time2Road2MFDNotProcessed[self.HourTimeArray[t]][Road][StrNumberPeople] += len(DfRouteInInterval)
+                else:
+                    pass
             self.Time2Road2MFD = ComputeAvgTime2Road2MFD(self.Time2Road2MFDNotProcessed,self.Time2Road2MFD,StrSpeed,StrNumberPeople)
-            self.Road2MFD2Plot = Init_Road2MFD2Plot(self.Time2Road2MFD,StrSpeed,StrNumberPeople)
+            self.Road2MFD2Plot = Init_Road2MFD2Plot(self.Time2Road2MFD,StrSpeed,StrNumberPeople,self.GeoJsonEdges)
             self.MFD2Plot = Init_MFD2Plot(self.Road2MFD2Plot,StrSpeed,StrNumberPeople)
             self.AddGeoJsonTimeColumns(StrNumberPeople,StrSpeed)
             self.CountFunctions += 1
@@ -149,8 +148,7 @@ class OutputStats:
         """
         if self.verbose:
             print("AddGeoJsonTimeColumns")
-            print("Time Hours Array: ",self.HourTimeArray)
-        for t in self.HourTimeArray:
+        for t in self.Time2Road2MFD.keys():
             self.GeoJsonEdges[StrNumberPeople + "_" + t] = self.GeoJsonEdges["uv"].apply(lambda x: self.Time2Road2MFD[t][x][StrNumberPeople])
             self.GeoJsonEdges[StrSpeed + "_" + t] = self.GeoJsonEdges["uv"].apply(lambda x: self.Time2Road2MFD[t][x][StrSpeed])
             self.GeoJsonEdges["timepercorrence_" + t] = self.GeoJsonEdges.apply(lambda x: self.Time2Road2MFD[t][x["uv"]][StrSpeed]/x["maxspeed_int"],axis = 1)

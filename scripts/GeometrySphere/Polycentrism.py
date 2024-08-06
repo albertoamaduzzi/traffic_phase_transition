@@ -100,8 +100,8 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         dd = df_distance.loc[maski]
         maskj = [j in IndexEdge for j in dd['j']]
         dd = dd.loc[maskj]        
-        result_vector = np.ones(NumGridEdge)*(SumPot/NumGridEdge)**2
-        return np.array(result_vector).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
+        Smax = np.ones(NumGridEdge)*(SumPot/NumGridEdge)#**2
+        return np.array(Smax).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
     else:
         maski = [i in IndexEdge for i in df_distance['i']]
         dd = df_distance.loc[maski]
@@ -122,7 +122,7 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         return np.array(PD['V_out'].values).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
 
 @numba.jit(['(float32[:], float32[:])'],parallel = True)
-def ComputeJitV(Filtered_Potential,Filtered_Distance):
+def ComputeJitV(Filtered_Potential_Normalized,Filtered_Distance):
     '''
         Input:
             Filtered_Potential: array of potential values [Pot_O,...,Pot_(Ngrids with non 0 potential)]
@@ -132,13 +132,13 @@ def ComputeJitV(Filtered_Potential,Filtered_Distance):
             NOTE: I am putting the renormalization with the number of couples.
     '''
     V_in_PI = 0
-    Filtered_Potential = Filtered_Potential/np.sum(Filtered_Potential)
+#    Filtered_Potential = Filtered_Potential/np.sum(Filtered_Potential)    
     index_distance = 0
-    for i in prange(len(Filtered_Potential)):
-        for j in prange(len(Filtered_Potential)):
-            V_in_PI += Filtered_Potential[i]*Filtered_Potential[j]*Filtered_Distance[index_distance]
+    for i in prange(len(Filtered_Potential_Normalized)):
+        for j in prange(len(Filtered_Potential_Normalized)):
+            V_in_PI += Filtered_Potential_Normalized[i]*Filtered_Potential_Normalized[j]*Filtered_Distance[index_distance]        # Si*Sj*Dij
             index_distance += 1
-    V_in_PI = V_in_PI/len(Filtered_Potential)**2
+#    V_in_PI = V_in_PI/len(Filtered_Potential_Normalized)**2
     return V_in_PI    
 
 
@@ -163,15 +163,22 @@ def LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe,v
                                             2) PotentialDataframe['V_out']>0)
         Returns the PI
     '''
-    Filtered_Potential,Filtered_Distance = PrepareJitCompiledComputeV(df_distance,GetIndexEdgePolygon(grid),SumPot,NumGridEdge,PotentialDataframe,case = 'Vmax')
+    # Compute Vmax 
+    # Smax_i: (Vtot/N_edges,...,Vtot/N_edges)
+    # Dmax_ij: (distance between the edges)
+    Smax_i,Dmax_ij = PrepareJitCompiledComputeV(df_distance,GetIndexEdgePolygon(grid),SumPot,NumGridEdge,PotentialDataframe,case = 'Vmax')
+    Vmax = ComputeJitV(Smax_i,Dmax_ij)/2
     if verbose:
-        print('Filtered Potential: ',len(Filtered_Potential))
-        print('Filtered Distance: ',len(Filtered_Distance))
-        print('N**2: ',len(Filtered_Potential)*(len(Filtered_Potential)))
-    Vmax = ComputeJitV(Filtered_Potential,Filtered_Distance)/2
+        print('Number of Squares that form the edge: ',len(Smax_i))
+        print('Number of Distances Among edges: ',len(Dmax_ij))
+        print('Control that the number of distances is equal to the Number of `grid units` in the edge squared: ',len(Smax_i)*(len(Smax_i)))
+    # Copmute V
+    # Si: Potential values for the grid with population > 0 and Potential > 0 [i is the index of the grid]
+    # D_ij: Distance between the grids with population > 0 and Potential > 0
     PotentialDataframeMass = PotentialDataframe.loc[grid['population']>0]
-    Filtered_Potential,Filtered_Distance = PrepareJitCompiledComputeV(df_distance,PotentialDataframeMass.loc[PotentialDataframeMass['V_out']>0]['index'].values,SumPot,NumGridEdge,PotentialDataframe,case = 'V')
-    V = ComputeJitV(Filtered_Potential,Filtered_Distance)/2
+    Si,D_ij = PrepareJitCompiledComputeV(df_distance,PotentialDataframeMass.loc[PotentialDataframeMass['V_out']>0]['index'].values,SumPot,NumGridEdge,PotentialDataframe,case = 'V')
+    Si_Normalized = Si/np.sum(Si)
+    V = ComputeJitV(Si_Normalized,D_ij)/2
     if verbose:
         print('Vmax: ',Vmax,'V: ',V)
     return ComputePI(V,Vmax)
@@ -215,7 +222,9 @@ def ComputeUCI(grid,PotentialDataframe,df_distance,verbose = True):
                 In particular the Lorenz Centers.
         
     '''
+    # Total Potential Copmuted for the generated OD
     SumPot = PotentialDataframe['V_out'].sum()
+    # Number of squares in the grid that are edges
     NumGridEdge = grid[grid['relation_to_line']=='edge'].shape[0]
     PI = LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe)
     MaskOutside = [True if (row['position'] == 'outside' or row['position'] == 'edge') else False for i,row in grid.iterrows()]
