@@ -359,9 +359,12 @@ def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,verbose):
     # [DistanceVector,Massi,Massj], Fluxes -> 1D vectors for all couples of OD.
     print('Start to compute vespignani Features')
     VespignaniVector,Fluxes,OriginDestination = PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulation, distance_matrix)
-    VespignaniVector = np.array([np.array(VespignaniVector[0],dtype = np.int32),np.array(VespignaniVector[1],dtype = np.int32),np.array(VespignaniVector[2],dtype = np.int32)])
+    VespignaniVector = np.array([np.array(VespignaniVector[0],dtype = np.int32),np.array(VespignaniVector[1],dtype = np.int32),np.array(VespignaniVector[2],dtype = np.float32)])
+    Massi = np.array(VespignaniVector[0],dtype = np.int32)
+    Massj = np.array(VespignaniVector[1],dtype = np.int32)
+    DistanceVector = np.array(VespignaniVector[2],dtype = np.float32)
     Fluxes = np.array(Fluxes,dtype = np.int32)
-    return VespignaniVector,Fluxes,OriginDestination
+    return Massi,Massj,DistanceVector,Fluxes,OriginDestination
 
 
 
@@ -378,7 +381,7 @@ def PlotVespignaniFit(EstimateFluxesScaled,Fluxes,DistanceVector,Massi,Massj):
 
 
 # END FITTING PROCEDURE
-@numba.njit(['(int32[:], int32[:], int32[:],int32[:],int32)'],parallel=True)
+@numba.njit(['(int32[:], int32[:], float32[:],int32[:],int32)'],parallel=True)
 def FilterVespignaniVectorByDistance(Massi,Massj,DistanceVector,Fluxes,k):
     '''
         Input: 
@@ -441,14 +444,15 @@ def FilterVespignaniVectorByDistance(Massi,Massj,DistanceVector,Fluxes,k):
 ##----------------------------- VESPIGNANI FITTING -----------------------------##
 
 def VespignaniBlock(df_distance,grid,Tij,potentialdir):
-    VespignaniVector,Fluxes,OriginDestination = ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,True)
-    n,bins = np.histogram(VespignaniVector[2],bins = 50)
+    Massi,Massj,DistanceVector,Fluxes,OriginDestination = ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij,True)
+    n,bins = np.histogram(DistanceVector,bins = 50)
     FittingInfo = defaultdict(dict)
     for i in range(len(bins)-1):
-        CutVesp0,CutFluxes0,CutVespEnd,CutFluxesEnd = FilterVespignaniVectorByDistance(VespignaniVector[0],VespignaniVector[1],VespignaniVector[2],Fluxes,i)
+        CutVesp0,CutFluxes0,CutVespEnd,CutFluxesEnd = FilterVespignaniVectorByDistance(Massi,Massj,DistanceVector,Fluxes,i)
 #        FittingInfo[i] = defaultdict(dict)
         # FIT
-        k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+        VespignaniVector = np.array([Massi,Massj,DistanceVector])
+        k,error = Fitting(np.array([Massi,Massj,DistanceVector]),np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
         print('Fit Vespignani: ',k,error)
 #        k0,error0 = Fitting(CutVesp0,np.array(CutFluxes0),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
 #        kend,errorend = Fitting(CutVespEnd,np.array(CutFluxesEnd),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
@@ -466,7 +470,7 @@ def VespignaniBlock(df_distance,grid,Tij,potentialdir):
  #       kend = [d[i]["bigger_distances"]['logk'],d[i]["bigger_distances"]['alpha'],d[i]["bigger_distances"]['gamma'],d[i]["bigger_distances"]['1/d0']]
 
     # SAVE FIT
-    k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
+    k,error = Fitting(np.array([Massi,Massj,DistanceVector]),np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 10000)
     with open(os.path.join(potentialdir,'FitVespignani.json'),'w') as f:
         json.dump({'logk':k[3],'alpha': k[0],'gamma': k[1],'1/d0':k[2]},f)
     with open(os.path.join(potentialdir,'FitVespignani.json'),'r') as f:

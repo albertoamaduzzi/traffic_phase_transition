@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+import polars as pl
 def AddMessageToLog(Message,LogFile):
     with open(LogFile,'a') as f:
         f.write(Message+'\n')
@@ -45,18 +46,33 @@ def ComputeAvgTime2Road2MFD(Time2Road2MFDNotProcessed,Time2Road2MFD,StrSpeed,Str
             Time2Road2MFD[t][Road][StrNumberPeople] = Time2Road2MFDNotProcessed[t][Road][StrNumberPeople]
     return Time2Road2MFD
 
-def Init_Road2MFD2Plot(Time2Road2MFD,StrSpeed,StrNumberPeople):
+def Init_Road2MFD2Plot(Time2Road2MFD,StrSpeed,StrNumberPeople,GeoJsonEdges):
     """
         For each Road Add the Speed and the Number of People per time
 
     """
-    SpeedList = np.array((len(list(Time2Road2MFD.keys())),1))
-    NumberPeopleList = np.array((len(list(Time2Road2MFD.keys())),1))
+#    SpeedList = np.array((len(list(Time2Road2MFD.keys())),1))
+#    NumberPeopleList = np.array((len(list(Time2Road2MFD.keys())),1))
+    Road2Time2MFDPlot = {Road:{t:{StrSpeed:np.empty(len(list(Time2Road2MFD.keys()))),StrNumberPeople:np.empty(len(list(Time2Road2MFD.keys())))} for t in Time2Road2MFD.keys()}for Road in Time2Road2MFD[list(Time2Road2MFD.keys())[0]]}
+    Road2MFDPlot = {Road:{StrSpeed:np.empty(len(list(Road2Time2MFDPlot[Road].keys()))),StrNumberPeople:np.empty(len(list(Road2Time2MFDPlot[Road].keys())))} for Road in Road2Time2MFDPlot.keys()}
     for Road in Time2Road2MFD[list(Time2Road2MFD.keys())[0]]:
         for t in Time2Road2MFD.keys():
-            SpeedList = np.append(SpeedList,Time2Road2MFD[t][Road][StrSpeed],axis =1)
-            NumberPeopleList = np.append(NumberPeopleList,Time2Road2MFD[t][Road][StrNumberPeople],axis =1)
-    Road2MFDPlot = {Road:{StrSpeed:np.mean(SpeedList,axis = 1),StrNumberPeople:np.sum(NumberPeopleList,axis = 1)} for Road in Road2MFDPlot}
+            Road2Time2MFDPlot[Road][t][StrSpeed] = np.append(Road2Time2MFDPlot[Road][t][StrSpeed],Time2Road2MFD[t][Road][StrSpeed])
+            Road2Time2MFDPlot[Road][t][StrNumberPeople] = np.append(Road2Time2MFDPlot[Road][t][StrNumberPeople],Time2Road2MFD[t][Road][StrNumberPeople])
+    #            SpeedList = np.append(SpeedList,Time2Road2MFD[t][Road][StrSpeed],axis =1)
+    #            NumberPeopleList = np.append(NumberPeopleList,Time2Road2MFD[t][Road][StrNumberPeople],axis =1)
+    for Road in Road2Time2MFDPlot.keys():
+        for t in range(len(Road2Time2MFDPlot[Road].keys())):
+            TmpList = list(Road2Time2MFDPlot[Road].keys())
+            if len(Road2Time2MFDPlot[Road][TmpList[t]][StrSpeed])!=0:
+                Road2MFDPlot[Road][StrSpeed][t] = np.mean(Road2Time2MFDPlot[Road][TmpList[t]][StrSpeed])
+            else:
+                Road2MFDPlot[Road][StrSpeed][t] = GeoJsonEdges.filter(pl.col("uv") == Road)["maxspeed_int"].to_list()[0]
+            if len(Road2Time2MFDPlot[Road][TmpList[t]][StrNumberPeople])!=0:
+                Road2MFDPlot[Road][StrNumberPeople][t] = np.mean(Road2Time2MFDPlot[Road][TmpList[t]][StrNumberPeople])
+            else:
+                Road2MFDPlot[Road][StrNumberPeople][t] = 0
+#    Road2MFDPlot = {Road:{StrSpeed:np.mean(Road2Time2MFDPlot[Road][t][StrSpeed]),StrNumberPeople:np.sum(NumberPeopleList,axis = 1)} for Road in Road2MFDPlot}
     return Road2MFDPlot
 
 
