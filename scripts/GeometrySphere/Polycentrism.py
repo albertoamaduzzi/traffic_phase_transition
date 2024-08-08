@@ -100,7 +100,7 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         dd = df_distance.loc[maski]
         maskj = [j in IndexEdge for j in dd['j']]
         dd = dd.loc[maskj]        
-        Smax = np.ones(NumGridEdge)*(SumPot/NumGridEdge)#**2
+        Smax = np.ones(NumGridEdge)*(1/NumGridEdge)#**2
         return np.array(Smax).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
     else:
         maski = [i in IndexEdge for i in df_distance['i']]

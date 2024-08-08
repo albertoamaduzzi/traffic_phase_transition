@@ -30,15 +30,16 @@ def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
                                     GeometricalInfo.save_dir_local)
     GeometricalInfo.grid = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.grid,'grid',NameCity)
     GeometricalInfo.lattice = GetLattice(GeometricalInfo.grid,grid_size,GeometricalInfo.bounding_box,GeometricalInfo.save_dir_local)
-    SaveGrid(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.grid)
-    SaveLattice(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.lattice)
     plot_grid_tiling(GeometricalInfo.grid,GeometricalInfo.gdf_polygons,GeometricalInfo.save_dir_local,grid_size)
-    GeometricalInfo.OD2grid,GeometricalInfo.grid2OD = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
+    GeometricalInfo.OD2grid,GeometricalInfo.grid2OD,GeometricalInfo.grid = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
                                                                     GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                     NameCity = GeometricalInfo.city,
                                                                     GeometryName ='grid',
                                                                     save_dir_local = GeometricalInfo.save_dir_local,
                                                                     resolution = grid_size)
+    SaveGrid(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.grid)
+    SaveLattice(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.lattice)
+
     direction_matrix, bool_ = GetDirectionMatrix(GeometricalInfo.save_dir_local,grid_size)
     if bool_:
         pass

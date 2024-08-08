@@ -33,7 +33,7 @@ def AllStepsRing(GeometricalInfo,radius,NameCity):
     GeometricalInfo.ring = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.ring,'ring',NameCity)
     SaveRing(GeometricalInfo.save_dir_local,radius,GeometricalInfo.ring)
     plot_ring_tiling(GeometricalInfo.rings,GeometricalInfo.save_dir_local,GeometricalInfo.number_of_rings,radius)
-    GeometricalInfo.OD2ring,GeometricalInfo.ring2OD = Geometry2OD(gdf_geometry = GeometricalInfo.ring,
+    GeometricalInfo.OD2ring,GeometricalInfo.ring2OD,GeometricalInfo.ring = Geometry2OD(gdf_geometry = GeometricalInfo.ring,
                                                                  GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                  NameCity = GeometricalInfo.city,
                                                                  GeometryName ='ring',
