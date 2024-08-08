@@ -1,35 +1,46 @@
 import numpy as np
 import json
+import os
 from Potential import *
 from ModifyPotential import *
 from Polycentrism import *
 from PolycentrismPlot import *
+
+# ----- UPLOAD GRAVITATIONAL FIT ------
+def UploadGravitationalFit(TRAFFIC_DIR,name):
+    with open(os.path.join(TRAFFIC_DIR,'data','carto',name,'potential','FitVespignani.json'),'r')as f:
+        fitGLM = json.load(f)
+    k = np.exp(fitGLM['logk'])
+    alpha =fitGLM['alpha']
+    beta = fitGLM['gamma']
+    d0 = fitGLM['1/d0']    
+    return k,alpha,beta,d0
 ###------------------------------- MODIFY FLUXES -------------------------------------------###
 def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_distance,lattice,num_peaks,TRAFFIC_DIR,name,grid_size,InfoCenters = {'center_settings': {"type":"exponential"},'covariance_settings':{"covariances":{"cvx":5,"cvy":5}}},fraction_fluxes = 80,verbose = True):
     '''
         Returns The Fluxes in the Tij That needs to be put in the simulation as Configuration Files.
     '''
 #    InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_distance,num_peaks = args
-    if verbose:
-        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        print("Modify Morphology {}".format(num_peaks))
-    with open('/home/aamad/Desktop/phd/berkeley/traffic_phase_transition/data/carto/BOS/potential/FitVespignani.json','r')as f:
-        fitGLM = json.load(f)
-    k = np.exp(fitGLM['logk'])
-    alpha =fitGLM['alpha']
-    beta = fitGLM['gamma']
-    d0 = fitGLM['1/d0']    
-    # Total Population and Fluxes
+    k,alpha,beta,d0 = UploadGravitationalFit(TRAFFIC_DIR,name)
+    #  Total Population and Fluxes
     total_population = np.sum(grid['population'])
     total_flux = np.sum(Tij['number_people'])
     # Generate random indices for centers
     if verbose:
+        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        print("Modify Morphology {}".format(num_peaks))
+        print("Center Settings: ")
+        print("Type: ",InfoCenters['center_settings']['type'])
+        print(f"Covariance: ({InfoCenters['covariance_settings']['covariances']['cvx']},{InfoCenters['covariance_settings']['covariances']['cvy']}")
         PrintInfoFluxPop(grid,Tij)
         print('Plotting fluxes coming from raw data')
-        PlotFluxes(grid,Tij,SFO_obj,'/home/aamad/Desktop/phd/berkeley/traffic_phase_transition/data/carto/BOS',fraction_fluxes)
+        PlotFluxes(grid,Tij,SFO_obj,os.path.join(TRAFFIC_DIR,'data','carto',name),fraction_fluxes)
         print('PIPELINE MODIFICATION FLUXES starting...')
+    # Store the DataFrames that will store the generated fluxes and population
     InfoConfigurationPolicentricity = InitConfigurationPolicentricity(num_peaks,InfoConfigurationPolicentricity,grid,Tij)
+    # Generate Random Population
     new_population,index_centers = GenerateRandomPopulation(grid,num_peaks,total_population,InfoCenters,verbose)
+    # From Population, using the gravitational model, generate the fluxes
     Modified_Fluxes = GenerateModifiedFluxes(new_population,df_distance,k,alpha,beta,d0,total_flux,verbose)
     InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people'] = Modified_Fluxes
     InfoConfigurationPolicentricity[num_peaks]['grid']['population'] = new_population    
@@ -46,26 +57,31 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
     InfoConfigurationPolicentricity[num_peaks]['LC'] = LC
     InfoConfigurationPolicentricity[num_peaks]['UCI'] = UCI
     if verbose:
-        print("InfoconfigurationPolicentricity: ",id(InfoConfigurationPolicentricity))
-        print("InfoconfigurationPolicentricity[num_peaks]: ",id(InfoConfigurationPolicentricity[num_peaks]))
-        print("InfoConfigurationPolicentricity[num_peaks]['grid']: ",id(InfoConfigurationPolicentricity[num_peaks]['grid']))
-        print("InfoConfigurationPolicentricity[num_peaks]['Tij']: ",id(InfoConfigurationPolicentricity[num_peaks]['Tij']))
-        print("grid: ",id(grid))
-        print("Tij: ",id(Tij))
-        print("Modified_Fluxes: ",id(Modified_Fluxes))
-        print("New_Vector_Field: ",id(New_Vector_Field))
-        print("New_Potential_Dataframe: ",id(New_Potential_Dataframe))
-        print("df_distance: ",id(df_distance))
-        print("SFO_obj: ",id(SFO_obj))
-        print("total_population: ",id(total_population))
-        print("total_flux: ",id(total_flux))
-        print("k: ",id(k))
-        print("alpha: ",id(alpha))
-        print("beta: ",id(beta))
-        print("d0: ",id(d0))
         print('After Population Generation and Gravity:')
         PrintInfoFluxPop(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'])
+        if len(Tij) == len(InfoConfigurationPolicentricity[num_peaks]['Tij']):
+            print("Total Absolute Difference Original/Generated Fluxes: ",np.sum(np.abs(InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people'].to_numpy() - Tij['number_people'].to_numpy())))
+            print("Average Absolute Difference Original/Generated Fluxes: ",np.mean(np.abs(InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people'].to_numpy() - Tij['number_people'].to_numpy())))
+            print("Number of Fluxes: ",len(InfoConfigurationPolicentricity[num_peaks]['Tij']))
+            print("Number of Fluxes > 0: ",len(InfoConfigurationPolicentricity[num_peaks]['Tij'][InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people']>0]))
+            print("Fraction (>0) to Total Fluxes: ",len(InfoConfigurationPolicentricity[num_peaks]['Tij'][InfoConfigurationPolicentricity[num_peaks]['Tij']['number_people']>0])/len(InfoConfigurationPolicentricity[num_peaks]['Tij']))
+        print('PI: ',PI)
+        print('LC: ',LC)
+        print('UCI: ',UCI)
         print('************PLOTTING************')
+        print("Comparison Among Fluxes: ")
+        count_peak0 = 0
+        for num_peak in InfoConfigurationPolicentricity.keys():
+            count_peak1 = 0
+            for num_peak1 in InfoConfigurationPolicentricity.keys():
+                if num_peak != num_peak1 and count_peak0 < count_peak1:
+                    if 'Tij' in InfoConfigurationPolicentricity[num_peak].keys() and 'Tij' in InfoConfigurationPolicentricity[num_peak1].keys():
+                        print("Comparison between {} and {}".format(num_peak,num_peak1))
+                        print("Average Difference Population",np.mean(np.abs(InfoConfigurationPolicentricity[num_peak]['Tij']['number_people'].to_numpy() - InfoConfigurationPolicentricity[num_peak1]['Tij']['number_people'].to_numpy())))
+#                        print("Average Difference Potential",np.mean(np.abs(np.array(InfoConfigurationPolicentricity[num_peak]['potential']) - np.array(InfoConfigurationPolicentricity[num_peak1]['potential']))))
+                        print("Potential: ",np.array(InfoConfigurationPolicentricity[num_peak]['potential']))
+                count_peak1 += 1
+            count_peak0 += 1
         dir_grid = GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,InfoCenters['covariance_settings']['covariances']['cvx'],InfoCenters['center_settings']['type'],UCI)
         PlotFluxes(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['Tij'],SFO_obj,dir_grid,fraction_fluxes,verbose)
         PlotPositionCenters(grid,SFO_obj,index_centers,dir_grid)
@@ -73,7 +89,7 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
         PlotOldNewFluxes(InfoConfigurationPolicentricity[num_peaks]['Tij'],Tij)
         PlotVFPotMass(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],InfoConfigurationPolicentricity[num_peaks]['vector_field'],dir_grid,'population','Ti',verbose)
         PotentialContour(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],SFO_obj,dir_grid,verbose)
-        PotentialSurface(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid,verbose)
-        PlotRotorDistribution(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid)
+#        PotentialSurface(InfoConfigurationPolicentricity[num_peaks]['grid'],SFO_obj,InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid,verbose)
+#        PlotRotorDistribution(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid)
         PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,verbose)
-    return InfoConfigurationPolicentricity
+    return InfoConfigurationPolicentricity,UCI

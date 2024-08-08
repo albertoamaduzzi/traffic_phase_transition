@@ -43,7 +43,7 @@ def main(NameCity,TRAFFIC_DIR):
     grid_sizes = [0.02]#list(np.arange(0.02,0.1,0.01))
     n_rings = list(np.arange(10,15,1))
     ## ------------------------- INITIALIZE POLYGON 2 OD ------------------------- ##
-    GeometricalInfo.OD2polygon,GeometricalInfo.polygon2OD = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_polygons,
+    GeometricalInfo.OD2polygon,GeometricalInfo.polygon2OD,GeometricalInfo.gdf_polygons = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_polygons,
                                                                         GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                         NameCity = GeometricalInfo.city,
                                                                         GeometryName ='polygon',
@@ -57,7 +57,7 @@ def main(NameCity,TRAFFIC_DIR):
     for resolution in resolutions:
         GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,resolution)
         SaveHexagon(GeometricalInfo.save_dir_local,resolution,GeometricalInfo.gdf_hexagons)
-        GeometricalInfo.OD2hexagon,GeometricalInfo.hexagon2OD = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_hexagons,
+        GeometricalInfo.OD2hexagon,GeometricalInfo.hexagon2OD,GeometricalInfo.gdf_hexagons = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_hexagons,
                                                                             GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                             NameCity = GeometricalInfo.city,
                                                                             GeometryName ='hexagon',
@@ -82,15 +82,15 @@ def main(NameCity,TRAFFIC_DIR):
                                     GeometricalInfo.save_dir_local)
         GeometricalInfo.grid = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.grid,'grid',NameCity)
         GeometricalInfo.lattice = GetLattice(GeometricalInfo.grid,grid_size,GeometricalInfo.bounding_box,GeometricalInfo.save_dir_local)
-        SaveGrid(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.grid)
-        SaveLattice(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.lattice)
         # Map Grid2OD and OD2Grid
-        GeometricalInfo.OD2grid,GeometricalInfo.grid2OD = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
+        GeometricalInfo.OD2grid,GeometricalInfo.grid2OD,GeometricalInfo.grid = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
                                                                     GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                     NameCity = GeometricalInfo.city,
                                                                     GeometryName ='grid',
                                                                     save_dir_local = GeometricalInfo.save_dir_local,
                                                                     resolution = grid_size)
+        SaveGrid(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.grid)
+        SaveLattice(GeometricalInfo.save_dir_local,grid_size,GeometricalInfo.lattice)        
         direction_matrix, bool_ = GetDirectionMatrix(GeometricalInfo.save_dir_local,grid_size)
         if bool_:
             pass
@@ -116,7 +116,7 @@ def main(NameCity,TRAFFIC_DIR):
                                             GeometricalInfo.save_dir_local)
             GeometricalInfo.rings = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.rings,'ring',NameCity)
             SaveRing(GeometricalInfo.save_dir_local,n_ring,GeometricalInfo.rings)
-            GeometricalInfo.OD2ring,GeometricalInfo.ring2OD = Geometry2OD(gdf_geometry = GeometricalInfo.rings,
+            GeometricalInfo.OD2ring,GeometricalInfo.ring2OD,GeometricalInfo.rings = Geometry2OD(gdf_geometry = GeometricalInfo.rings,
                                                                         GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                         NameCity = GeometricalInfo.city,
                                                                         GeometryName ='ring',

@@ -37,9 +37,9 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
         print("++++++++++++ Generate Index Centers ++++++++++++")
         print("Number of Populated Grids: ",len(populated_grid))
         print("Average distance from Center: ",scale)
-        print("Distance from Center Extracted: ")
-        for rv in random_values:
-            print(rv) 
+#        print("Distance from Center Extracted: ")
+#        for rv in random_values:
+#            print(rv) 
     for rv in random_values:
         if rv > bin_edges[-1]:
             while(rv > bin_edges[-1]):
@@ -49,8 +49,8 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
 #                print('bin index: ',bin_index)     
             filtered_grid = populated_grid[(populated_grid['distance_from_center'] >= bin_edges[bin_index - 1])] 
             filtered_grid = filtered_grid[filtered_grid['distance_from_center'] < bin_edges[bin_index]]   
-            if verbose:
-                print('Distance from center extracted: ',rv,'Number of grids available: ',len(filtered_grid))
+#            if verbose:
+#                print('Distance from center extracted: ',rv,'Number of grids available: ',len(filtered_grid))
         else:
             bin_index = np.digitize(rv, bin_edges)
 #            print('bin index: ',bin_index)  
@@ -66,8 +66,8 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
             # Step 6: Get the index of the selected row
             selected_index = selected_row['index'].values[0]
             index_centers.append(selected_index)
-    if verbose:
-        print('Grid selected: ',index_centers)
+#    if verbose:
+#        print('Grid selected: ',index_centers)
 
     return index_centers
 
@@ -93,8 +93,8 @@ def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random
                 covariances.append(rvs)
             if verbose:
                 print('Isotropic and Random')
-                for i in range(len(index_centers)):
-                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
+#                for i in range(len(index_centers)):
+#                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
         else:
             assert 'cvx' in cov.keys()
             for i in range(len(index_centers)):
@@ -103,8 +103,8 @@ def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random
                 covariances.append(rvs)
             if verbose:
                 print('Isotropic and Not Random')
-                for i in range(len(index_centers)):
-                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
+#                for i in range(len(index_centers)):
+#                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
     else:
         if Random:
             for i in range(len(index_centers)):
@@ -112,8 +112,8 @@ def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random
                 covariances.append(rvs)
             if verbose:
                 print('Not Isotropic and Random')
-                for i in range(len(index_centers)):
-                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
+#                for i in range(len(index_centers)):
+#                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
         else:
             assert 'cvx' in cov.keys() and 'cvy' in cov.keys()
             for i in range(len(index_centers)):
@@ -123,8 +123,8 @@ def SetCovariances(index_centers,cov = {"cvx":5,"cvy":5},Isotropic = True,Random
                 covariances.append(rvs)
             if verbose:
                 print('Not Isotropic and Not Random')
-                for i in range(len(index_centers)):
-                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
+#                for i in range(len(index_centers)):
+#                    print("Center ",i,":\nsigma_x: ",covariances[i][0][0],"\nsigma_y: ",covariances[i][1][1])
 
 
     return covariances
@@ -142,15 +142,15 @@ def ComputeNewPopulation(grid,index_centers,covariances,total_population,Distrib
     new_population = np.ones(len(grid))
     centers = grid.loc[index_centers][['centroidx','centroidy']].to_numpy()
     count_center = 0
-    if verbose:
-        print('++++++++++ POPULATION DISTRIBUTION +++++++++')
-        print("Distribution: ",Distribution)
-        print('Covariance -> x {0}, y {1}'.format(covariances[count_center][0][0],covariances[count_center][1][1]))
+#    if verbose:
+#        print('++++++++++ POPULATION DISTRIBUTION +++++++++')
+#        print("Distribution: ",Distribution)
+#        print('Covariance -> x {0}, y {1}'.format(covariances[count_center][0][0],covariances[count_center][1][1]))
     for center in centers:
         for i in range(len(grid)):
             point = np.array([grid['centroidx'][i], grid['centroidy'][i]])
             if grid['is_populated'][i]:
-                if Distribution == 'exponetial':
+                if Distribution == 'exponential':
                     new_population[i] += total_population_center*np.exp(-(np.linalg.norm(ProjCoordsTangentSpace(center[0],center[1],point[0],point[1]))/(10**3))/covariances[count_center][0][0])/2
                 elif Distribution == 'gaussian':
                     new_population[i] += total_population_center*np.exp(-(np.linalg.norm(ProjCoordsTangentSpace(center[0],center[1],point[0],point[1]))/(10**3))**2/(covariances[count_center][0][0]**2 + covariances[count_center][1][1]**2))/2
@@ -192,7 +192,7 @@ def GenerateRandomPopulation(grid,num_peaks,total_population,args = {'center_set
     assert all(key in args['covariance_settings']['covariances'] for key in required_keys_covariances), "Dictionary is missing required keys check the missing from: {}".format(required_keys_covariances)
     # Check Allowed Keys
     assert args['center_settings']['type'] in allowed_keys_center_type, "center_settings['type'] must be in: {}".format(allowed_keys_center_type)
-    # Compute
+    # Compute the indices of the new centers at random
     index_centers = GenerateIndexCenters(grid,num_peaks,verbose)
     covariances = SetCovariances(index_centers,args['covariance_settings']['covariances'],args["covariance_settings"]["Isotropic"],args["covariance_settings"]["Random"],verbose)
     new_population = ComputeNewPopulation(grid,index_centers,covariances,total_population,args["center_settings"]["type"],verbose)    

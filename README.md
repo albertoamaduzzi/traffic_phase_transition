@@ -22,3 +22,10 @@ To postprocess the results create a new environment so that the packages needed 
 
 Hierarchy of Calls Post Processing:   
 MainAnalysis: for City in ListCities -> TrajectoryAnalysis: for UCI in UCIs: for R in R -> OutputStats: Compute things that are conditional on these variables.
+
+
+# Input
+`{NameCity}.shp`: Shape File Containing Polygons
+`OD_{NameCity}_{StartTime}_{EndTime}.fma`: This file contains information about origin and destinations.    
+*Format*: `IndexOrigin` (space) `IndexDestination` (space) `NumberPeople` (new line)   
+*NOTE*:  `IndexOrigin` and `IndexDestination` are those of the polygons `{NameCity}.shp`
