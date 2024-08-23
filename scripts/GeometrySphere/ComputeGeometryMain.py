@@ -181,6 +181,7 @@ if __name__=='__main__':
     list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
     arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
     for argument in arguments:
-        main(*argument)
+        if argument[0] == 'BOS':
+            main(*argument)
 #    with mp.Pool(processes=2) as pool:
 #        pool.starmap(main,arguments)

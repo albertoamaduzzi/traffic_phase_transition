@@ -271,6 +271,17 @@ def ODGrid(gridIdx2dest,
 
 ##---------------------- INTERIOR AND BOUNDARY ----------------------
 def GetBoundariesInterior(grid,SFO_obj,verbose = True):
+    """
+        Input:
+            grid: GeoDataFrame -> grid of points
+            SFO_obj: object -> object containing the boundaries of the city
+        Output:
+            grid: GeoDataFrame -> grid of points with the position and relation to the line
+        Description:
+            This function is used to get the position of the grid with respect to the boundaries of
+            the city. The position can be inside, outside or edge. The relation to the line can be edge or not_edge.
+            If There are connected Components Then Something Must Be Done.
+    """
     boundary = gpd.overlay(SFO_obj.gdf_polygons, SFO_obj.gdf_polygons, how='union',keep_geom_type=False).unary_union
     # CREATE BOUNDARY LINE
     if isinstance(boundary, Polygon):
@@ -301,7 +312,27 @@ def GetBoundariesInterior(grid,SFO_obj,verbose = True):
     return grid
 
 
-
+def GetLargestConnectedComponentPolygons(gdf):
+    # Perform unary union to merge all geometries
+    merged_geometry = shp.ops.unary_union(gdf.geometry)
+    
+    # Identify connected components
+    if isinstance(merged_geometry, MultiPolygon):
+        connected_components = list(merged_geometry.geoms)
+    else:
+        connected_components = [merged_geometry]
+    
+    # Calculate the area of each connected component and select the largest
+    largest_component = max(connected_components, key=lambda geom: geom.area)
+    
+    # Check if there are more than one connected components
+    num_connected_components = len(connected_components)
+    if num_connected_components > 1:
+        print(f"There are {num_connected_components} connected components.")
+    else:
+        print("There is only one connected component.")
+    
+    return largest_component
 
 
 

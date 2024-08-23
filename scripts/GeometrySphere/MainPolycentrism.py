@@ -1,10 +1,12 @@
 import numpy as np
 import json
 import os
+import socket
 from Potential import *
 from ModifyPotential import *
 from Polycentrism import *
 from PolycentrismPlot import *
+from GenerateModifiedFluxesSimulation import *
 
 # ----- UPLOAD GRAVITATIONAL FIT ------
 def UploadGravitationalFit(TRAFFIC_DIR,name):
@@ -93,3 +95,44 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
 #        PlotRotorDistribution(InfoConfigurationPolicentricity[num_peaks]['grid'],InfoConfigurationPolicentricity[num_peaks]['potential'],dir_grid)
         PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,verbose)
     return InfoConfigurationPolicentricity,UCI
+
+def GenerateParallelODs(num_peaks, cv, distribution,InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_distance,lattice,TRAFFIC_DIR,NameCity,grid_size,osmid2index,grid2OD,CityName2RminRmax):
+    """
+        Description: Generate the ODs for the city with the given parameters.
+        NOTE: It is Very Heavy to run this function in parallel. Since Need to Load each time the Tij,grid,df_distance,lattice, that are around 2
+          GB for Boston. 
+        
+    """
+    InfoCenters = {'center_settings': {"type":distribution},
+                   'covariance_settings':{"covariances":{"cvx":cv,"cvy":cv},
+                                          "Isotropic": True,
+                                          "Random": False}
+                    }
+    InfoConfigurationPolicentricity,UCI = ModifyMorphologyCity(InfoConfigurationPolicentricity,
+                                                               grid,
+                                                               SFO_obj,
+                                                               Tij,
+                                                               df_distance,
+                                                               lattice,
+                                                               num_peaks,
+                                                               TRAFFIC_DIR,
+                                                               NameCity,
+                                                               grid_size,
+                                                               InfoCenters,
+                                                               fraction_fluxes = 200,
+                                                               verbose = True)
+    if socket.gethostname()=='artemis.ist.berkeley.edu':
+        SaveOd = "/home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network"
+    else:
+        SaveOd = f'/home/aamad/Desktop/phd/traffic_phase_transition/data/carto/{NameCity}/OD'
+    OD_from_T_Modified(InfoConfigurationPolicentricity[num_peaks]['Tij'],
+                    CityName2RminRmax,
+                    NameCity,
+                    osmid2index,
+                    grid2OD,
+                    1,
+                    SaveOd,
+                    7,
+                    8,
+                    round(UCI,3))
+    del InfoConfigurationPolicentricity

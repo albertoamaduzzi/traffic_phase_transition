@@ -276,7 +276,7 @@ def Map2Geom2OD(gdf_geometry,
     if percentage_nodes_outside_box > 0.4:
         raise ValueError('More than 10% of the nodes are outside the geometry')
     # Generate the Column That Tells If Roads Are Present In The Grid
-    gdf_geometry["with_roads"] = gdf_geometry.apply(lambda x: x['index'] in list(Geom2OD.keys()))
+    gdf_geometry["with_roads"] = gdf_geometry['index'].apply(lambda x: x in list(Geom2OD.keys()))
     WriteMapODGeom(save_dir_local,GeometryName,'origindest2'+GeometryName+'.json',GeometryName+'2origindest.json',OD2Geom,Geom2OD,resolution)
     return OD2Geom,Geom2OD,gdf_geometry
 

@@ -3,7 +3,7 @@
     - REQUIRED:
         city_shapefile.shp
     - RUN:
-        python3 ./mobility_planner.py
+        python3 ./CreateCartoSimulator.py
 
     - CITY AVAILBLE:
         ['BOS','LAX','SFO','RIO','LIS']

@@ -29,7 +29,9 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
         grid['distance_from_center'] = grid.apply(lambda x: polar_coordinates(np.array([x['centroidx'],x['centroidy']]),np.array(x['coords']))[0],axis = 1)
     index_centers = []
     scale = np.mean(grid.loc[grid['is_populated']]['distance_from_center'])
+    # Choose Just From The Populated And With Roads Grids
     populated_grid = grid.loc[grid['is_populated']]
+    populated_grid = populated_grid.loc[populated_grid['with_roads']]
     # PICK RANDOMLY THE CENTERS (with exponentially decreasing probability in distance from center)
     random_values = np.random.exponential(scale,num_peaks)
     _, bin_edges = np.histogram(populated_grid['distance_from_center'].to_numpy(), bins=30)
@@ -147,9 +149,9 @@ def ComputeNewPopulation(grid,index_centers,covariances,total_population,Distrib
 #        print("Distribution: ",Distribution)
 #        print('Covariance -> x {0}, y {1}'.format(covariances[count_center][0][0],covariances[count_center][1][1]))
     for center in centers:
-        for i in range(len(grid)):
+        for i,row in grid.iterrows():
             point = np.array([grid['centroidx'][i], grid['centroidy'][i]])
-            if grid['is_populated'][i]:
+            if grid['is_populated'][i] and grid['with_roads'][i]:
                 if Distribution == 'exponential':
                     new_population[i] += total_population_center*np.exp(-(np.linalg.norm(ProjCoordsTangentSpace(center[0],center[1],point[0],point[1]))/(10**3))/covariances[count_center][0][0])/2
                 elif Distribution == 'gaussian':
@@ -179,6 +181,7 @@ def GenerateRandomPopulation(grid,num_peaks,total_population,args = {'center_set
         Output:
             new_population: new population [np.array(dtype = np.int32)] -> to be used in the GravitationalModel
             index_centers: list of indices of the centers.
+        NOTE: Consider Just the Grids that have either population and road network in them.
     '''
     required_keys = ['center_settings', 'covariance_settings']
     required_keys_center_settings = ['type']
@@ -192,7 +195,7 @@ def GenerateRandomPopulation(grid,num_peaks,total_population,args = {'center_set
     assert all(key in args['covariance_settings']['covariances'] for key in required_keys_covariances), "Dictionary is missing required keys check the missing from: {}".format(required_keys_covariances)
     # Check Allowed Keys
     assert args['center_settings']['type'] in allowed_keys_center_type, "center_settings['type'] must be in: {}".format(allowed_keys_center_type)
-    # Compute the indices of the new centers at random
+    # Compute the indices of the new centers at random (Chosen From Places with Population and Roads)
     index_centers = GenerateIndexCenters(grid,num_peaks,verbose)
     covariances = SetCovariances(index_centers,args['covariance_settings']['covariances'],args["covariance_settings"]["Isotropic"],args["covariance_settings"]["Random"],verbose)
     new_population = ComputeNewPopulation(grid,index_centers,covariances,total_population,args["center_settings"]["type"],verbose)    

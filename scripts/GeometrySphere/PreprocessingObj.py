@@ -16,7 +16,7 @@ SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
         - .graphml file
         - .shp file
         - .tiff file
-    
+    NOTE: It has got encoded all the structure for the file system we are going to create
 '''
 class GeometricalSettingsSpatialPartition:
     def __init__(self,city,TRAFFIC_DIR):

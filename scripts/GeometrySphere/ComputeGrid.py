@@ -61,17 +61,22 @@ def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
             Upload2ServerPwd(file,GeometricalInfo.Files2Upload[file],GeometricalInfo.config_dir_local)
 
 
-def ComputeGrid(NameCity,TRAFFIC_DIR):
+def ComputeGrid(GeometricalInfo,NameCity,grid_sizes):
     print('Computing Grid for city: ',NameCity)
-    print('TRAFFIC_DIR: ',TRAFFIC_DIR)
-    GeometricalInfo = GeometricalSettingsSpatialPartition(NameCity,TRAFFIC_DIR)
     GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,8)
-    grid_sizes = [0.02]#list(np.arange(0.02,0.1,0.01))
-    ParametersGridParallel = [(GeometricalInfo,grid_size,NameCity) for grid_size in grid_sizes]
     for grid_size in grid_sizes:
         AllStepsGrid(GeometricalInfo,grid_size,NameCity)
 #    with Pool(processes = 5) as pool:
 #        pool.starmap(AllStepsGrid,ParametersGridParallel)
+
+def ComputeGridParallelOnCity(NameCity,TRAFFIC_DIR,grid_sizes):
+    print('Computing Grid in Parallel for city: ',NameCity)
+    print('TRAFFIC_DIR: ',TRAFFIC_DIR)
+    GeometricalInfo = GeometricalSettingsSpatialPartition(NameCity,TRAFFIC_DIR)
+    GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,8)
+    for grid_size in grid_sizes:
+        print("Computing Grid for grid_size: ",grid_size)
+        AllStepsGrid(GeometricalInfo,grid_size,NameCity)
 
 if __name__=='__main__':
     '''
@@ -82,8 +87,14 @@ if __name__=='__main__':
     else:
         TRAFFIC_DIR = os.getenv('TRAFFIC_DIR')
     list_cities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
-    arguments = [(list_cities[i],TRAFFIC_DIR) for i in range(len(list_cities))]
-    for arg in arguments:
-        ComputeGrid(*arg)
-#    with Pool(processes=3) as pool:
-#        pool.starmap(ComputeGrid,arguments)
+    parallel = False
+    grid_sizes = [0.02]
+    if parallel:
+        arguments = [(list_cities[i],TRAFFIC_DIR,grid_sizes) for i in range(len(list_cities))]
+        with Pool(processes=3) as pool:
+            pool.starmap(ComputeGridParallelOnCity,arguments)
+    else:
+        arguments = [(list_cities[i],grid_sizes) for i in range(len(list_cities))]
+        for arg in arguments:
+            GeometricalInfo = GeometricalSettingsSpatialPartition(arg[0],TRAFFIC_DIR)
+            ComputeGrid(GeometricalInfo,*arg)
