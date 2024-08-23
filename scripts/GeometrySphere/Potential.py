@@ -89,6 +89,7 @@ def GetPotentialLattice(lattice,VectorField):
     nx.set_node_attributes(lattice, 0, 'rotor_z_in')
     max_i = max(ast.literal_eval(node_str)[0] for node_str in lattice.nodes)
     max_j = max(ast.literal_eval(node_str)[1] for node_str in lattice.nodes)
+    # Initialize Potential To 0 -> In this way the edges will be 0
     for node_str in lattice.nodes:    
         ij = ast.literal_eval(node_str)
         i = ij[0]
@@ -175,9 +176,11 @@ def ConvertLattice2PotentialDataframe(lattice):
         index_ = lattice.nodes[node]['index']
         rotor_z_in = lattice.nodes[node]['rotor_z_in']
         rotor_z_out = lattice.nodes[node]['rotor_z_out']
+        print("Node: ",node)
+        print("V_in: ",node_Vin)
+        print("V_out: ",node_Vout)
         # Save the information to the list
         data_.append({'V_in': node_Vin, 'V_out': node_Vout,'index': index_ ,'node_id': node_id,'x':x,'y':y,'rotor_z_in':rotor_z_in,'rotor_z_out':rotor_z_out})
-        
         # Create a DataFrame from the list
         PotentialDataframe = pd.DataFrame(data_)
         PotentialDataframe['index'] = PotentialDataframe.index
@@ -186,7 +189,6 @@ def ConvertLattice2PotentialDataframe(lattice):
     return PotentialDataframe
 
 def CompletePotentialDataFrame(VectorField,grid,PotentialDataframe):
-    PotentialDataframe['Ti'] = VectorField['Ti']
     PotentialDataframe['population'] = grid['population']    
     return PotentialDataframe
 

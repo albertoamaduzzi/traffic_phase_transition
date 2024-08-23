@@ -11,8 +11,25 @@ export TRAFFIC_DIR=/path/to/ProjectBaseDir
 
 
 # Preprocessing
+## Population/Origin-Destination/Grid
+`python3 ./scripts/GeometrySphere/ComputeGeometryMain.py`   
+The script reads the shape file of the region of interest with the relative Origin-Destinations file (.fma) (see `Input` Section).
+It accordingly creates a grid (the script is set to 1.5km^2 for Boston but it changes from place to place according to the size of the region considered.
+NOTE: having it too fine grained is very expensive computationally).
+It assigns the population to the grid, and creates an origin destination according to the one read from the file. 
+Since the file origin destination is taken from polygons of the shape file, the population is redistributed uniformly on the grid that has more resolution by counting.
+### OUTPUT
+`/TRAFFIC_DIR/grid/size_grid/ODgrid.csv`
+`/TRAFFIC_DIR/grid/size_grid/direction_distance_matrix.csv`    
+`/TRAFFIC_DIR/grid/size_grid/centroid_lattice.graphml`    
 
 
+## Computation Vector Field - Potential
+
+## Fit
+
+
+## Generation New Configuration
 # PostProcessing
 To postprocess the results create a new environment so that the packages needed do not clash, in the old environment probably built in random order.    
 `conda config --set channel_priority strict`    
