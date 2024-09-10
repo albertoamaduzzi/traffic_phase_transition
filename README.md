@@ -25,6 +25,9 @@ Since the file origin destination is taken from polygons of the shape file, the 
 
 
 ## Computation Vector Field - Potential
+Either:
+`ModifyPotential.ipynb` (first cell)   
+Or:   
 
 ## Fit
 

@@ -32,6 +32,10 @@ class OutputStats:
         self.GetPeopleInfo()
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
+    def CompleteAnalysis(self):
+        """
+            This is the Function one wants to Call to get the Analysis of the Simulation
+        """
         self.ComputeUnloadCurve()
         self.PlotUnloadCurve()
         self.ComputeTime2Road2Traveller()
@@ -39,7 +43,22 @@ class OutputStats:
 
     def GetPeopleInfo(self):
         if IsFile(self.PeopleFile):
-            self.DfPeople = pl.read_csv(self.PeopleFile)
+            dtypes = {"p":pl.Int64,
+                      "init_intersection":pl.Int64,
+                      "end_intersection":pl.Int64,
+                      "time_departure":pl.Float64,
+                      "num_steps":pl.Int64,
+                      "co":pl.Float32,
+                      "gas":pl.Float32,
+                      "distance":pl.Float32,
+                      "a":pl.Float32,
+                      "b":pl.Float32,
+                      "T":pl.Float32,"avg_v(mph)":pl.Float32,
+                      "active":pl.Int32,
+                      "last_time_simulated":pl.Int64,
+                      "path_length_cpu":pl.Int64,
+                      "path_length_gpu":pl.Int64}
+            self.DfPeople = pl.read_csv(self.PeopleFile,dtypes = dtypes,ignore_errors = True)
             self.ReadPeopleInfoBool = True
             self.CountFunctions += 1
             Message = f"Function {self.CountFunctions}: GetPeopleInfo: {self.PeopleFile} was read"
@@ -70,26 +89,40 @@ class OutputStats:
             Returns:
                 Interval2NumberPeopleInNet: Dictionary containing the number of people in the network at each time interval
         """
-        SecondsInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR*SECONDS_IN_MINUTE)
-        MinutesInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR)
-        NumIntervals = int(MinutesInDay/self.delta_t)
-        # Create the Int Time Array (0 -> Seconds In Day)
-        self.IntTimeArray = np.linspace(0,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals,dtype = int)       
-        # Convert it to minutes seconds and hour for the plot Labels (0 -> 24)        
-        self.HourTimeArray = ConvertArray2HMS(np.linspace(TIMESTAMP_OFFSET,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals))
-        self.Interval2NumberPeopleInNet = {Interval:0 for Interval in self.HourTimeArray}
-        for t in range(len(self.Interval2NumberPeopleInNet.keys())-1):
-            DfPeopleInNetAtTimet = FilterDfPeopleInNetInTSlice(self.IntTimeArray[t],self.IntTimeArray[t+1],self.DfPeople,"time_departure","last_time_simulated")
-            self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Compute the number of people in the network at each time interval"
-        AddMessageToLog(Message,self.LogFile)
-        
+        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI))):
+            SecondsInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR*SECONDS_IN_MINUTE)
+            MinutesInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR)
+            # I count people in Network at each time interval (15 mins)
+            NumIntervals = int(MinutesInDay/self.delta_t)
+            # Create the Int Time Array (0 -> Seconds In Day)
+            self.IntTimeArray = np.linspace(0,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals,dtype = int)       
+            # Convert it to minutes seconds and hour for the plot Labels (0 -> 24)        
+            self.HourTimeArray = ConvertArray2HMS(np.linspace(TIMESTAMP_OFFSET,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals))
+            self.Interval2NumberPeopleInNet = {Interval:0 for Interval in self.HourTimeArray}
+            for t in range(len(self.Interval2NumberPeopleInNet.keys())-1):
+                # DataFrame Filtered With People in the Network at time t in the time interval t,t+1
+                DfPeopleInNetAtTimet = FilterDfPeopleInNetInTSlice(self.IntTimeArray[t],self.IntTimeArray[t+1],self.DfPeople,"time_departure","last_time_simulated")
+                # Number Of People in the Network at time t
+                self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
+            pd.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople"]).to_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)),index = False)
+            self.CountFunctions += 1
+#            Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Compute the number of people in the network at each time interval"
+#            AddMessageToLog(Message,self.LogFile)
+        else:
+            self.Interval2NumberPeopleInNet = pd.read_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)))
+            self.HourTimeArray = self.Interval2NumberPeopleInNet["Time"]
+            self.Interval2NumberPeopleInNet = self.Interval2NumberPeopleInNet["NumberPeople"]
+            self.CountFunctions += 1
+#            Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Read the number of people in the network at each time interval"
+#            AddMessageToLog(Message,self.LogFile)        
     def PlotUnloadCurve(self):
         PlotPeopleInNetwork(self.Interval2NumberPeopleInNet,self.HourTimeArray,JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
         self.CountFunctions += 1
         Message = f"Function {self.CountFunctions}: PlotUnloadCurve: Plot the number of people in the network at each time interval"
         AddMessageToLog(Message,self.LogFile)
+
+    
+
 
 
 
@@ -126,6 +159,7 @@ class OutputStats:
                 if len(user_ids_in_net) != 0:
                     DfRouteInInterval = self.DfRoute.filter(pl.col(StrUsersId).is_in(user_ids_in_net))
                     for Personrow in DfRouteInInterval.rows():
+                        # The Roads that are Travelled by Person Id_
                         Roads = ast.literal_eval(Personrow[self.Column2IndexDfRoute["route"]])
                         Id_ = Personrow[self.Column2IndexDfRoute[StrUsersId]]
                         for Road in Roads:
@@ -162,6 +196,7 @@ class OutputStats:
         """
             Description:
                 Create dictionary that contains the right information to plot the data in the animation.
+            StrNumberPeople: str -> Number of People (Column of Output)
         """
         self.Column2InfoSavePlot = defaultdict()
         for t in self.HourTimeArray:

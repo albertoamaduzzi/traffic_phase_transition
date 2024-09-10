@@ -185,6 +185,19 @@ def PlotRotorDistribution(grid,PotentialDataframe,dir_grid,verbose = False):
 #    if verbose:
 #        plt.show()
 
+def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,verbose = False):
+    if 'harmonic' in grid.columns:
+        pass
+    else:
+        grid['harmonic'] = PotentialDataframe['HarmonicComponentOut']
+    fig, ax = plt.subplots(figsize=(8, 6))
+    twin = ax.twinx()
+    ax.hist(grid['harmonic'],bins = 50, color = 'blue',label = 'Harmonic')
+    ax.set_title('Harmonic Distribution')
+    ax.set_xlabel('Harmonic')
+    ax.set_ylabel('Count')
+    plt.savefig(os.path.join(dir_grid,'HarmonicDistr.png'),dpi = 200)
+
 def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose = False):
     
     fig,ax = plt.subplots(1,1,figsize = (8,6))

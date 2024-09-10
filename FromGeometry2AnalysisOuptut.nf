@@ -6,13 +6,15 @@ params.BaseShapeFile = "${params.TrafficDir}/data/carto"
 params.BaseTiffFile = "${params.TrafficDir}/tiff_files"
 params.CityName = ["BOS"]//["BOS","SFO","LAX","LIS","RIO"]
 
+// 
+
 // Writing the Configuration File [For each City]
 
 process OpenJsonConfig{
     input:
-    each ConfigFile
+    each CityName
     """
-    touch > ./config/GenerateShapeConfig.json
+    touch > ./config/${CityName}/Config_${CityName}.json
     nano 
     """
 }

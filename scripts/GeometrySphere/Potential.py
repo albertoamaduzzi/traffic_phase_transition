@@ -133,7 +133,31 @@ def GetPotentialLattice(lattice,VectorField):
         lattice.nodes[node_index_2]['index'] = VectorField.loc[node_index_1, 'index']
         lattice.nodes[node_index_2]['rotor_z_in'] = rotor_z_in
         lattice.nodes[node_index_2]['rotor_z_out'] = rotor_z_out
+        lattice = ComputeHarmonicComponents(lattice)
     return lattice
+
+def ComputeHarmonicComponents(lattice):
+    nx.set_node_attributes(lattice, 0, 'HarmonicComponentIn')
+    nx.set_node_attributes(lattice, 0, 'HarmonicComponentOut')
+    for node_str in lattice.nodes:
+        ij = ast.literal_eval(node_str)
+        i = ij[0]
+        j = ij[1]
+        lattice.nodes[node_str]['HarmonicComponentIn'] = 0
+        lattice.nodes[node_str]['HarmonicComponentOut'] = 0
+        HarmonicComponentNodeOut = 0
+        HarmonicComponentNodeIn = 0
+        for Neighbor in lattice.neighbors(node_str):
+            if math.isinf(lattice[node_str][Neighbor]['d/dx']):
+                HarmonicComponentNodeOut += (lattice[node_str][Neighbor]['d/dy']**2)*(lattice.nodes[node_str]['V_out'] - lattice.nodes[Neighbor]['V_out'])
+                HarmonicComponentNodeIn += (lattice[node_str][Neighbor]['d/dy']**2)*(lattice.nodes[node_str]['V_in'] - lattice.nodes[Neighbor]['V_in'])
+            elif math.isinf(lattice[node_str][Neighbor]['d/dy']):
+                HarmonicComponentNodeOut += (lattice[node_str][Neighbor]['d/dx']**2)*(lattice.nodes[node_str]['V_out'] - lattice.nodes[Neighbor]['V_out'])
+                HarmonicComponentNodeIn += (lattice[node_str][Neighbor]['d/dx']**2)*(lattice.nodes[node_str]['V_in'] - lattice.nodes[Neighbor]['V_in'])            
+        lattice.nodes[node_str]['HarmonicComponentOut'] = HarmonicComponentNodeOut
+        lattice.nodes[node_str]['HarmonicComponentIn'] = HarmonicComponentNodeIn
+    return lattice
+        
 
 def SmoothPotential(lattice):
     # Smooth V_in and V_out by taking the average over all the neighbors
@@ -176,18 +200,38 @@ def ConvertLattice2PotentialDataframe(lattice):
         index_ = lattice.nodes[node]['index']
         rotor_z_in = lattice.nodes[node]['rotor_z_in']
         rotor_z_out = lattice.nodes[node]['rotor_z_out']
-        print("Node: ",node)
-        print("V_in: ",node_Vin)
-        print("V_out: ",node_Vout)
         # Save the information to the list
         data_.append({'V_in': node_Vin, 'V_out': node_Vout,'index': index_ ,'node_id': node_id,'x':x,'y':y,'rotor_z_in':rotor_z_in,'rotor_z_out':rotor_z_out})
         # Create a DataFrame from the list
         PotentialDataframe = pd.DataFrame(data_)
         PotentialDataframe['index'] = PotentialDataframe.index
+    # Add Harmonic Components
+    AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice)
         # Format the 'node_id' column using ast.literal_eval
 #        PotentialDataframe['node_id'] = PotentialDataframe['node_id'].apply(ast.literal_eval)
     return PotentialDataframe
 
+def AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice):
+    '''
+        Input:
+            PotentialDataframe: Dataframe with V_in, V_out, index, node_id(i,j)
+            lattice: Graph with the potential
+        Output:
+            PotentialDataframe with HarmonicComponentIn, HarmonicComponentOut
+    '''
+    HarmonicComponentsIn = []
+    HarmonicComponentsOut = []
+    for node,data in lattice.nodes(data=True):
+        # Extract the indices of the nodes
+        ij = ast.literal_eval(node)    
+        node_id = (ij[0],ij[1])
+        # Compute the value of V_in for the edge
+        HarmonicComponentsIn.append(lattice.nodes[node]['HarmonicComponentIn'])  
+        # Compute the value of V_out for the edge
+        HarmonicComponentsOut.append(lattice.nodes[node]['HarmonicComponentOut'])
+    PotentialDataframe['HarmonicComponentIn'] = HarmonicComponentsIn
+    PotentialDataframe['HarmonicComponentOut'] = HarmonicComponentsOut
+    return PotentialDataframe
 def CompletePotentialDataFrame(VectorField,grid,PotentialDataframe):
     PotentialDataframe['population'] = grid['population']    
     return PotentialDataframe

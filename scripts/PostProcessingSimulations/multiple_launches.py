@@ -5,6 +5,11 @@ import json
 import time
 import shutil
 import platform
+import numpy as np
+from multiprocessing import Pool
+import sys
+sys.path.append(os.path.join(os.environ["TRAFFIC_DIR"],"scripts","GeometrySphere"))
+#from ODfromfma import NUMBER_SIMULATIONS,CityName2RminRmax
 
 LPSIM_DIR = '/home/alberto/LPSim' 
 HOME_DIR = '/home/alberto/LPSim/LivingCity'
@@ -39,7 +44,7 @@ def ModifyConfigIni(CityName,start,end,R,UCI,verbose = False):
     file.close()
     if verbose:
         print("***** MODIFICATION CONFIG ******")
-        print(file_txt)    
+#        print(file_txt)    
 
 
 def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
@@ -107,10 +112,9 @@ def DockerCommand(verbose = False):
     env = os.environ.copy()
     docker_cmd = f'/usr/bin/docker run -it --rm --gpus all -v {PWD}:/lpsim -w /lpsim {container_name} bash'
     docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash','-c','./LivingCity/LivingCity']
-    if verbose:
-        print("***** DOCKER COMMAND ******")
-        print('current working dir: ',os.getcwd())
-        print(docker_cmd)
+#    if verbose:
+#        print("***** LAUNCH DOCKER ******")
+#        print('current working dir: ',os.getcwd())
 
     # Execute the Docker command
     if not verbose:
@@ -158,27 +162,70 @@ def LaunchDockerFromServer(container_name,CityName,start,end,R,UCI,verbose = Fal
         else:
             print(f"Error executing Docker command: {stderr.decode()}")
     else:
-        print('***** MAIN FUNCTION *****')
-#        CheckPlatform()
-        ModifyConfigIni(CityName,start,end,R,UCI, verbose)
-#        os.chdir(TRAFFIC_DIR)
-        CheckUseDocker()
-        exec_result = DockerCommand(verbose)   
+        # Run Simulation Just If it does not exist the Output
+        saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
+        output_file = '0_people{0}to24.csv'.format(start)
+        destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{UCI}_{output_file}")
+        print('***** LAUNCH DOCKER *****')
+        if os.path.exists(destination_file):
+            print(f"File {destination_file} already exists")
+            pass
+        else:
+    #        CheckPlatform()
+            ModifyConfigIni(CityName,start,end,R,UCI, verbose)
+    #        os.chdir(TRAFFIC_DIR)
+            CheckUseDocker()
+            exec_result = DockerCommand(verbose)   
 
-#        exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#            exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], capture_output=True, text=True)
-#        print(exec_result.stdout)
-        output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
-                        '0_indexPathInit{0}to24.csv'.format(start),
-                        '0_people{0}to24.csv'.format(start),
-                        '0_route{0}to24.csv'.format(start)
-                        ]
-#        CheckPlatform()
-        for output_file in output_files:
-            RenameMoveOutput(output_file,CityName,R,UCI,verbose)
+    #        exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #            exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], capture_output=True, text=True)
+    #        print(exec_result.stdout)
+            output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
+                            '0_indexPathInit{0}to24.csv'.format(start),
+                            '0_people{0}to24.csv'.format(start),
+                            '0_route{0}to24.csv'.format(start)
+                            ]
+    #        CheckPlatform()
+            for output_file in output_files:
+                RenameMoveOutput(output_file,CityName,R,UCI,verbose)
 
-
+def RsUCIsFromDir(OD_dir):
+    Rs = []
+    UCIs = []
+    for file in os.listdir(OD_dir):
+        if 'od' in file:
+            if len(file.split('_')) == 8:
+                start = file.split('_')[2]
+                end = file.split('_')[3]
+                R = file.split('_')[5]
+                UCI = file.split('_')[7].split('.csv')[0]
+                if R not in Rs:
+                    Rs.append(R)
+                if float(UCI) not in UCIs:
+                    UCIs.append(float(UCI))
+    Rs = sorted(Rs)
+    UCIs = sorted(UCIs)
+    UCisJump = []
+    for i in range(len(UCIs)):
+        if i == 0:
+            UCisJump.append(str(UCIs[i]))
+        elif (UCIs[i] - float(UCisJump[-1])) > 0.009:
+            UCisJump.append(str(UCIs[i]))
+    return Rs,UCisJump
     
+def UCIsFromDirRsFromMetaData(OD_dir,CityName,NUMBER_SIMULATIONS,CityName2RminRmax):
+    Rs = np.arange(CityName2RminRmax[CityName][0],CityName2RminRmax[CityName][1],(CityName2RminRmax[CityName][1]-CityName2RminRmax[CityName][0])/NUMBER_SIMULATIONS,dtype=int)
+    Rs = [str(R) for R in Rs]
+    UCIs = []
+    for file in os.listdir(OD_dir):
+        if 'od' in file:
+            if len(file.split('_')) == 8:
+                UCI = file.split('_')[7].split('.csv')[0]
+                if UCI not in UCIs:
+                    UCIs.append(UCI)
+    
+    UCIs = sorted(UCIs)
+    return Rs,UCIs
     
 #def LaunchProgram(config):
 #    subprocess.run(['your_program_executable', config_file])
@@ -209,20 +256,49 @@ if __name__ == '__main__':
         OD_dir = os.path.join(TRAFFIC_DIR,'berkeley_2018',"new_full_network")
         print(os.getcwd())
         print('OD_dir: ',OD_dir)
-        for file in os.listdir(OD_dir):
-            if 'od' in file:
-                if len(file.split('_')) == 8:
-                    start = file.split('_')[2]
-                    end = file.split('_')[3]
-    #                start = file.split('_')[2].split('to')[0]
-    #                end = file.split('_')[2].split('to')[1]
-                    R = file.split('_')[5]
-                    UCI = file.split('_')[7].split('.csv')[0]
-                    print('start: ',start)
-                    print('end: ',end)
-                    print('R: ',R)
-                    print('UCI: ',UCI)
-                    print('Launching docker from server')
-                    LaunchDockerFromServer(container_name,CityName,start,end,R,UCI,verbose)
-                else:
-                    pass
+        print(f"Total Number Simulation {CityName}: ",len(os.listdir(OD_dir)))
+        CompletedSimulations = 0
+        # Keep Start and End time fixed
+        if True:
+            start = 7
+            end = 8
+            parallel = False
+            Rs,UCIs = RsUCIsFromDir(OD_dir)
+#            Rs,UCIs = UCIsFromDirRsFromMetaData(OD_dir,CityName,NUMBER_SIMULATIONS,CityName2RminRmax)
+            print('Rs: ',Rs)
+            print('UCIs: ',UCIs)
+            InputSimulation = [(container_name,CityName,start,end,R,UCI,verbose) for R in Rs for UCI in UCIs]
+            if parallel:
+                with Pool(3) as p:
+                    RsUCIs = p.starmap(LaunchDockerFromServer, InputSimulation)
+            else:
+                for UCI in UCIs:
+                    for R in Rs:
+                        if os.path.isfile(os.path.join(OD_dir,f"{CityName}_oddemand_{start}_{end}_R_{R}_UCI_{UCI}.csv")):
+                            print('Launching docker from server')
+                            print('R: ',R)
+                            print('UCI: ',UCI)
+                            LaunchDockerFromServer(container_name,CityName,start,end,R,UCI,verbose)
+                            CompletedSimulations += 1
+                            print("Completed Simulations: ",CompletedSimulations, " out of ",len(os.listdir(OD_dir)))
+        # Get Start and End time from file
+        else:        
+            for file in os.listdir(OD_dir):
+                if 'od' in file:
+                    if len(file.split('_')) == 8:
+                        start = file.split('_')[2]
+                        end = file.split('_')[3]
+        #                start = file.split('_')[2].split('to')[0]
+        #                end = file.split('_')[2].split('to')[1]
+                        R = file.split('_')[5]
+                        UCI = file.split('_')[7].split('.csv')[0]
+                        print('start: ',start)
+                        print('end: ',end)
+                        print('R: ',R)
+                        print('UCI: ',UCI)
+                        print('Launching docker from server')
+                        LaunchDockerFromServer(container_name,CityName,start,end,R,UCI,verbose)
+                        CompletedSimulations += 1
+                        print("Completed Simulations: ",CompletedSimulations, " out of ",len(os.listdir(OD_dir)))
+                    else:
+                        pass
