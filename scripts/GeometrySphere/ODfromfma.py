@@ -5,6 +5,7 @@ import pandas as pd
 from collections import defaultdict
 from Grid import *
 PRINTING_INTERVAL = 10000000
+NUMBER_SIMULATIONS = 20
 offset = 6
 CityName2RminRmax = {'SFO':[140,200], 'LAX':[100,220],'LIS':[60,100],'RIO':[75,120],'BOS':[150,220]}
 #CityName2RminRmax = {'SFO':[145,180], 'LAX':[100,200],'LIS':[60,80],'RIO':[75,100],'BOS':[150,200]}
@@ -171,9 +172,37 @@ def OD_from_fma(polygon2OD,
                 seconds_in_minute = 60,
                 ):
     '''
-        Each fma file contains the origin and destinations with the rate of people entering the graph.
-        This function, takes advantage of the polygon2origindest dictionary to build the origin and destination
-        selecting at random one of the nodes that are contained in the polygon.
+        NOTE:
+            GEOMETRY:
+                I,J: Set of x,y coordinates of the grid (int numbers)
+                Index: Set of 1D indeces of the grid (int number)
+                PolygonId: Set of 1D ids of the polygon (int number)
+            GRAPH:
+                Osmid: Set of 1D ids of the node (int number)
+        Input:
+            polygon2OD: dict -> Maps polygon ids (That are contained in OD <- ODfma_file) to the OD of Tij (in the grid): NOTE: i,j in I,J
+            osmid2index: dict -> Maps osmid to Index
+            grid: Geopandas -> ["i": int, "j": int, "centroidx": float, "centroidy": float, "area":float, "index": int, "population":float, "with_roads":bool, "geometry":Polygon]
+            grid_size: float -> Size of the grid (0.02 for Boston is 1.5 km^2)
+            OD2Grid: dict -> Maps PolygonIds to grid index
+            NameCity: str -> Name of the city
+            ODfmaFile: str -> Path to the fma file
+            start: int -> Start time of the simulation
+            end: int -> End time of the simulation
+            save_dir_local: str -> Path to the directory where the data is stored
+            number_of_rings: int -> Number of rings to consider
+            grid_sizes: list -> List of grid sizes to consider
+            resolutions: list -> List of resolutions to consider
+            offset: int -> Offset of the fma file
+            seconds_in_minute: int -> Number of seconds in a minute
+        Output:
+            df1: pd.DataFrame -> DataFrame with the OD demand
+            df: pd.DataFrame -> DataFrame with the OD grid
+            ROutput: list -> List of Rs that have been considered
+        Description: 
+            Each fma file contains the origin and destinations with the rate of people entering the graph.
+            This function, takes advantage of the polygon2origindest dictionary to build the origin and destination
+            selecting at random one of the nodes that are contained in the polygon.
     '''
     ROutput = []
     # NOTE: ADD HERE THE POSSIBILITY OF HAVING OD FROM POTENTIAL CONSIDERATIONS
@@ -182,7 +211,7 @@ def OD_from_fma(polygon2OD,
     R = GetTotalMovingPopulation(OD_vector)/3600 # R is the number of people that move in one second (that is the time interval for the evolution )
     Rmin = CityName2RminRmax[NameCity][0]
     Rmax = CityName2RminRmax[NameCity][1]
-    spacing = (Rmax/R - Rmin/R)/20
+    spacing = (Rmax/R - Rmin/R)/NUMBER_SIMULATIONS
     cprint('OD_from_fma {} '.format(NameCity) + ODfmaFile,'cyan')
     cprint('R: ' + str(R) + ' Rmin: ' + str(Rmin) + ' Rmax: ' + str(Rmax) + ' spacing: ' + str(spacing),'cyan')
     gridIdx2ij = {grid['index'][i]: (grid['i'].tolist()[i],grid['j'].tolist()[i]) for i in range(len(grid))}

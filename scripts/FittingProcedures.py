@@ -15,6 +15,7 @@ sys.path.append('~/berkeley/traffic_phase_transition/scripts/GeometrySphere')
 # FUCNTIONS FOR FITTING
 def powerlaw(x, amp, index):
     return amp * (np.array(x)**index)
+    
 
 def exponential(x, amp, index):
     return amp * np.exp(-index*np.array(x))
@@ -105,6 +106,53 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
     print('Optimal parameters: ',result_powerlaw.x)
     print('Message: ',result_powerlaw.message)
     return fit
+
+def ComparePlExpo(x,y,initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-1),maxfev = 10000):
+    '''
+        Input:
+            x: (np.array 1D) x-axis
+            y: (np.array 1D) y-axis
+            initial_guess: (tuple 2D) parameters for fitting
+        USAGE:
+            ComparePlExpo(x,y,(6000,0.3))
+        RETURN:
+            - The error of the best fit and the parameters of the best fit
+            - Parameters Fitted:
+            - Boolean Value indicating if the Power Law is better than the Exponential
+    '''
+    # Fit on the log-log scale POWERLAW
+    x0 =[x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0]
+    y0 =[y[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0]
+    print('x\n',x,'\ny\n',y,'\nx0\n',x0,'\ny0\n',y0)
+
+    logx = np.log(x0)
+    logy = np.log(y0)
+    result_powerlaw = minimize(objective_function_linear, initial_guess_powerlaw, args = (logx, logy))
+    optimal_params_pl = result_powerlaw.x
+    fit = curve_fit(linear, xdata = logx, ydata = logy,p0 = list(optimal_params_pl),maxfev = maxfev)
+    # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
+    A = np.exp(fit[0][1])
+    alpha = fit[0][0]
+    ## EXPO
+    result_expo = minimize(objective_function_exponential, initial_guess_expo, args = (x0, y0))
+    optimal_params_expo = result_expo.x
+    fit = curve_fit(exponential, xdata = logx, ydata = logy,p0 = list(optimal_params_expo),maxfev = maxfev)
+    A0 = fit[0][0]
+    tau = fit[0][1]
+    if len(y0)!=0:
+        # Compare the two fits NOTE: Scale for the number of samples since the 
+        ErrorExp = np.sqrt(np.sum((exponential(x0,A0,tau)-y0)**2)/len(y0))
+        ErrorPL = np.sqrt(np.sum((powerlaw(x0,A,alpha)-y0)**2)/len(y0))
+        if ErrorExp<ErrorPL:
+            print('Exponential is better')
+            PowerLawFitted = False
+            return ErrorExp,A0,tau,PowerLawFitted
+        else:
+            print('Power Law is better')
+            PowerLawFitted = True
+            return ErrorPL,A,alpha,PowerLawFitted
+    else:
+        return 1000000,0,0,False    
 
 if FoundPyMC3:
     def FitWithPymc(x,y,label):

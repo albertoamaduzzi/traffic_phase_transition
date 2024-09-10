@@ -87,3 +87,104 @@ def AnimateNetworkTraffic(PlotDir,TrafficGdf,Column2InfoSavePlot,dpi = 300,IsLog
 
 
 # Fondamental Diagram
+
+
+# Phase Transition
+def PlotAvailableUCIs(UCIs,PlotDir):
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.scatter(UCIs,[0]*len(UCIs))
+    ax.set_xlabel('UCI',fontsize=15)
+    ax.set_title('Available UCIs',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,'AvailableUCIs.png'))
+
+
+def PlotAlphaBeta(Alphas,Betas,PlotDir):
+    """
+        Description:
+            - Plots the Alpha and Beta
+        Args:
+            - Alphas: list -> [alpha1,alpha2,...,alphaN]
+            - Betas: list -> [beta1,beta2,...,betaN]
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.scatter(Alphas,Betas,label = 'Alpha')
+    ax.set_xlabel(r'$\alpha$',fontsize=15)
+    ax.set_ylabel(r'$\beta$',fontsize=15)
+    ax.set_title('Critical Exponent',fontsize=15)
+    ax.axhline(y=0.27, xmin=0 , xmax=1, color='black', linestyle='--')
+    ax.axhline(y=0.25, xmin=0 , xmax=1, color='blue', linestyle='--')
+    ax.axhline(y=0.29, xmin=0 , xmax=1, color='blue', linestyle='--')
+    ax.text(0.28,0.2,'monocentric', ha='right', va='bottom', color='black',fontsize=15)
+    ax.text(0.9,0.2,'1DP', ha='right', va='bottom', color='black',fontsize=15)
+    ax.axhline(y=0.58, xmin=0 , xmax=1, color='black', linestyle='--')
+    ax.axhline(y=0.6, xmin=0 , xmax=1, color='red', linestyle='--')
+    ax.axhline(y=0.56, xmin=0 , xmax=1, color='red', linestyle='--')
+    ax.text(0.22,0.62,'polycentric', ha='right', va='bottom', color='black',fontsize=15)
+    ax.text(0.9,0.62,'2DP', ha='right', va='bottom', color='black',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,'AlphaBeta.png'))
+
+def PlotNR(Rs,Rc,NR,PlotDir):
+    """
+        Description:
+            - Plots the NR given in input the array of Rs and NR
+        Args:
+            - Rs: list -> [R1,R2,...,RN]
+            - Rc: int -> Rc
+            - NR: list -> [NR1,NR2,...,NRN]
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    Rs = Rs/Rc
+    ax.scatter(Rs,NR,label = 'NR')
+    ax.set_xlabel(r'\\frac{R}{R_{c}}',fontsize=15)
+    ax.set_ylabel('N(R)',fontsize=15)
+    ax.set_title('NR',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,'NR.png'))
+
+def PlotNtAndFitSingleR(t,Nt,tau,NtFitted,R,UCI,PlotDir):
+    """
+        Description:
+            - Plots the Nt given in input the array of Nt
+        Args:
+            - Nt: list -> [Nt1,Nt2,...,NtN]
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.scatter(t,Nt)
+    ax.plot(t,NtFitted,label = 'Fitted')
+    ax.axvline(x=tau, color='red', linestyle='--')
+
+    ax.set_xlabel('t',fontsize=15)
+    ax.set_ylabel('N(t)',fontsize=15)
+    ax.set_title('Number of People in network',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,f'{R}_{UCI}_Nt.png'))
+
+def PlotNtAndFit(Rs,Nt,tau,NtFitted,PlotDir):
+    """
+        Description:
+            - Plots the Nt given in input the array of Nt
+        Args:
+            - Nt: list -> [Nt1,Nt2,...,NtN]
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    for i in range(len(Rs)):
+        ax.scatter(Rs[i],Nt[i])
+        ax.plot(Rs[i],NtFitted[i],label = 'Fitted')
+    ax.axvline(x=tau, color='red', linestyle='--')
+
+    ax.set_xlabel('R',fontsize=15)
+    ax.set_ylabel('N(t)',fontsize=15)
+    ax.set_title('Number of People in network',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,'Nt.png'))
+
+def PlotErrorFitAlphaWindow(Time2ErrorFit,R,UCI,PlotDir):
+    """
+        Description:
+            - Plots the Error Fit given in input the dictionary Time2ErrorFit
+        Args:
+            - Time2ErrorFit: dict -> {time:{'error':0,"A":0,"b":0,"is_powerlaw":False}}
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.scatter(Time2ErrorFit.keys(),Time2ErrorFit.values())
+    ax.set_xlabel('Window Time',fontsize=15)
+    ax.set_ylabel('Error',fontsize=15)
+    ax.set_title('Error Fit',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,f'{R}_{UCI}_ErrorFitAlphaWindow.png'))
