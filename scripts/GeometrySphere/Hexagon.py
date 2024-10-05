@@ -36,6 +36,8 @@ import shapely.geometry as sg
 import rasterio
 from rasterio.mask import mask
 import geopandas as gpd
+import logging
+logger = logging.getLogger(__name__)
 
 def SetHexagonDir(save_dir_local,resolution):
     '''

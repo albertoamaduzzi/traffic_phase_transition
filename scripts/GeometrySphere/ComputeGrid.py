@@ -22,6 +22,8 @@ from HostConnection import *
 from plot import *
 import warnings
 warnings.filterwarnings("ignore")
+import logging
+logger = logging.getLogger(__name__)
 
 def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
     GeometricalInfo.grid = GetGrid(grid_size,

@@ -13,6 +13,9 @@ import ast
 import math
 sys.path.append('~/berkeley/traffic_phase_transition/scripts')
 from FittingProcedures import Fitting
+import logging
+logger = logging.getLogger(__name__)
+
 ###################################################################################################################
 ###############################         VECTOR FIELD AND POTENTIAL           ######################################
 ###################################################################################################################
@@ -283,46 +286,3 @@ def filter_within_percentage(arr, lower_percentile, upper_percentile):
 
 ##-------------------------------------------- PLOTS ----------------------------------------------------------#
 
-def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True,verbose = False):
-    '''
-        NOTE:
-            label_potential:    V_in, V_out
-            label_fluxes:       Tj  , Ti
-        USAGE:
-            PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,label_potential = 'V_out',label_fluxes = 'Ti')
-            PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,label_potential = 'population',label_fluxes = 'Ti')
-
-    '''
-    labelf2title = {'Tj': 'Incoming','Ti':'Outgoing'}
-    label2save = {'V_in':'Potential','V_out':'Potential','population':'Mass'}
-    fig, ax = plt.subplots(figsize=(15, 15))
-    centroid_coords = np.array([grid['centroidx'].to_numpy(),grid['centroidy'].to_numpy()])
-    centroid_coords = centroid_coords.T
-    #grav_vector_field = gravitational_field(fluxes_matrix,normalized_vectors,nv)
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black')
-    if label_potential in PotentialDataframe.columns: 
-        grid[label_potential] = PotentialDataframe[label_potential]
-    elif label_potential in grid.columns:
-        pass
-    else:
-        raise KeyError(label_potential,' Neither in grid nor potential columns: ',grid.columns,PotentialDataframe.columns)
-    if plot_mass:
-        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'Greys',edgecolor='black', alpha=0.3)
-        grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
-        grid_cbar.set_label('{}'.format(label_potential), rotation=270, labelpad=15)
-    else:
-        pass
-    VF = np.stack(VectorField[label_fluxes].to_numpy(dtype = np.ndarray))
-    VF_norm = np.linalg.norm(VF, axis=1)
-    VF_normalized = np.stack(np.array([VF[i] / VF_norm[i] if VF_norm[i] !=0 else [0, 0] for i in range(len(VF_norm))]))
-    mask = [True if VF_norm[i]!=0 else False for i in range(len(VF_norm))]
-    quiver_plot = ax.quiver(centroid_coords[mask,0], centroid_coords[mask,1], VF_normalized[mask,0], VF_normalized[mask,1],
-            VF_norm[mask], cmap='inferno_r', angles='xy', scale_units='xy', scale=60, width=0.005,headwidth=1, headlength=3)
-#    quiver_plot = ax.quiver(centroid_coords[:,0], centroid_coords[:,1], VF_normalized[:,0], VF_normalized[:,1],
-#            VF_norm, cmap='inferno', angles='xy', scale_units='xy', scale=50, width=0.005,headwidth=1, headlength=2)
-    quiver_cbar = plt.colorbar(quiver_plot, ax=ax)
-    quiver_cbar.set_label('Normalized Vector Magnitude', rotation=270, labelpad=15)
-    ax.set_title('Vector Field {} Fluxes'.format(labelf2title[label_fluxes]))
-    plt.savefig(os.path.join(dir_grid,'{0}Flux{1}.png'.format(labelf2title[label_fluxes],label2save[label_potential])),dpi = 200)
-    if verbose:
-        plt.show()

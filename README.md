@@ -49,3 +49,18 @@ MainAnalysis: for City in ListCities -> TrajectoryAnalysis: for UCI in UCIs: for
 `OD_{NameCity}_{StartTime}_{EndTime}.fma`: This file contains information about origin and destinations.    
 *Format*: `IndexOrigin` (space) `IndexDestination` (space) `NumberPeople` (new line)   
 *NOTE*:  `IndexOrigin` and `IndexDestination` are those of the polygons `{NameCity}.shp`
+
+
+# Description:
+## Geometry
+`grid`: GeoJson 
+Columns:  
+- "i": int, Bidimensional index for grid in the x-axis
+- "j": int, Bidimensional index for grid in the y-axis
+- "centroidx": float, "centroidy": float, Centroid coorindates
+- "area": float, Area of the grid
+- "index": int, Unidimensional index for the grid once flattened: Useful for OD generation
+- "population": float, Number of people living in the grid obtained as a intersection with the hexagons obtained from Facebook
+- "with_roads": bool, Value that tells wether the map has roads in that grid
+- "geometry":Polygon   
+

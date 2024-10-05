@@ -1,4 +1,7 @@
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
+
 ##---------------------------------- GEOMETRIC FEATURES ----------------------------------##
 def ProjCoordsTangentSpace(lat,lon,lat0,lon0):
     '''

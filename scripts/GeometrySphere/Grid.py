@@ -32,6 +32,8 @@ else:
     sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','GenerationNet'))
 from global_functions import *
 from GeometrySphere import ProjCoordsTangentSpace
+import logging
+logger = logging.getLogger(__name__)
 
 ##---------------------------------------- DIRECTORY ----------------------------------------##
 
@@ -108,10 +110,10 @@ def GetGrid(grid_size,
         Usage:
             grid and lattice are together containing spatial and network information
     '''
-    cprint('Initialize Grid: ' + str(round(grid_size,3)),'yellow')
+    logger.info("Getting Grid ...")
     dir_grid = SetGridDir(save_dir_local,grid_size)
     if os.path.isfile(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")):
-        cprint('ALREADY COMPUTED'.format(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")),'yellow')
+        logger.info(f"Uploading grid with size {grid_size} from file...")
         grid = gpd.read_file(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson"))
         bbox = shp.geometry.box(*bounding_box)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox], crs=crs)
@@ -119,7 +121,7 @@ def GetGrid(grid_size,
         y = np.arange(bounding_box[1], bounding_box[3], grid_size)
 
     else:
-        cprint('COMPUTING {}'.format(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")),'green')
+        logger.info(f"Computing grid with size {grid_size} from file...")
         bbox = shp.geometry.box(*bounding_box)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox], crs=crs)
         x = np.arange(bounding_box[0], bounding_box[2], grid_size)
@@ -136,7 +138,34 @@ def GetGrid(grid_size,
         grid['area'] = grid['geometry'].apply(ComputeAreaSquare)
         grid['index'] = grid.index
     return grid
+
+
 ## Direction matrix
+def ObtainDirectionMatrix(grid,save_dir_local,grid_size):
+    """
+        Input:
+            grid: GeoDataFrame -> grid of points
+            save_dir_local: str -> local directory to save the grid
+            grid_size: float -> size of the grid
+        Output:
+            direction_distance_df: DataFrame -> [i,j,dir_vector,distance]
+        Description:
+            This function is used to obtain the direction matrix and the distance matrix of the grid.
+            The direction matrix is a dictionary that contains the direction vector between two points of the grid.
+            The distance matrix is a dictionary that contains the distance between two points of the grid.
+            The direction_distance_df is a DataFrame that contains the information of the direction matrix and the distance matrix.
+            The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
+    """
+    logger.info("Obtaining Direction Matrix ...")
+    direction_distance_df,IsComputed = GetDirectionMatrix(save_dir_local,grid_size)
+    if IsComputed:
+        return direction_distance_df
+    else:
+        direction_matrix,distance_matrix = ComputeDirectionMatrix(grid)
+        direction_distance_df = DirectionDistance2Df(direction_matrix,distance_matrix)
+        SaveDirectionDistanceMatrix(save_dir_local,grid_size,direction_distance_df)
+        return direction_distance_df
+    
 def GetDirectionMatrix(save_dir_local,grid_size):
     if os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")):
         direction_distence_df = pd.read_csv(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv"))   
@@ -153,9 +182,7 @@ def ComputeDirectionMatrix(grid,verbose = True):
             direction_matrix: dict -> {(idxj,idxj): [xj-xi/norm(xj-xi,yj-yi),yj-yi/norm(xj-xi,yj-yi)]}
         NOTE: The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
     '''
-    if verbose:
-        print("Computing Direction Matrix")
-        print("Size grid: ",len(grid))
+    logger.info("Computing Direction Matrix ...")
     t0 = time.time()
     direction_matrix = {i: {j: np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])/np.linalg.norm(np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])) for j in range(len(grid))} for i in range(len(grid))}
     t1 = time.time()
@@ -173,10 +200,7 @@ def ComputeDirectionMatrix(grid,verbose = True):
 def DirectionDistance2Df(direction_matrix,distance_matrix,verbose = True):
     rows = []
     columns = ['i', 'j', 'dir_vector', 'distance']
-    if verbose:
-        print("Direction matrix to DataFrame:")
-        print("Size direction Matrix: ",len(direction_matrix))
-        print("Size distance Matrix: ",len(distance_matrix))
+    logger.info("Getting DataFrame with direction,distance informations...")
     # Iterate over the direction and distance matrices to construct DataFrame rows
     for i, dir_row in direction_matrix.items():
         for j, dir_vector in dir_row.items():
@@ -184,8 +208,6 @@ def DirectionDistance2Df(direction_matrix,distance_matrix,verbose = True):
             rows.append([i, j, dir_vector, distance])
     # Create DataFrame
     df = pd.DataFrame(rows, columns=columns)
-    if verbose:
-        print("Size DataFrame: ",len(df))
     return df
 
 
@@ -204,15 +226,15 @@ def GetLattice(grid,
     '''
     dir_grid = SetGridDir(save_dir_local,grid_size)
     ## BUILD GRAPH OBJECT GRID
-    cprint('Get Lattice','yellow')
+    logger.info(f"Building lattice with grid size {grid_size}...")
     x = np.arange(bounding_box[0], bounding_box[2], grid_size)
     y = np.arange(bounding_box[1], bounding_box[3], grid_size)
     if os.path.isfile(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")):
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")),'yellow')
+        logger.info("Uploading lattice from file...")
         lattice = nx.read_graphml(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml"))
         return lattice
     else:
-        cprint('COMPUTING {}'.format(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")),'yellow')
+        logger.info("Computing lattice...")
         lattice = nx.grid_2d_graph(len(x),len(y))
         node_positions = {(row['i'],row['j']): {'x': row['centroidx'],'y':row['centroidy']} for idx, row in grid.iterrows()}
         # Add position attributes to nodes
@@ -241,6 +263,7 @@ def GridIdx2OD(grid):
     '''
         Saves the origin destination in terms of the index column of the grid
     '''
+    logger.info("Init GridIdx2OD: {(Ogrid, Dgrid): Flux = 0} ...")
     gridIdx2dest = defaultdict(int)
     for o in grid['index'].tolist():
         for d in grid['index'].tolist():
@@ -254,12 +277,14 @@ def ODGrid(gridIdx2dest,
             gridIdx2dest: dict -> {(i,j): number_people}
             gridIdx2ij: dict -> {index: (i,j)}
         Output:
-    '''    
+    ''' 
+    logger.info("Computing Fluxes in the Grid ...")   
     orig = []
     dest = []
     number_people = []
     idxorig = []
     idxdest = []
+    logger.info("Computing ODGrid DataFrame: [origin,destination,number_people,(i,j)O,(i,j)D]...")
     for k in gridIdx2dest.keys():
         orig.append(k[0])
         dest.append(k[1])
@@ -282,6 +307,7 @@ def GetBoundariesInterior(grid,SFO_obj,verbose = True):
             the city. The position can be inside, outside or edge. The relation to the line can be edge or not_edge.
             If There are connected Components Then Something Must Be Done.
     """
+    logger.info("Adding Boundaries and Interior to Grid ...")
     boundary = gpd.overlay(SFO_obj.gdf_polygons, SFO_obj.gdf_polygons, how='union',keep_geom_type=False).unary_union
     # CREATE BOUNDARY LINE
     if isinstance(boundary, Polygon):
@@ -313,6 +339,15 @@ def GetBoundariesInterior(grid,SFO_obj,verbose = True):
 
 
 def GetLargestConnectedComponentPolygons(gdf):
+    """
+        Input:
+            gdf: GeoDataFrame -> GeoDataFrame containing polygons
+        Output:
+            largest_component: Polygon -> the largest connected component
+        Description:
+            This function is used to identify the largest connected component of a GeoDataFrame containing polygons.
+            The function also prints the number of connected components
+    """
     # Perform unary union to merge all geometries
     merged_geometry = shp.ops.unary_union(gdf.geometry)
     

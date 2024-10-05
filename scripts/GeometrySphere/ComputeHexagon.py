@@ -6,6 +6,7 @@ import numpy as np
 from PreprocessingObj import *
 from PolygonSettings import *
 import pandas as pd
+from Polygon import *
 from Hexagon import *
 from Grid import *
 from multiprocessing import Pool
@@ -22,24 +23,26 @@ from HostConnection import *
 from plot import *
 import warnings
 warnings.filterwarnings("ignore")
+import logging
+logger = logging.getLogger(__name__)
+
     ##  ------------------------- INITIALIZE HEXAGON 2 OD ------------------------- ##
-def AllStepsHexagon(GeometricalInfo,resolutions,NameCity):
-    for resolution in resolutions:
-        GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,resolution)
-        SaveHexagon(GeometricalInfo.save_dir_local,resolution,GeometricalInfo.gdf_hexagons)
-        GeometricalInfo.OD2hexagon,GeometricalInfo.hexagon2OD,GeometricalInfo.gdf_hexagons = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_hexagons,
-                                                                            GraphFromPhml = GeometricalInfo.GraphFromPhml,
-                                                                            NameCity = GeometricalInfo.city,
-                                                                            GeometryName ='hexagon',
-                                                                            save_dir_local = GeometricalInfo.save_dir_local,
-                                                                            resolution = resolution)
-        
-        
-        if socket.gethostname()!='artemis.ist.berkeley.edu':
-            # ADD FILES TO UPLOAD
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon.geojson'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon.geojson'))
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon2origindest.json'))
-            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'origindest2hexagon.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'origindest2hexagon.json'))
+def AllStepsHexagon(GeometricalInfo,resolution,NameCity):
+    GeometricalInfo.gdf_hexagons = GetHexagon(GeometricalInfo.gdf_polygons,GeometricalInfo.tiff_file_dir_local,GeometricalInfo.save_dir_local,NameCity,resolution)
+    SaveHexagon(GeometricalInfo.save_dir_local,resolution,GeometricalInfo.gdf_hexagons)
+    GeometricalInfo.OD2hexagon,GeometricalInfo.hexagon2OD,GeometricalInfo.gdf_hexagons = Geometry2OD(gdf_geometry = GeometricalInfo.gdf_hexagons,
+                                                                        GraphFromPhml = GeometricalInfo.GraphFromPhml,
+                                                                        NameCity = GeometricalInfo.city,
+                                                                        GeometryName ='hexagon',
+                                                                        save_dir_local = GeometricalInfo.save_dir_local,
+                                                                        resolution = resolution)
+    
+    
+    if socket.gethostname()!='artemis.ist.berkeley.edu':
+        # ADD FILES TO UPLOAD
+        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon.geojson'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon.geojson'))
+        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'hexagon2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'hexagon2origindest.json'))
+        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'hexagon',str(resolution),'origindest2hexagon.json'),os.path.join(GeometricalInfo.save_dir_server,'hexagon',str(resolution),'origindest2hexagon.json'))
     
     GeometricalInfo.gdf_polygons = getPolygonPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.gdf_polygons,NameCity)
     SavePolygon(GeometricalInfo.save_dir_local,GeometricalInfo.gdf_polygons)

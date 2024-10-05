@@ -21,6 +21,8 @@ if socket.gethostname()=='artemis.ist.berkeley.edu':
 else:
     sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
 from plot import *
+import logging
+logger = logging.getLogger(__name__)
 
 def AllStepsRing(GeometricalInfo,radius,NameCity):
     '''
