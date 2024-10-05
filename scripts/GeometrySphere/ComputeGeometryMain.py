@@ -1,3 +1,24 @@
+"""
+    @file: ComputeGeometryMain.py
+    @brief: This script is responsible for tiling city with different geometrical shapes.
+    The geometrical shapes are:
+        - Hexagon (Since the tiff files are read in hexagons using h3 and rasterio)
+        - Grid (Since the definition of the grid allow the definition of the gradient and the curl, in the perspective of defining a potential)
+        - Ring (Since the definition of the ring since for monocentric cities we have a clear definition of the ring)
+        - Polygon (Since the shape files contains plygons, and from these shape files we download the osmnx graph)
+    All these objects are saved in GeometricalInfo object. This object is specific for each city and handles information about its geometry.
+    The main function is the following:
+        - main(NameCity,TRAFFIC_DIR)
+    The main function is responsible for the following:
+        - Get the geometrical settings for the city
+        - Compute the OD from the geometrical shapes
+        - Compute the OD from the FMA files
+        - Upload the files to the server
+    The main function is called for each city in the list of cities.
+    The list of cities is obtained from the carto folder in the data folder.
+    The main function is called in parallel for each city.
+"""
+
 from termcolor import  cprint
 import os
 import json
@@ -20,20 +41,8 @@ from Ring import *
 from Polygon import *
 from ODfromfma import *
 import warnings
+import logging
 warnings.filterwarnings("ignore")
-
-'''
-    This script is responsible for tiling city with different geometrical shapes.
-    The geometrical shapes are:
-        - Hexagon (Since the tiff files are read in hexagons using h3 and rasterio)
-        - Grid (Since the definition of the grid allow the definition of the gradient and the curl, in the perspective of defining a potential)
-        - Ring (Since the definition of the ring since for monocentric cities we have a clear definition of the ring)
-        - Polygon (Since the shape files contains plygons, and from these shape files we download the osmnx graph)
-    The main function is the following:
-        - main(NameCity,TRAFFIC_DIR)
-    The main function is responsible for the following:
-        
-'''
 
 
 def main(NameCity,TRAFFIC_DIR):        
@@ -129,6 +138,7 @@ def main(NameCity,TRAFFIC_DIR):
                 GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'ring',str(n_ring),'origindest2ring.json'),os.path.join(GeometricalInfo.save_dir_server,'ring',str(n_ring),'origindest2ring.json'))
     ## -------------------------- FMA FILES -------------------------- ##
     AdjustDetailsBeforeConvertingFma2Csv(GeometricalInfo)
+    FirstFile = True
     for file in os.listdir(os.path.join(GeometricalInfo.ODfma_dir)):
         if file.endswith('.fma'):
             start = int(file.split('.')[0].split('D')[1])
@@ -139,8 +149,10 @@ def main(NameCity,TRAFFIC_DIR):
             cprint('file.fma: ' + file,'yellow')
             ODfmaFile = os.path.join(GeometricalInfo.ODfma_dir,file)
             for grid_size in grid_sizes:
-                if start == 7:
-                    _,_,ROutput = OD_from_fma(GeometricalInfo.polygon2OD,
+                # Generate the Origin Destination For non modified mobility
+                # Concatenated for all different hours.
+                if FirstFile:
+                    df1,_,ROutput = OD_from_fma(GeometricalInfo.polygon2OD,
                                         GeometricalInfo.osmid2index,
                                         GeometricalInfo.grid,
                                         grid_size,
@@ -150,17 +162,29 @@ def main(NameCity,TRAFFIC_DIR):
                                         start,
                                         end,
                                         GeometricalInfo.save_dir_local,
-                                        n_rings,
-                                        grid_sizes,
-                                        resolutions,
-                                        offset = 6,
                                         seconds_in_minute = 60,
                                         )
-                    if socket.gethostname()!='artemis.ist.berkeley.edu':
-                        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(round(grid_size,3)),'ODgrid.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(round(grid_size,3)),'ODgrid.csv'))
-                        print('R Output: ',ROutput)
-                        for R in ROutput:
-                            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))),os.path.join(GeometricalInfo.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))) )
+                    FirstFile = False
+                else:
+                    df2,_,ROutput = OD_from_fma(GeometricalInfo.polygon2OD,
+                                        GeometricalInfo.osmid2index,
+                                        GeometricalInfo.grid,
+                                        grid_size,
+                                        GeometricalInfo.OD2grid,
+                                        NameCity,
+                                        ODfmaFile,
+                                        start,
+                                        end,
+                                        GeometricalInfo.save_dir_local,
+                                        seconds_in_minute = 60,
+                                        )
+                    df1 = pd.concat([df1, df2], ignore_index=True)
+    df1.sort_values(by=['dep_time'],ascending=True)            
+    if socket.gethostname()!='artemis.ist.berkeley.edu':
+        GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(round(grid_size,3)),'ODgrid.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(round(grid_size,3)),'ODgrid.csv'))
+        print('R Output: ',ROutput)
+        for R in ROutput:
+            GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))),os.path.join(GeometricalInfo.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))) )
  #   for localfile in GeometricalInfo.Files2Upload.keys():
  #       serverfile = GeometricalInfo.Files2Upload[localfile]
  #       Upload2ServerPwd(localfile,serverfile)
@@ -174,6 +198,7 @@ if __name__=='__main__':
         the geometrical parameters asked.
 
     '''
+    logger = logging.getLogger(__name__)
     if socket.gethostname()=='artemis.ist.berkeley.edu':
         TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
     else:

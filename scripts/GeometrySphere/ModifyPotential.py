@@ -6,6 +6,8 @@ import time
 from Potential import *
 from Polycentrism import *
 from GeometrySphere import *
+import logging
+logger = logging.getLogger(__name__)
 
 def GenerateIndexCenters(grid,num_peaks,verbose = False):
     '''
@@ -35,6 +37,7 @@ def GenerateIndexCenters(grid,num_peaks,verbose = False):
     # PICK RANDOMLY THE CENTERS (with exponentially decreasing probability in distance from center)
     random_values = np.random.exponential(scale,num_peaks)
     _, bin_edges = np.histogram(populated_grid['distance_from_center'].to_numpy(), bins=30)
+    logger.info("Gnerating Index Centers")
     if verbose:
         print("++++++++++++ Generate Index Centers ++++++++++++")
         print("Number of Populated Grids: ",len(populated_grid))

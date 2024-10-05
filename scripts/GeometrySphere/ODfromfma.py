@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 from Grid import *
+import logging
+logger = logging.getLogger(__name__)
+
 PRINTING_INTERVAL = 10000000
 NUMBER_SIMULATIONS = 20
 offset = 6
@@ -45,6 +48,21 @@ def GetRightTypeOD(origin,destination,polygon2OD):
         destination = float(destination)
     return origin,destination                    
 
+def ObtainODMatrixGrid(save_dir_local,grid_size,grid):
+    """
+        Either Upload the OD grid or compute it
+    """
+    logger.info("Obtaining OD Matrix Grid...")
+    if os.path.isfile(os.path.join(save_dir_local,'grid',grid_size,'ODgrid.csv')):
+        logger.info("OD Grid already computed, uploading...")
+        return pd.read_csv(os.path.join(save_dir_local,'grid',grid_size,'ODgrid.csv'))
+    else:
+        logger.info("Computing OD Grid...")
+        gridIdx2ij = {grid['index'][i]: (grid['i'].tolist()[i],grid['j'].tolist()[i]) for i in range(len(grid))}
+        gridIdx2dest = GridIdx2OD(grid)
+        ODGrid(gridIdx2dest,gridIdx2ij)
+        
+
 def GetODGrid(save_dir_local,grid_size):
     if os.path.isfile(os.path.join(save_dir_local,'grid',grid_size,'ODgrid.csv')):
         return pd.read_csv(os.path.join(save_dir_local,'grid',grid_size,'ODgrid.csv'))
@@ -70,10 +88,107 @@ def SaveOD(df,df1,save_dir_local,NameCity,start,end,R,grid_size):
     if not os.path.isfile(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,str(int(R))))):
         df1.to_csv(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,str(int(R)))),sep=',',index=False)
 
+def ScaleOD(OD_vector,R):
+    '''
+        @param OD_vector: list -> List of number of people moving from origin to destination
+        @param R: int -> Rate of people moving in the simulation
+        @return OD_vector: list -> People moving from origin to destination scaled
+        @brief Scale the OD vector. In This way we obtain the WANTED rate of people in the simulation.
+    '''
+    logger.info("Scaling OD...")
+    TotalNonModifiedFlux = np.sum(OD_vector)
+    FluxWantedIn1HourForControlGroup = R*3600
+    ScaleFactor = FluxWantedIn1HourForControlGroup/TotalNonModifiedFlux
+    OD_vector = [int(ScaleFactor*OD_vector[i]) for i in range(len(OD_vector))]
+    return OD_vector
+
+##-------------------------------------------------##
+def GenerateBeginDf(Hour2Files,
+                       ODfma_dir,
+                       StartControlGroup,
+                        polygon2OD,
+                        osmid2index,
+                        grid,
+                        grid_size,
+                        OD2grid,
+                        city,
+                        save_dir_local):
+    """
+        @param Hour2Files: dict -> Dictionary that maps the hour to the file fma (NOTE: is ordered)
+        @return dfBegin: pd.DataFrame -> DataFrame that contains the first 7 hours of the simulation
+        @return dfEnd: pd.DataFrame -> DataFrame that contains the last 7 hours of the simulation
+        @ Description: Returns the dataframe of the fist StartControlGroup hours of the simulation
+        It will be used appending o it the different generated dataframes depending on R (insertion rate)
+    """
+    FileMidnight = True
+    logger.info("Computing begin OD for simulation from data...")
+    for start,file in Hour2Files.items():
+        logger.info("From file: {}".format(file))
+        end = start + 1
+        ODfmaFile = os.path.join(ODfma_dir,file)
+        # Generate the Origin Destination For non modified mobility
+        # Concatenated for all different hours.
+        OffsetNPeople = 0
+        O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
+        # Number of People Without Change
+#        if start == StartControlGroup:
+#            OffsetNPeople += np.array([R*3600 for R in ArrayRs],dtype = int)
+        if start < StartControlGroup:
+            R = np.sum(OD_vector)
+            # Do Not Change the OD and Concatenate the input for Simulation                            
+            df2 = ReturnFileSimulation(O_vector,
+                                    D_vector,
+                                    OD_vector,
+                                    R,
+                                    OffsetNPeople,
+                                    polygon2OD,
+                                    osmid2index,
+                                    grid,
+                                    grid_size,
+                                    OD2grid,
+                                    city,
+                                    start,
+                                    end,
+                                    save_dir_local)
+            OffsetNPeople += R*3600
+        else:
+            break
+        if FileMidnight:
+            dfBegin = df2
+            FileMidnight = False
+        else:
+            dfBegin = pd.concat([dfBegin, df2], ignore_index=True)
+    return dfBegin
+
 
 
 ##-------------------------------------------------##
-def CumulativeODPolygonGivenR(O_vector,D_vector,OD_vector,polygon2OD,osmid2index,OD2Grid,gridIdx2dest,start,end,multiplicative_factor,seconds_in_minute,R):
+def GetODForSimulationFromFmaPolygonInput(O_vector,
+                              D_vector,
+                              OD_vector,
+                              R,
+                              OffsetNPeople,
+                              polygon2OD,
+                              osmid2index,
+                              OD2Grid,
+                              gridIdx2dest,
+                              start,
+                              seconds_in_minute
+                              ):
+    """
+        @param O_vector: list -> List of origins (index of the polygon)
+        @param D_vector: list -> List of destinations (index of the polygon)
+        @param OD_vector: list -> List of number of people moving from origin to destination
+        @param polygon2OD: dict -> Maps polygon ids (That are contained in OD <- ODfma_file) to the OD of Tij (in the grid): NOTE: i,j in I,J
+        @param osmid2index: dict -> Maps osmid to Index
+        @param OD2Grid: dict -> Maps PolygonIds to grid index
+        @param gridIdx2dest: dict -> Maps grid index to number of people moving from origin to destination
+        @param start: int -> Start time of control group
+        @param end: int -> End time of control group
+
+    """ 
+    # Rescale OD
+    OD_vector = ScaleOD(OD_vector,R)   
     total_number_people_considered = 0
     total_number_people_not_considered = 0
     count_line = 0
@@ -83,24 +198,18 @@ def CumulativeODPolygonGivenR(O_vector,D_vector,OD_vector,polygon2OD,osmid2index
     destinations = []
     osmid_origin = []
     osmid_destination = []
-    print('map Nodes Carto to grid:\n ')
-    count = 0
-    for key, value in OD2Grid.items():
-        print(key, ':', value)
-        count += 1
-        if count == 3:
-            break    
-    print('number of couples of origin-destination: ',len(O_vector))
+    # For Each Couple of Origin and Destination
     for i in range(len(O_vector)):
         origin = O_vector[i]
         destination = D_vector[i]
-        number_people = OD_vector[i]
-        bin_width = 1                        
+        number_people = OD_vector[i]                   
+        # If a flux exists
         if number_people > 0:
-            iterations = multiplicative_factor*number_people/bin_width   
-            time_increment = 1/iterations
-            for it in range(int(iterations)):
+            time_increment = 1/number_people
+            for person in range(int(number_people)):
+                # Get Index of the Origin and Destination From Polygon Index Set
                 origin,destination = GetRightTypeOD(origin,destination,polygon2OD)
+                # Control there are nodes in the polygon
                 try:
                     Originbigger0 = len(polygon2OD[origin])>0
                 except KeyError:
@@ -112,9 +221,9 @@ def CumulativeODPolygonGivenR(O_vector,D_vector,OD_vector,polygon2OD,osmid2index
                     total_number_people_not_considered += number_people
                     break
                 if  Originbigger0 and Destinationbigger0:
-                    users_id.append(count_line)
-                    t = start*(seconds_in_minute**2) + it*time_increment*seconds_in_minute**2
-                    time_.append(t) # TIME IN HOURS
+                    users_id.append(OffsetNPeople + count_line)
+                    t = start*(seconds_in_minute**2) + person*time_increment*seconds_in_minute**2
+                    time_.append(t) # TIME SECONDS
                     i = np.random.randint(0,len(polygon2OD[origin]))
                     try:
                         origins.append(osmid2index[polygon2OD[origin][i]])
@@ -143,15 +252,23 @@ def CumulativeODPolygonGivenR(O_vector,D_vector,OD_vector,polygon2OD,osmid2index
                     gridIdx2dest[(ogrid,dgrid)] += 1
                     count_line += 1
                     if count_line%PRINTING_INTERVAL==0:
-                        print('Origin: ',origin,' Osmid Origin: ',osmid2index[polygon2OD[str(origin)][i]],' Destination: ',destination,' Osmid Destination: ',osmid2index[polygon2OD[str(destination)][i]],' Number of people: ',number_people,' R: ',R)
-                        print(len(destinations),len(origins))
-                        cprint('iteration: ' + str(it) + ' number_people: ' + str(number_people) + ' origin: ' + str(origin) + ' #nodes('+ str(len(polygon2OD[origin])) + ') ' + ' destination: ' + str(destination) + ' #nodes('+ str(len(polygon2OD[destination])) + ') '+ ' R: ' + str(R),'green')        
-                        print('time insertion: ',start*seconds_in_minute**2 + it*time_increment*seconds_in_minute**2,' time min: ',start*seconds_in_minute**2,' time max: ',end*seconds_in_minute**2,' time max iteration: ',start*seconds_in_minute**2 + (iterations)*time_increment*seconds_in_minute**2)
+                        logger.debug(f"Iteration: {person}")
+                        logger.debug(f'People Considered: {total_number_people_considered} (Not: {total_number_people_not_considered})')
+                        logger.debug('Lost People: {}'.format(total_number_people_considered/(total_number_people_considered+total_number_people_not_considered)))
                     total_number_people_considered += 1
-    print('total_number_people_considered: ',total_number_people_considered)
-    print('total_number_people_not_considered: ',total_number_people_not_considered)
-    print('ratio: ',total_number_people_considered/(total_number_people_considered+total_number_people_not_considered))
-    return users_id,time_,origins,destinations,gridIdx2dest,osmid_origin,osmid_destination
+    logger.debug(f'Tot People Considered: {total_number_people_considered} (Not: {total_number_people_not_considered})')
+    logger.debug('Tot Lost People: {}'.format(total_number_people_considered/(total_number_people_considered+total_number_people_not_considered)))
+    df1 = pd.DataFrame({
+        'SAMPN':users_id,
+        'PERNO':users_id,
+        'origin_osmid':osmid_origin,
+        'destination_osmid':osmid_destination,
+        'dep_time':time_,
+        'origin':origins,
+        'destination':destinations,
+        })
+
+    return df1
 
 
 ##--------------------------ALL Rs-----------------------##
@@ -165,11 +282,9 @@ def OD_from_fma(polygon2OD,
                 start,
                 end,
                 save_dir_local,
-                number_of_rings,
-                grid_sizes,
-                resolutions,
-                offset = 6,
-                seconds_in_minute = 60,
+                Rmin,
+                Rmax,
+                seconds_in_minute = 60
                 ):
     '''
         NOTE:
@@ -226,24 +341,103 @@ def OD_from_fma(polygon2OD,
         else:
             gridIdx2dest = GridIdx2OD(grid)    
             cprint('COMPUTING {}'.format(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(multiplicative_factor*R)))),'cyan')
-            users_id,time_,origins,destinations,gridIdx2dest,osmid_origin,osmid_destination = CumulativeODPolygonGivenR(O_vector,D_vector,OD_vector,polygon2OD,osmid2index,OD2Grid,gridIdx2dest,start,end,multiplicative_factor,seconds_in_minute,R)
+            df1 = GetODForSimulationFromFmaPolygonInput(O_vector,
+                                                        D_vector,
+                                                        OD_vector,
+                                                        R,
+                                                        polygon2OD,
+                                                        osmid2index,
+                                                        OD2Grid,
+                                                        gridIdx2dest,
+                                                        start,
+                                                        seconds_in_minute
+                                                        )
             df = ODGrid(gridIdx2dest,gridIdx2ij)
             print('df:\n',df.head())
             print('population moving: ',df['number_people'].sum())
-            df1 = pd.DataFrame({
-                'SAMPN':users_id,
-                'PERNO':users_id,
-                'origin_osmid':osmid_origin,
-                'destination_osmid':osmid_destination,
-                'dep_time':time_,
-                'origin':origins,
-                'destination':destinations,
-                })
             print('df1:\n',df1.head())
             R = multiplicative_factor*R
             ROutput.append(int(R))
             SaveOD(df,df1,save_dir_local,NameCity,str(start),str(end),str(int(R)),round(grid_size,3))
     return df1,df,ROutput
+
+
+def ReturnFileSimulation(O_vector,
+                        D_vector,
+                        OD_vector,
+                        R,
+                        OffsetNPeople,
+                        polygon2OD,
+                        osmid2index,
+                        grid,
+                        grid_size,
+                        OD2Grid,
+                        NameCity,
+                        start,
+                        end,
+                        save_dir_local,
+                        seconds_in_minute = 60
+                        ):
+    '''
+        NOTE:
+            GEOMETRY:
+                I,J: Set of x,y coordinates of the grid (int numbers)
+                Index: Set of 1D indeces of the grid (int number)
+                PolygonId: Set of 1D ids of the polygon (int number)
+            GRAPH:
+                Osmid: Set of 1D ids of the node (int number)
+        Input:
+            polygon2OD: dict -> Maps polygon ids (That are contained in OD <- ODfma_file) to the OD of Tij (in the grid): NOTE: i,j in I,J
+            osmid2index: dict -> Maps osmid to Index
+            grid: Geopandas -> ["i": int, "j": int, "centroidx": float, "centroidy": float, "area":float, "index": int, "population":float, "with_roads":bool, "geometry":Polygon]
+            grid_size: float -> Size of the grid (0.02 for Boston is 1.5 km^2)
+            OD2Grid: dict -> Maps PolygonIds to grid index
+            NameCity: str -> Name of the city
+            ODfmaFile: str -> Path to the fma file
+            start: int -> Start time of the simulation
+            end: int -> End time of the simulation
+            save_dir_local: str -> Path to the directory where the data is stored
+            number_of_rings: int -> Number of rings to consider
+            grid_sizes: list -> List of grid sizes to consider
+            resolutions: list -> List of resolutions to consider
+            offset: int -> Offset of the fma file
+            seconds_in_minute: int -> Number of seconds in a minute
+        Output:
+            df1: pd.DataFrame -> DataFrame with the OD demand
+            df: pd.DataFrame -> DataFrame with the OD grid
+            ROutput: list -> List of Rs that have been considered
+        Description: 
+            Each fma file contains the origin and destinations with the rate of people entering the graph.
+            This function, takes advantage of the polygon2origindest dictionary to build the origin and destination
+            selecting at random one of the nodes that are contained in the polygon.
+    '''
+    logger.info("computing file simulation...")
+    FileInputSimulation = os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R)))
+    if os.path.isfile(FileInputSimulation):
+        logger.info(f"Scaled OD already computed, skipping...")
+        df = pd.DataFrame({})
+        df1 = pd.read_csv()
+    else:
+        logger.info(f"Computing Scaled OD...")
+        gridIdx2dest = GridIdx2OD(grid)    
+        df1 = GetODForSimulationFromFmaPolygonInput(O_vector,
+                              D_vector,
+                              OD_vector,
+                              R,
+                              OffsetNPeople,
+                              polygon2OD,
+                              osmid2index,
+                              OD2Grid,
+                              gridIdx2dest,
+                              start,
+                              seconds_in_minute
+                              )
+        gridIdx2ij = {grid['index'][i]: (grid['i'].tolist()[i],grid['j'].tolist()[i]) for i in range(len(grid))}
+        df = ODGrid(gridIdx2dest,gridIdx2ij)
+        print('df:\n',df.head())
+        print('population moving: ',df['number_people'].sum())
+        SaveOD(df,df1,save_dir_local,NameCity,str(start),str(end),str(int(R)),round(grid_size,3))
+    return df1,df
 
 
 # def OD_from_potential TODO: Inputs O_vector,D_vector,OD_vector from potential in the grid.

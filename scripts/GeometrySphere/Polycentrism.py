@@ -5,6 +5,9 @@ import pandas as pd
 from numba import prange
 from shapely.geometry import Point
 import os
+import logging
+logger = logging.getLogger(__name__)
+
 ##--------------------------------------- GEOMETRIC FACTS ---------------------------------------##
 
 def FilterPopulation(grid):

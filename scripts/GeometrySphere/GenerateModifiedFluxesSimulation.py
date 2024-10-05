@@ -3,6 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 from ODfromfma import CityName2RminRmax
+import logging
+logger = logging.getLogger(__name__)
 
 def CheckAndConvert2AvailableTypesKeys(origin,AvailableTypesKeys,grid2OD):
     if type(origin) not in AvailableTypesKeys:
@@ -21,7 +23,8 @@ def GetAvailableTypesKeys(grid2OD):
             AvailableTypesKeys.append(type(key))
     return AvailableTypesKeys
 
-def CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,multiplicative_factor,seconds_in_minute = 60):
+
+def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,seconds_in_minute = 60):
     '''
         Input:
             O_vector: (np.array 1D) -> origin subset with repetition [0,...,Ngridx*Ngridy-1]
@@ -38,7 +41,6 @@ def CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,m
     assert osmid2index is not None, 'osmid2index must be provided'
     assert grid2OD is not None, 'grid2OD must be provided'
     assert start is not None, 'start must be provided'
-    assert multiplicative_factor is not None, 'multiplicative_factor must be provided'    
     total_number_people_considered = 0
     total_number_people_not_considered = 0
     count_line = 0
@@ -48,11 +50,11 @@ def CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,m
     destinations = []
     osmid_origin = []
     osmid_destination = []
-    print('number of couples of origin-destination: ',len(O_vector))
     NoneInOrigins = len([i for i in range(len(O_vector)) if O_vector[i] is None])
     NoneInDestinations = len([i for i in range(len(D_vector)) if D_vector[i] is None])
     NoneInOD = len([i for i in range(len(OD_vector)) if OD_vector[i] is None])
-    print('NoneInOrigins: ',NoneInOrigins," NoneInDestinations: ",NoneInDestinations," NoneInOD: ",NoneInOD)
+    logger.info(f'Number of Origin-Destination: {len(O_vector)}')
+    logger.debug(f'NoneInOrigins: {NoneInOrigins} NoneInDestinations: %s NoneInOD: %s',NoneInDestinations,NoneInOD)
     for i in range(len(O_vector)):
         # Index Origin
         origin = O_vector[i]
@@ -60,10 +62,9 @@ def CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,m
         destination = D_vector[i]
         # Number of people Origin-Destination
         number_people = OD_vector[i]
-        bin_width = 1
         # Add to File Just if There are People for The Origin-Destination                        
         if number_people > 0:
-            iterations = multiplicative_factor*number_people/bin_width   
+            iterations = number_people   
             time_increment = 1/iterations
             # Adequate the key to the grid2OD dictionary
             AvailableTypesKeysGrid2OD = GetAvailableTypesKeys(grid2OD)
@@ -112,12 +113,60 @@ def CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,m
                     ## FILLING ORIGIN DESTINATION GRID ACCORDING TO THE ORIGIN DESTINATION NODES
                     count_line += 1
                     total_number_people_considered += 1
+    df1 = pd.DataFrame({
+        'SAMPN':users_id,
+        'PERNO':users_id,
+        'origin_osmid':osmid_origin,
+        'destination_osmid':osmid_destination,
+        'dep_time':time_,
+        'origin':origins,
+        'destination':destinations,
+        })
+
     print('total_number_people_considered: ',total_number_people_considered)
     print('total_number_people_not_considered: ',total_number_people_not_considered)
     print('ratio: ',total_number_people_considered/(total_number_people_considered+total_number_people_not_considered))
-    return users_id,time_,origins,destinations,osmid_origin,osmid_destination
+    return df1
 
-def OD_from_T_Modified(Tij_modified,
+def ODVectorFromTij(Tij_modified):
+    """
+        Input:
+            Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
+        Output:
+            O_vector: (np.array 1D) -> origin subset with repetition [0,...,Ngridx*Ngridy-1]
+            D_vector: (np.array 1D) -> destination subset with repetition [0,...,Ngridx*Ngridy-1]
+            OD_vector: (np.array 1D) -> number of people from Tij['number_people'].to_numpy()
+    """
+    logger.info("Convert Tij to OD_vector...")
+    # NOTE: ADD HERE THE POSSIBILITY OF HAVING OD FROM POTENTIAL CONSIDERATIONS
+    O_vector = np.array(Tij_modified['origin'],dtype=int)
+    D_vector = np.array(Tij_modified['destination'],dtype=int)
+    OD_vector = np.array(Tij_modified['number_people'],dtype=int)
+    return O_vector,D_vector,OD_vector
+
+def GenerateDfFluxesFromGravityModel(Tij_modified,osmid2index,grid2OD,start):
+    """
+        Input:
+            Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
+            osmid2index: (dict) -> osmid2index = {osmid:i}
+            grid2OD: (dict) -> grid2OD = {(i,j):OD}
+            start: (int) -> start time
+        Output:
+            df1: (pd.DataFrame) -> df1 = pd.DataFrame({
+                'SAMPN':users_id,
+                'PERNO':users_id,
+                'origin_osmid':osmid_origin,
+                'destination_osmid':osmid_destination,
+                'dep_time':time_,
+                'origin':origins,
+                'destination':destinations,
+                })
+    """
+    logger.info("Generate Df Fluxes From Gravity Model...")
+    O_vector,D_vector,OD_vector = ODVectorFromTij(Tij_modified)
+    df1 = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,60)
+    return df1
+def GetODForSimulation(Tij_modified,
                        CityName2RminRmax,
                        NameCity,
                        osmid2index,
@@ -126,7 +175,8 @@ def OD_from_T_Modified(Tij_modified,
                        save_dir_local,
                        start = 7,
                        end = 8,
-                       UCI = None
+                       UCI = None,
+                       df2 = None
                        ):
     # Set the number of OD files to generate
     NumberOfConfigurationsR = 20
@@ -152,7 +202,7 @@ def OD_from_T_Modified(Tij_modified,
         else:
 #            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))),'cyan')
             cprint('COMPUTING {}'.format(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))),'cyan')
-            users_id,time_,origins,destinations,osmid_origin,osmid_destination = CumulativeODFromGrid(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,multiplicative_factor,60)
+            users_id,time_,origins,destinations,osmid_origin,osmid_destination = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,multiplicative_factor,60)
             df1 = pd.DataFrame({
                 'SAMPN':users_id,
                 'PERNO':users_id,
@@ -165,6 +215,8 @@ def OD_from_T_Modified(Tij_modified,
             print('df1:\n',df1.head())
             R = multiplicative_factor*R
             ROutput.append(int(R))
+            df2 = pd.concat([df1,df2],ignore_index = True)
+            df2 = df2.sort_values(by = ['dep_time'],ascending=True)
 #            df1.to_csv(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(R),UCI)))
-            df1.to_csv(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(R),UCI)))
-    
+            df2.to_csv(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(R),UCI)))
+    return df1    

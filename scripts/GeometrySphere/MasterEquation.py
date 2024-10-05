@@ -1,4 +1,6 @@
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 def GetMaxIndicesGridFromTij(Tij):
     ij = Tij['(i,j)O'].apply(lambda x: [int((x.replace('(','').replace(')','').split(','))[0]),int((x.replace('(','').replace(')','').split(','))[1])]).T
