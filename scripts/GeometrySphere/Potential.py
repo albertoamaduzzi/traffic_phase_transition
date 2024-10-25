@@ -38,6 +38,16 @@ def parse_dir_vector(vector_string):
     return vector_array
 
 def GetVectorField(Tij,df_distance):
+    '''
+        @param Tij: Dataframe with the number of people from i to j
+        @param df_distance: Dataframe with the distance matrix and the direction vector
+        @return VectorField: Dataframe with the vector field in the square lattice
+        @description: Compute the vector field in the square lattice from the Tij and the distance matrix.
+        Columns of Tij: (i,j)O, (i,j)D, number_people
+
+    '''
+    assert 'dir_vector' in df_distance.columns, 'The column "dir_vector" is not in the DataFrame'
+    assert 'number_people' in Tij.columns, 'The column "number_people" is not in the DataFrame'    
     Tij['vector_flux'] = df_distance['dir_vector'].apply(lambda x: parse_dir_vector(x) ) * Tij['number_people']
 
     # Create VectorField DataFrame
@@ -68,23 +78,27 @@ def GetSavedVectorFieldDF(save_dir):
 
 def GetPotentialLattice(lattice,VectorField):
     '''
-        Input: 
-            lattice -> without ['V_in','V_out']
-            VectorField: Dataframe [index,(i,j),Ti,Tj]
-        Output:
-            lattice with:
-                'V_in' potential for the incoming fluxes
-                'V_out' potential for the outgoing fluxes
-                'rotor_z_in': Is the rotor at the point (i,j) for the ingoing flux. (Tj) sum over i. So I look at a source and I say that the field
-                              is the ingoing flux. This is strange as it does not give any information about where to go to find the sink.
-                'rotor_z_out': Is the rotor at the point (i,j) for the ingoing flux. (Ti) sum over j. So I look at a source and I say that the field
-                               is the outgoing flux. In this way I am considering the analogue case to the google algorithm for
-                               page rank as I am at a random point and the field points at the direction with smaller potential, the sink, that is 
-                               the higher rank of importance.
+        @param lattice: Graph with the square lattice
+        @param VectorField: Dataframe with the vector field
+        @return lattice: Graph 
+        @description: lattice -> nodes features: V_in, V_out, index, rotor_z_in, rotor_z_out, HarmonicComponentOut, HarmonicComponentIn
+                      lattice -> edges features: dx, dy, d/dx, d/dy
+        'V_in': potential for the incoming fluxes
+        'V_out': potential for the outgoing fluxes
+        'rotor_z_in': Is the rotor at the point (i,j) for the ingoing flux. (Tj) sum over i. So I look at a source and I say that the field
+                    is the ingoing flux. This is strange as it does not give any information about where to go to find the sink.
+        'rotor_z_out': Is the rotor at the point (i,j) for the ingoing flux. (Ti) sum over j. So I look at a source and I say that the field
+                    is the outgoing flux. In this way I am considering the analogue case to the google algorithm for
+                    page rank as I am at a random point and the field points at the direction with smaller potential, the sink, that is 
+                    the higher rank of importance.
+        'HarmonicComponentIn': Harmonic Component for the ingoing flux
+        'HarmonicComponentOut': Harmonic Component for the outgoing flux
                     
-        Describe:
-            Output = Input for ConvertLattice2PotentialDataframe
     '''
+    assert 'Ti' in VectorField.columns, 'The column "Ti" is not in the DataFrame'
+    assert 'Tj' in VectorField.columns, 'The column "Tj" is not in the DataFrame'
+    assert 'index' in VectorField.columns, 'The column "index" is not in the DataFrame'
+    assert '(i,j)' in VectorField.columns, 'The column "(i,j)" is not in the DataFrame'
     nx.set_node_attributes(lattice, 0, 'V_in')
     nx.set_node_attributes(lattice, 0, 'V_out')
     nx.set_node_attributes(lattice, 0, 'index')
@@ -140,6 +154,11 @@ def GetPotentialLattice(lattice,VectorField):
     return lattice
 
 def ComputeHarmonicComponents(lattice):
+    """
+        @param lattice: Graph with the square lattice
+        @return lattice: Graph with the square lattice
+        @description: Compute the Harmonic Component for the ingoing and outgoing fluxes
+    """
     nx.set_node_attributes(lattice, 0, 'HarmonicComponentIn')
     nx.set_node_attributes(lattice, 0, 'HarmonicComponentOut')
     for node_str in lattice.nodes:
@@ -179,6 +198,8 @@ def SmoothPotential(lattice):
 
 def ConvertLattice2PotentialDataframe(lattice):
     '''
+        @param lattice: Graph with the square lattice
+        @return PotentialDataframe: Dataframe with V_in, V_out, centroid (x,y), index, node_id(i,j), HarmonicComponentIn, HarmonicComponentOut
         Input: 
             Lattice with potential
         Output:
@@ -216,11 +237,10 @@ def ConvertLattice2PotentialDataframe(lattice):
 
 def AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice):
     '''
-        Input:
-            PotentialDataframe: Dataframe with V_in, V_out, index, node_id(i,j)
-            lattice: Graph with the potential
-        Output:
-            PotentialDataframe with HarmonicComponentIn, HarmonicComponentOut
+        @param PotentialDataframe: Dataframe with V_in, V_out, index, node_id(i,j)
+        @param lattice: Graph with the potential
+        @description: Add the Harmonic Components to the PotentialDataframe
+        @return PotentialDataframe: Dataframe with V_in, V_out, index, node_id(i,j), HarmonicComponentIn, HarmonicComponentOut
     '''
     HarmonicComponentsIn = []
     HarmonicComponentsOut = []
@@ -235,7 +255,36 @@ def AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice):
     PotentialDataframe['HarmonicComponentIn'] = HarmonicComponentsIn
     PotentialDataframe['HarmonicComponentOut'] = HarmonicComponentsOut
     return PotentialDataframe
-def CompletePotentialDataFrame(VectorField,grid,PotentialDataframe):
+
+## ---- Aggregeted Functions Generation Potential from Fluxes ---- ##
+def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city):
+    """
+        @param Tij: Dataframe with the number of people from i to j
+        @param df_distance: Dataframe with the distance matrix and the direction vector
+        @param lattice: Graph with the square lattice
+        @param grid: Dataframe with the grid
+        @param city: Name of the city
+        @return PotentialDataframe: Dataframe with the potential
+    """
+    logger.info(f"Computing Vector Field {city} ...")
+    VectorField = GetVectorField(Tij,df_distance)
+    logger.info(f"Getting Potential in Lattice from VF {city} ...")
+    lattice = GetPotentialLattice(lattice,VectorField)
+    logger.info(f"Smoothing Potential in Lattice {city} ...")
+    lattice = SmoothPotential(lattice)
+    logger.info(f"Converting Lattice to Potential Dataframe {city} ...")
+    PotentialDataframe = ConvertLattice2PotentialDataframe(lattice)
+    logger.info(f"Add Population to Potential Dataframe {city} ...")
+    PotentialDataframe = CompletePotentialDataFrame(grid,PotentialDataframe)
+    return PotentialDataframe,lattice,VectorField
+
+
+def CompletePotentialDataFrame(grid,PotentialDataframe):
+    """
+        @param grid: Dataframe with the grid
+        @param PotentialDataframe: Dataframe with the potential
+        @description: Add the population to the PotentialDataframe
+    """
     PotentialDataframe['population'] = grid['population']    
     return PotentialDataframe
 

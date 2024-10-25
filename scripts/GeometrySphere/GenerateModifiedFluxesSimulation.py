@@ -26,14 +26,16 @@ def GetAvailableTypesKeys(grid2OD):
 
 def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,seconds_in_minute = 60):
     '''
-        Input:
-            O_vector: (np.array 1D) -> origin subset with repetition [0,...,Ngridx*Ngridy-1]
-            D_vector: (np.array 1D) -> destination subset with repetition [0,...,Ngridx*Ngridy-1]
-            OD_vector: (np.array 1D) -> number of people from Tij['number_people'].to_numpy() 
-            osmid2index: (dict) -> osmid2index = {osmid:i} 
-            grid2OD: (dict) -> grid2OD = {(i,j):OD}
-            start: (int) -> start time
-
+        @brief: Generate the Input for the Simulation from the Grid2OD
+        @param: O_vector: (np.array 1D) -> origin subset with repetition [0,...,Ngridx*Ngridy-1]
+        @param: D_vector: (np.array 1D) -> destination subset with repetition [0,...,Ngridx*Ngridy-1]
+        @param: OD_vector: (np.array 1D) -> number of people from Tij['number_people'].to_numpy()
+        @param: osmid2index: (dict) -> osmid2index = {osmid:i}
+        @param: grid2OD: (dict) -> grid2OD = {(i,j):OD}
+        @param: start: (int) -> start time
+        @param: seconds_in_minute: (int) -> seconds in a minute
+        @return: df1: (pd.DataFrame) -> 
+        df1 = pd.DataFrame({"SAMPN":users_id,"PERNO":users_id,"origin_osmid":osmid_origin,"destination_osmid":osmid_destination,"dep_time":time_,"origin":origins,"destination":destinations})
         NOTE: grid2OD,keys() in [0,...,Ngridx*Ngridy-1] <- Stored like Strings
         NOTE: grid2OD,values() in [osmid0,...,osmidN-1]
     '''

@@ -11,6 +11,8 @@ export TRAFFIC_DIR=/path/to/ProjectBaseDir
 
 
 # Preprocessing
+In this project we are considering the realization of synthetic traffic conditions for different cities: Boston, San Francisco,Rio De Janeiro, Los Angeles, Lisbon.
+The alorithm, starting from informations about population and fluxes in different hours of the day has the goal to produce diff
 ## Population/Origin-Destination/Grid
 `python3 ./scripts/GeometrySphere/ComputeGeometryMain.py`   
 The script reads the shape file of the region of interest with the relative Origin-Destinations file (.fma) (see `Input` Section).
@@ -52,6 +54,17 @@ MainAnalysis: for City in ListCities -> TrajectoryAnalysis: for UCI in UCIs: for
 
 
 # Description:
+The Project can be divided into 2 parts:
+1) Preprocessing
+2a) Launch Simulation
+2b) Analysis Simulation
+The Preprocessing part is all contained in `/$TRAFFIC_DIR/scripts/GeometrySphere/` directory.
+The task computed here are the following:
+## Preprocessing
+1) Extract information about population from .tiff files extracted from Meta project for demography. They come in `hexagon` format, whose `hexagon_resolution` must be specified
+2) Extract information about fluxes in .fma files obtained from previous work. They come in `polygon` format. No parameter needed.
+3) Adjust the data to `grid` as it is the only format that allows the framework developed for UCI used (Urban Centrality Index).
+4) 
 ## Geometry
 `grid`: GeoJson 
 Columns:  

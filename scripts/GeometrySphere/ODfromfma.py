@@ -19,7 +19,11 @@ def GetTotalMovingPopulation(OD_vector):
 ##-------------------------------------------------##
 def MapFile2Vectors(ODfmaFile):
     '''
-        Read the file and store the origin, destination and number of people in the vectors O_vector, D_vector and OD_vector
+        @param ODfmaFile: str -> Path to the fma file
+        @return O_vector: list -> List of origins (index of the polygon)
+        @return D_vector: list -> List of destinations (index of the polygon)
+        @return OD_vector: list -> List of number of people moving from origin to destination
+        @brief: Read the file and store the origin, destination and number of people in the vectors O_vector, D_vector and OD_vector
     '''
     O_vector = []
     D_vector = []
@@ -60,7 +64,7 @@ def ObtainODMatrixGrid(save_dir_local,grid_size,grid):
         logger.info("Computing OD Grid...")
         gridIdx2ij = {grid['index'][i]: (grid['i'].tolist()[i],grid['j'].tolist()[i]) for i in range(len(grid))}
         gridIdx2dest = GridIdx2OD(grid)
-        ODGrid(gridIdx2dest,gridIdx2ij)
+        return ODGrid(gridIdx2dest,gridIdx2ij)
         
 
 def GetODGrid(save_dir_local,grid_size):
@@ -122,6 +126,7 @@ def GenerateBeginDf(Hour2Files,
     """
     FileMidnight = True
     logger.info("Computing begin OD for simulation from data...")
+    TotalNumberPeople = 0
     for start,file in Hour2Files.items():
         logger.info("From file: {}".format(file))
         end = start + 1
@@ -130,11 +135,13 @@ def GenerateBeginDf(Hour2Files,
         # Concatenated for all different hours.
         OffsetNPeople = 0
         O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
+
         # Number of People Without Change
 #        if start == StartControlGroup:
 #            OffsetNPeople += np.array([R*3600 for R in ArrayRs],dtype = int)
         if start < StartControlGroup:
             R = np.sum(OD_vector)
+            TotalNumberPeople += R
             # Do Not Change the OD and Concatenate the input for Simulation                            
             df2 = ReturnFileSimulation(O_vector,
                                     D_vector,

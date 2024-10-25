@@ -18,7 +18,7 @@ def PrintInfoFluxPop(grid,Tij):
     logger.debug('Fraction of couples of grids with fluxes: ',Tij.loc[Tij['number_people']>0].shape[0]/Tij.shape[0])
     logger.debug('******************')
 
-def PlotOldNewFluxes(Tij_new,Tij,verbose = False):
+def PlotOldNewFluxes(Tij_new,Tij):
     logger.info('Plotting Old and New Fluxes')
     n,bins = np.histogram(Tij_new['number_people'].loc[Tij_new['number_people']>0],bins = 100)
     n1,bins1 = np.histogram(Tij['number_people'].loc[Tij['number_people']>0],bins = 100)
@@ -34,20 +34,20 @@ def PlotOldNewFluxes(Tij_new,Tij,verbose = False):
 #        plt.show()
 
 
-def PlotPositionCenters(grid,SFO_obj,index_centers,dir_grid,verbose = False):
+def PlotPositionCenters(grid,gdf_polygons,index_centers,dir_grid,UCI):
     logger.info('Plotting Position Centers')
     fig,ax = plt.subplots(figsize=(10, 10))
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     grid.plot(ax=ax, edgecolor='black', facecolor='none',alpha = 0.2)
     for i in index_centers:
         ax.scatter(grid['geometry'].apply(lambda geom: geom.centroid.x)[i],grid['geometry'].apply(lambda geom: geom.centroid.y)[i],marker = 'x',color = 'r')
-    plt.savefig(os.path.join(dir_grid,'Position_Centers.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'Position_Centers_{round(UCI,3)}.png'),dpi = 200)
 #    if verbose:
 #        plt.show()
-def PlotNewPopulation(grid,SFO_obj,dir_grid,verbose = False):
+def PlotNewPopulation(grid,gdf_polygons,dir_grid,UCI):
     logger.info('Plotting New Population')
     fig,ax = plt.subplots(1,1,figsize = (8,6))
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     grid.plot(column = 'population', cmap='Greys', facecolor = 'none',alpha = 0.2)
     contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                     grid['geometry'].apply(lambda geom: geom.centroid.y), 
@@ -58,13 +58,13 @@ def PlotNewPopulation(grid,SFO_obj,dir_grid,verbose = False):
     ax.set_title('Mass Distribution')
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
-    plt.savefig(os.path.join(dir_grid,'Population_Distribution.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'Population_Distribution_{round(UCI,3)}.png'),dpi = 200)
 #        plt.show()
 
-def PlotFluxes(grid,Tij,SFO_obj,dir_grid,top_fluxes = 50,verbose=False):
+def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,top_fluxes = 50,UCI):
     logger.info('Plotting Fluxes')
     fig,ax = plt.subplots(1,1, figsize = (8,6))
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    gdf_polygons.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     highest_row = Tij.nlargest(top_fluxes, 'number_people')
     # Extract indices 'i' and 'j' from the highest row
     highest_i = highest_row['origin'].to_numpy()
@@ -90,18 +90,16 @@ def PlotFluxes(grid,Tij,SFO_obj,dir_grid,top_fluxes = 50,verbose=False):
     sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
     sm.set_array([])    
     plt.colorbar(sm, label='Flux',ax=plt.gca())         
-    plt.savefig(os.path.join(dir_grid,'Fluxes.png'),dpi = 200)
-    #plt.show()
-    if verbose:        
-        gammas = [1,5,10,20,30,50,100]
-        for gamma in gammas:
-            print("Number of people in grid with flux > ",gamma,": ",(Tij['number_people'].to_numpy()>gamma).sum())
-            print("Number of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma]))
-            print("Fraction of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma])/len(Tij['number_people'].to_numpy()))
+    plt.savefig(os.path.join(dir_grid,f'Fluxes_{round(UCI,3)}.png'),dpi = 200)
+    gammas = [1,5,10,20,30,50,100]
+    for gamma in gammas:
+        print("Number of people in grid with flux > ",gamma,": ",(Tij['number_people'].to_numpy()>gamma).sum())
+        print("Number of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma]))
+        print("Fraction of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma])/len(Tij['number_people'].to_numpy()))
         
         
 
-def PotentialContour(grid,PotentialDataframe,SFO_obj,dir_grid,verbose = False):
+def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
     # Assuming you have a GeoDataFrame named 'grid' with a 'geometry' column containing polygons and a 'potential' column
     if 'potential' in grid.columns:
         pass
@@ -110,7 +108,7 @@ def PotentialContour(grid,PotentialDataframe,SFO_obj,dir_grid,verbose = False):
     grid['potential'] = PotentialDataframe['V_out']
     # Create a contour plot
     fig, ax = plt.subplots(figsize=(10, 10))
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     grid.plot(ax=ax, edgecolor='black', facecolor='none',alpha = 0.2)
     contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                     grid['geometry'].apply(lambda geom: geom.centroid.y), 
@@ -129,11 +127,11 @@ def PotentialContour(grid,PotentialDataframe,SFO_obj,dir_grid,verbose = False):
     ax.set_title('Curve Level of Potential')
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
-    plt.savefig(os.path.join(dir_grid,'CountorPlot.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'CountorPlot_{round(UCI,3)}.png'),dpi = 200)
 #    if verbose:
         #plt.show()
 
-def PotentialSurface(grid,SFO_obj,PotentialDataframe,dir_grid,verbose = False):
+def PotentialSurface(grid,PotentialDataframe,dir_grid,UCI):
     # Assuming you have a GeoDataFrame named 'grid' with a 'geometry' column containing polygons and a 'potential' column
     '''
         Draws the Potential surface considering just the potential inside and discarding the one outside.
@@ -164,11 +162,11 @@ def PotentialSurface(grid,SFO_obj,PotentialDataframe,dir_grid,verbose = False):
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
     ax.set_zlabel('Potential')
-    plt.savefig(os.path.join(dir_grid,'Potential3D.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'Potential3D_{round(UCI,3)}.png'),dpi = 200)
 #    if verbose:
         #plt.show()
 
-def PlotRotorDistribution(grid,PotentialDataframe,dir_grid,verbose = False):
+def PlotRotorDistribution(grid,PotentialDataframe,dir_grid,UCI):
     if 'rotor' in grid.columns:
         pass
     else:
@@ -179,11 +177,11 @@ def PlotRotorDistribution(grid,PotentialDataframe,dir_grid,verbose = False):
     ax.set_title('Rotor Distribution')
     ax.set_xlabel('Rotor')
     ax.set_ylabel('Count')
-    plt.savefig(os.path.join(dir_grid,'RotorDistr.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'RotorDistr_{round(UCI,3)}.png'),dpi = 200)
 #    if verbose:
 #        plt.show()
 
-def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,verbose = False):
+def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,UCI):
     if 'harmonic' in grid.columns:
         pass
     else:
@@ -194,7 +192,7 @@ def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,verbose =
     ax.set_title('Harmonic Distribution')
     ax.set_xlabel('Harmonic')
     ax.set_ylabel('Count')
-    plt.savefig(os.path.join(dir_grid,'HarmonicDistr.png'),dpi = 200)
+    plt.savefig(os.path.join(dir_grid,f'HarmonicDistr_{round(UCI,3)}.png'),dpi = 200)
 
 def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose = False):
     
@@ -217,13 +215,8 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose
     ax.set_title('Lorenz Curve Potential')
     ax.set_xlabel('Index sorted grid')
     ax.set_ylabel('Cumulative Potential')
-    plt.savefig(os.path.join(dir_grid,'LorenzCurve.png'),dpi = 200)
-    if verbose:
-#        plt.show()
-        print('index Fstar: ',Fstar)
-        print('cumulative: ',cumulative)
-        print('x: ',x)
-        print('x[idxFstar]: ',x[idxFstar])
+    plt.savefig(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}.png'),dpi = 200)
+    logger.info(f"F* = {Fstar}")
     return line1,line2
 
 
@@ -243,7 +236,7 @@ def PlotDistributionDistance(Tij,distance_df):
     ax.set_ylabel('Count')
 #    plt.show()
 
-def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True,verbose = False):
+def PlotVFPotMass(grid,gdf_polygons,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',UCI,plot_mass = True,verbose = False):
     '''
         NOTE:
             label_potential:    V_in, V_out
@@ -259,7 +252,7 @@ def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_pot
     centroid_coords = np.array([grid['centroidx'].to_numpy(),grid['centroidy'].to_numpy()])
     centroid_coords = centroid_coords.T
     #grav_vector_field = gravitational_field(fluxes_matrix,normalized_vectors,nv)
-    SFO_obj.gdf_polygons.plot(ax=ax, color='white', edgecolor='black')
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black')
     if label_potential in PotentialDataframe.columns: 
         grid[label_potential] = PotentialDataframe[label_potential]
     elif label_potential in grid.columns:
@@ -283,11 +276,9 @@ def PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,dir_grid,label_pot
     quiver_cbar = plt.colorbar(quiver_plot, ax=ax)
     quiver_cbar.set_label('Normalized Vector Magnitude', rotation=270, labelpad=15)
     ax.set_title('Vector Field {} Fluxes'.format(labelf2title[label_fluxes]))
-    plt.savefig(os.path.join(dir_grid,'{0}Flux{1}.png'.format(labelf2title[label_fluxes],label2save[label_potential])),dpi = 200)
-    if verbose:
-        plt.show()
+    plt.savefig(os.path.join(dir_grid,f'{labelf2title[label_fluxes]}_Flux_{label2save[label_potential]}_{round(UCI,3)}.png'),dpi = 200)
 
-def PlotRoutineOD(grid,Tij,SFO_obj,PotentialDataFrame,VectorField,dir_grid,fraction_fluxes,verbose,index_centers,Tij1,cumulative,Fstar,result_indices):
+def PlotRoutineOD(grid,Tij,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,fraction_fluxes,UCI,index_centers,Tij1,cumulative,Fstar,result_indices):
     """
         @param grid: DataFrame with the population of each grid 
         @param Tij: DataFrame with the fluxes between each grid
@@ -298,16 +289,16 @@ def PlotRoutineOD(grid,Tij,SFO_obj,PotentialDataFrame,VectorField,dir_grid,fract
         @param fraction_fluxes: Fraction of fluxes to plot
         @param verbose: Print information
     """
-    PlotFluxes(grid,Tij,SFO_obj,dir_grid,fraction_fluxes,verbose)
+    PlotFluxes(grid,Tij,gdf_polygons,dir_grid,fraction_fluxes,UCI)
     if index_centers is not None:
-        PlotPositionCenters(grid,SFO_obj,index_centers,dir_grid)
-    PlotNewPopulation(grid, SFO_obj,dir_grid)
+        PlotPositionCenters(grid,gdf_polygons,index_centers,dir_grid,UCI)
+    PlotNewPopulation(grid, gdf_polygons,dir_grid,UCI)
     # Comparison New Fluxes and From File
     if Tij1 is not None:
         PlotOldNewFluxes(Tij,Tij1)
-    PlotVFPotMass(grid,SFO_obj,PotentialDataFrame,VectorField,dir_grid,'population','Ti',verbose)
-    PotentialContour(grid,PotentialDataFrame,SFO_obj,dir_grid,verbose)
-    PotentialSurface(grid,SFO_obj,PotentialDataFrame,dir_grid,verbose)
-    PlotRotorDistribution(grid,PotentialDataFrame,dir_grid)
-    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,verbose)
-    PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid)
+    PlotVFPotMass(grid,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,'population','Ti',UCI)
+    PotentialContour(grid,PotentialDataFrame,gdf_polygons,dir_grid,UCI)
+    PotentialSurface(grid,gdf_polygons,PotentialDataFrame,dir_grid,UCI)
+    PlotRotorDistribution(grid,PotentialDataFrame,dir_grid,UCI)
+    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,UCI)
+    PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid,UCI)
