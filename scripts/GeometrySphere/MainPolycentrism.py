@@ -22,11 +22,12 @@ def UploadGravitationalFit(TRAFFIC_DIR,name):
     return k,alpha,beta,d0
 ###------------------------------- MODIFY FLUXES -------------------------------------------###
 def LogModifyMorphologyCity(name,num_peaks,InfoCenters):
-    logger.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     logger.info('Modify Morphology City: {}'.format(name))
     logger.info("Number of Centers: {}".format(num_peaks))
     logger.info("Type: ",InfoCenters['center_settings']['type'])
     logger.info(f"Covariance: ({InfoCenters['covariance_settings']['covariances']['cvx']},{InfoCenters['covariance_settings']['covariances']['cvy']}")
+
+
 
 def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_distance,lattice,num_peaks,TRAFFIC_DIR,name,grid_size,InfoCenters = {'center_settings': {"type":"exponential"},'covariance_settings':{"covariances":{"cvx":5,"cvy":5}}},fraction_fluxes = 80,verbose = True):
     '''
@@ -39,7 +40,6 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
     total_flux = np.sum(Tij['number_people'])
     LogModifyMorphologyCity(name,num_peaks,InfoCenters)
     # Generate random indices for centers
-    PrintInfoFluxPop(grid,Tij)
     logger.info('Plotting fluxes coming from raw data')
     PlotFluxes(grid,Tij,SFO_obj,os.path.join(TRAFFIC_DIR,'data','carto',name),fraction_fluxes)
     logger.info('PIPELINE MODIFICATION FLUXES starting...')
@@ -89,15 +89,15 @@ def ModifyMorphologyCity(InfoConfigurationPolicentricity,grid,SFO_obj,Tij,df_dis
                         print("Potential: ",np.array(InfoConfigurationPolicentricity[num_peak]['potential']))
                 count_peak1 += 1
             count_peak0 += 1
-        dir_grid = GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,InfoCenters['covariance_settings']['covariances']['cvx'],InfoCenters['center_settings']['type'],UCI)
+        dir_grid = GetDirGrid(TRAFFIC_DIR,name,grid_size,num_peaks,InfoCenters['covariance_settings']['covariances']['cvx'],InfoCenters['center_settings']['type'],UCI)        
         PlotRoutineOD(InfoConfigurationPolicentricity[num_peaks]['grid'],
                       InfoConfigurationPolicentricity[num_peaks]['Tij'],
-                      SFO_obj,
+                      SFO_obj.gdf_polygons,
                       InfoConfigurationPolicentricity[num_peaks]['potential'],
                         InfoConfigurationPolicentricity[num_peaks]['vector_field'],
                       dir_grid,
                       fraction_fluxes,
-                      verbose,
+                      UCI,
                       index_centers,
                       Tij,
                       cumulative,

@@ -1,9 +1,13 @@
 import json
 import os
 from GenerateModifiedFluxesSimulation import CityName2RminRmax
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
 def GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR,start = 7,end = 8,grid_size = 0.02,hexagon_resolution = 8,list_peaks = [1,2,3,4,5,6,8,10],covariances = [1,2,4],distribution_population_from_center = ["exponential"]):
+    logger.info(f'Generating config for city: {city}\n')
     config = {
         'crs': 'epsg:4326',
         'city': city,

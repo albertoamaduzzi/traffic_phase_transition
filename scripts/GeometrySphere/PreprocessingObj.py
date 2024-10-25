@@ -132,7 +132,7 @@ class GeometricalSettingsSpatialPartition:
     """
     def __init__(self,city,TRAFFIC_DIR):
         logging.basicConfig(filename=os.path.join(TRAFFIC_DIR,"log.log"), level=logging.INFO)
-        self.config =GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR)
+        self.config = GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR)
         self.crs = 'epsg:4326'
         self.city = city
         ## 
@@ -152,6 +152,7 @@ class GeometricalSettingsSpatialPartition:
         self.save_dir_potential = os.path.join(self.save_dir_local,'potential')
         self.save_dir_plots = os.path.join(self.save_dir_local,'plots')
         self.save_dir_server = self.config['save_dir_server'] # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/LPSim/LivingCity/{city}
+        self.new_full_network_dir = '/home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network' 
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
         else:
@@ -183,6 +184,7 @@ class GeometricalSettingsSpatialPartition:
         self.ring2OD = None
         self.OD2ring = None
         self.ring2OD = None
+        self.DfBegin = None
         # INFO FLUXES
         self.Rmin = CityName2RminRmax[self.city][0]
         self.Rmax = CityName2RminRmax[self.city][1]
@@ -194,6 +196,13 @@ class GeometricalSettingsSpatialPartition:
         # INFO ALGORITHM
         self.StateAlgorithm = InitWholeProcessStateFunctions()
         logger.info('Geometrical Settings Spatial Partition Inititalized: {}'.format(self.city))
+        # INFO FIT
+        self.k = None
+        self.alpha = None
+        self.beta = None
+        self.d0 = None
+
+
 
 #### GEOMETRICAL SETTINGS ####
     def ComputeBoundingBox(self):
@@ -287,40 +296,158 @@ class GeometricalSettingsSpatialPartition:
             Computes:
                 - Distance Matrix in format 
                 - OD Grid in format Tij
+                - Vector Field
+            NOTE: In this case we are considering just the dataset and not produced any change in the potential.    
+                
         """
-        grid_size = self.grid_size
         ## BASIC NEEDED OBJECTS
         self.ObtainDirectionMatrix()
         self.ObtainODMatrixGrid()
         self.GetLattice()
-        if not self.StateAlgorithm["GetVectorField"]:
-            self.VectorField = GetVectorField(self.Tij,self.df_distance)
-            self.StateAlgorithm["GetVectorField"] = True
-        self.VectorFieldDir = os.path.join(TRAFFIC_DIR,'data','carto',self.city,'grid',str(grid_size))
-        if not self.StateAlgorithm["GetPotentialLattice"]:
-            self.lattice = GetPotentialLattice(self.lattice,self.VectorField)
-            self.StateAlgorithm["GetPotentialLattice"] = True
-        else:
-            pass
-        if not self.StateAlgorithm["GetPotentialDataframe"]:
-            self.lattice = SmoothPotential(self.lattice)
-            self.StateAlgorithm["GetPotentialDataframe"] = True
-        else:
-            pass
-        if not self.StateAlgorithm["ConvertLattice2PotentialDataframe"]:
-            self.PotentialDataframe = ConvertLattice2PotentialDataframe(self.lattice)
-            self.StateAlgorithm["ConvertLattice2PotentialDataframe"] = True
-        else:
-            pass
-        if not self.StateAlgorithm["CompletePotentialDataFrame"]:
-            self.PotentialDataframe = CompletePotentialDataFrame(self.VectorField,self.grid,self.PotentialDataframe)
-            self.StateAlgorithm["CompletePotentialDataFrame"] = True
-        else:
-            pass
+        PotentialDf, _,VectorField = GeneratePotentialFromFluxes(self.Tij,self.df_distance,self.lattice,self.grid,self.city)
         if os.path.isfile(os.path.join(self.save_dir_grid,'PotentialDataframe.csv')):
-            SavePotentialDataframe(self.PotentialDataframe,self.save_dir_grid)
-        if os.path.isfile(os.path.join(self.VectorFieldDir,'VectorField.csv')):
-            SaveVectorField(self.VectorField,self.VectorFieldDir)        
+            SavePotentialDataframe(PotentialDf,self.save_dir_grid)        
+        PI,LC,UCI,result_indices,_,cumulative,Fstar = ComputeUCI(self.grid,PotentialDf,self.df_distance)
+        I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar}           
+        SaveJsonDict(I,os.path.join(self.save_dir_local,f'UCI_{UCI}.json'))         
+        PlotFluxes(self.grid,self.Tij,self.gdf_polygons,self.save_dir_grid,80,UCI)
+        PlotNewPopulation(self.grid, self.gdf_polygons,self.save_dir_grid,UCI)
+        PlotVFPotMass(self.grid,self.gdf_polygons,PotentialDf,VectorField,self.save_dir_grid,'population','Ti',UCI)
+        PotentialContour(self.grid,PotentialDf,self.gdf_polygons,self.save_dir_grid,UCI)
+        PotentialSurface(self.grid,self.gdf_polygons,PotentialDf,self.save_dir_grid,UCI)
+        PlotRotorDistribution(self.grid,PotentialDf,self.save_dir_grid,UCI)
+        PlotLorenzCurve(cumulative,Fstar,result_indices,self.save_dir_grid, 0.1,UCI)
+        PlotHarmonicComponentDistribution(self.grid,PotentialDf,self.save_dir_grid,UCI)
+        PrintInfoFluxPop(self.grid,self.Tij)    
+        return UCI  
+
+    def InitializeDf4Sim(self):
+
+        # Get File.fma each hour
+        self.Hour2Files = self.OrderFilesFmaPerHour()
+        # Generate The Brgin And End Files For Simulation Common to All Rs
+        if not os.path.isfile(os.path.join(self.save_dir_local,'DfBegin.csv')):
+            logger.info('Computing DfBegin')
+            self.DfBegin = GenerateBeginDf(self.Hour2Files,
+                                    self.ODfma_dir,
+                                    self.start,
+                                    self.polygon2OD,
+                                    self.osmid2index,
+                                    self.grid,
+                                    self.grid_size,
+                                    self.OD2grid,
+                                    self.city,
+                                    self.save_dir_local)
+            self.DfBegin.to_csv(os.path.join(self.save_dir_local,'DfBegin.csv'),index=False)
+        else:
+            self.DfBegin = pd.read_csv(os.path.join(self.save_dir_local,'DfBegin.csv'))
+            pass
+
+
+    def ComputeFit(self):
+        '''
+            Gravitational model:
+                T_ij = k * M_i^alpha * M_j^beta * exp(-d_ij/d0)
+            M_i: Number of people living in the grid i
+            M_j: Number of people living in the grid j
+            d_ij: Distance between the centroids of the grid i and j
+            k: constant
+            alpha: exponent mass i
+            beta: exponent mass j
+            d0_1: -1/d0
+
+        '''
+        if not os.path.isfile(os.path.join(self.save_dir_grid,'PotentialDataframe.csv')):
+            logk,alpha,gamma,d0_2min1 = VespignaniBlock(self.df_distance,self.grid,self.Tij,self.save_dir_potential)            
+            self.k = np.exp(logk)
+            self.alpha = alpha
+            self.beta = gamma
+            self.d0 = d0_2min1
+        else:
+            self.k,self.alpha,self.beta,self.d0 = UploadGravitationalFit(TRAFFIC_DIR,self.city)
+    def TotalPopAndFluxes(self):
+        """
+            Compute the Total Population and Total Fluxes
+        """
+        logger.info('Computing Total Population and Total Fluxes')
+        self.total_population = np.sum(self.grid['population'])
+        self.total_flux = np.sum(self.Tij['number_people'])
+
+    def ChangeMorpholgy(self,cov,distribution,num_peaks):
+        """
+            Change the Morphology of the City
+        """
+        # Number of People and Fluxes
+        self.TotalPopAndFluxes()
+        logger.info('Modify Morphology City: {}'.format(self.city))
+        logger.info(f"cov: {cov}, num_peaks: {num_peaks}, city: {self.city}")    
+        InfoCenters = {'center_settings': {"type":distribution},
+                            'covariance_settings':{
+                                "covariances":{"cvx":cov,"cvy":cov},
+                            "Isotropic": True,
+                            "Random": False}}
+        logger.info(f'Generating Random Population {self.city}')
+        new_population,index_centers = GenerateRandomPopulation(self.grid,num_peaks,self.total_population,InfoCenters,False)
+        # From Population, using the gravitational model, generate the fluxes
+        logger.info(f'Generating Modified Fluxes {self.city}')
+        Modified_Fluxes = GenerateModifiedFluxes(new_population,self.df_distance,self.k,self.alpha,self.beta,self.d0,self.total_flux,False)
+        logger.info(f'Computing New Vector Field {self.city}')
+        New_Vector_Field = ComputeNewVectorField(Modified_Fluxes,self.df_distance)
+        logger.info(f'Computing New Potential {self.city}')
+        New_Potential_Dataframe = ComputeNewPotential(New_Vector_Field,self.lattice,new_population)
+        PI,LC,UCI,result_indices,_,cumulative,Fstar = ComputeUCI(new_population,New_Potential_Dataframe,self.df_distance)
+        I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar}           
+        SaveJsonDict(I,os.path.join(self.save_dir_local,f'UCI_{UCI}.json'))         
+        PlotRoutineOD(new_population,
+                    Modified_Fluxes,
+                    self.gdf_polygons,
+                    New_Potential_Dataframe,
+                    New_Vector_Field,
+                    self.save_dir_plots,
+                    80,
+                    UCI,
+                    index_centers,
+                    self.Tij,
+                    cumulative,
+                    Fstar,
+                    result_indices)
+        return Modified_Fluxes,UCI
+
+## Simulation Output File ##
+    def ComputeDf4SimChangedMorphology(self,UCI,R,Modified_Fluxes):
+        NPeopleOffset = len(self.DfBegin)
+        Df_GivenR = GenerateDfFluxesFromGravityModel(Modified_Fluxes,
+                                                        self.osmid2index,
+                                                        self.grid2OD,
+                                                        self.start) 
+        Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
+        assert len(Df) == NPeopleOffset + R*3600
+        NPeopleOffset += R*3600
+        DfEnd = self.AddEndFileInputSimulation(self,NPeopleOffset) 
+        Df = pd.concat([DfEnd,Df_GivenR],ignore_index=True)
+        end = self.start + 1
+        Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
+        return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
+
+
+    def ComputeDf4SimNotChangedMorphology(self,UCI,R):
+        """
+            @params: UCI: float (Urban Centrality Index)
+            Compute the Df for Simulation without changing the morphology of the city
+        """
+        NPeopleOffset = len(self.DfBegin)
+        Df_GivenR = GenerateDfFluxesFromGravityModel(self.Tij,
+                                                        self.osmid2index,
+                                                        self.grid2OD,
+                                                        self.start) 
+        Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
+        assert len(Df) == NPeopleOffset + R*3600
+        NPeopleOffset += R*3600
+        DfEnd = self.AddEndFileInputSimulation(self,NPeopleOffset) 
+        Df = pd.concat([DfEnd,Df_GivenR],ignore_index=True)
+        end = self.start + 1
+        Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
+        return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
 
 
 
@@ -354,45 +481,81 @@ class GeometricalSettingsSpatialPartition:
         logger.info('Files Ordered in Hour2Files')
         return Hour2Files
 
+    def AddEndFileInputSimulation(self,NPeopleOffset):
+        """
+            @params: NPeopleOffset: int (Number of people that are inserted from the beginning of time
+                                        to the end of the control group)
+            @brief: Add the End File for Simulation
+        """
+        Count = 0
+        for time,ODfmaFile in self.Hour2Files.items(): 
+            if time > self.start:
+                O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
+                TotalFluxesTime = np.sum(OD_vector)
+                # Do Not Change the OD and Concatenate the input for Simulation                            
+                Df_GivenR = ReturnFileSimulation(O_vector,
+                                            D_vector,
+                                            OD_vector,
+                                            TotalFluxesTime,
+                                            NPeopleOffset,
+                                            self.polygon2OD,
+                                            self.osmid2index,
+                                            self.grid,
+                                            self.grid_size,
+                                            self.OD2grid,
+                                            self.city,
+                                            time,
+                                            time + 1,
+                                            self.save_dir_local)
+                NPeopleOffset += TotalFluxesTime
+                if Count == 0:
+                    DfEnd = Df_GivenR
+                else:
+                    DfEnd = pd.concat([DfEnd,Df_GivenR],ignore_index=True)
+                Count += 1
+        return DfEnd
+
+
     def ComputeInfoInputSimulation(self,Type):
         """
             Compute the File Input for Simulation.
         """            
-        # Get File.fma each hour
-        self.Hour2Files = self.OrderFilesFmaPerHour()
-        # Iterate over all the files
-        for grid_size in self.grid_sizes:
-            # Generate The Brgin And End Files For Simulation Common to All Rs
-            DfBegin = GenerateBeginDf(self.Hour2Files,
-                                    self.ODfma_dir,
-                                    self.start,
-                                    self.polygon2OD,
-                                    self.osmid2index,
-                                    self.grid,
-                                    grid_size,
-                                    self.OD2grid,
-                                    self.city,
-                                    self.save_dir_local)
-            # Update index Users
-            NPeopleOffset = np.ones(len(self.ArrayRs))*len(DfBegin)
-            R2DfSimulation = {R:None for R in self.ArrayRs}
-            # Append The Control Group
-            for time,ODfmaFile in self.Hour2Files.items():
-                if time == self.start:
-                    for R in self.ArrayRs:
-                        if Type == "from_data":
-
-                            Df_GivenR = GenerateDfFluxesFromData()
-                        else:
-                            Df_GivenR = GenerateDfFluxesFromGravityModel(self.InfoConfigurationPolicentricity[]['Tij'],self.osmid2index,self.grid2OD,self.start) 
-                        R2DfSimulation[R] = pd.concat([DfBegin,Df_GivenR],ignore_index=True)
-                    NPeopleOffset += self.ArrayRs*3600
-                elif time > self.start:
-                    for R in self.ArrayRs:
+        # Update index Users
+        NPeopleOffset = np.ones(len(self.ArrayRs))*len(self.DfBegin)
+        R2DfSimulation = {R:self.DfBegin for R in self.ArrayRs}
+        # Append The Control Group
+        for time,ODfmaFile in self.Hour2Files.items():
+            # If I want to insert the number of people from the control group
+            if time == self.start:
+                # Compute the file for the different parameter values
+                for R in self.ArrayRs:
+                    if Type == "from_data":
+                        logger.info("Compute Info Input Simulation from Data At ControlTime R: {}".format(R))
+                        # Generate vector of simulation file.
                         O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
-                        R = np.sum(OD_vector)
-                        # Do Not Change the OD and Concatenate the input for Simulation                            
-                        df2 = ReturnFileSimulation(O_vector,
+                        # Insert the control group
+                        Df_GivenR = ReturnFileSimulation(O_vector,D_vector,OD_vector,R*3600,NPeopleOffset,
+                                                        self.polygon2OD,
+                                                        self.osmid2index,
+                                                        self.grid,
+                                                        self.grid_size,
+                                                        self.OD2grid,
+                                                        self.city,
+                                                        time,
+                                                        time + 1,
+                                                        self.save_dir_local)
+                    else:
+                        logger.info("Compute Info Input Simulation from Gravity R: {}".format(R))                        
+                        Df_GivenR = GenerateDfFluxesFromGravityModel(self.InfoConfigurationPolicentricity[]['Tij'],self.osmid2index,self.grid2OD,self.start) 
+                    R2DfSimulation[R] = pd.concat([R2DfSimulation[R],Df_GivenR],ignore_index=True)
+                NPeopleOffset += self.ArrayRs*3600
+            elif time > self.start:
+                for R in self.ArrayRs:
+                    logger.info("Compute Info Input Simulation from Data R: {}".format(R))
+                    O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
+                    R = np.sum(OD_vector)
+                    # Do Not Change the OD and Concatenate the input for Simulation                            
+                    Df_GivenR = ReturnFileSimulation(O_vector,
                                                 D_vector,
                                                 OD_vector,
                                                 R,
@@ -400,58 +563,14 @@ class GeometricalSettingsSpatialPartition:
                                                 self.polygon2OD,
                                                 self.osmid2index,
                                                 self.grid,
-                                                grid_size,
+                                                self.grid_size,
                                                 self.OD2grid,
                                                 self.city,
                                                 time,
                                                 time + 1,
                                                 self.save_dir_local)
-                        OffsetNPeople += R*3600
-                        R2DfSimulation[R] = pd.concat([R2DfSimulation[R],Df_GivenR],ignore_index=True)
+                    NPeopleOffset += R*3600
+                    R2DfSimulation[R] = pd.concat([R2DfSimulation[R],Df_GivenR],ignore_index=True)
                     NPeopleOffset += self.ArrayRs*3600
                 else:
                     pass
-
-
-
-                    # Case Read Fluxes From Data 
-                    
-                        # NOTE: ADD HERE THE POSSIBILITY OF HAVING OD FROM POTENTIAL CONSIDERATIONS
-                        O_vector,D_vector,OD_vector = MapFile2Vectors(ODfmaFile)
-                        for R in self.ArrayRs:
-                            # Generate the Scaled OD
-                            logger.info(f"Generating Scaled OD from fma, R: {R}")
-                            ReturnFileSimulation(O_vector,
-                                                D_vector,
-                                                OD_vector,
-                                                R,
-                                                self.polygon2OD,
-                                                self.osmid2index,
-                                                self.grid,
-                                                grid_size,
-                                                self.OD2grid,
-                                                self.city,
-                                                start,
-                                                end,
-                                                self.save_dir_local,
-                                                seconds_in_minute = 60)
-                # Case Generate Fluxes
-                    else:
-                        GetODForSimulation(Tij_modified,
-                        CityName2RminRmax,
-                        NameCity,
-                        osmid2index,
-                        grid2OD,
-                        p,
-                        save_dir_local,
-                        start = 7,
-                        end = 8,
-                        UCI = None,
-                        df2 = None
-                        )
-                df1.sort_values(by=['dep_time'],ascending=True)            
-                if socket.gethostname()!='artemis.ist.berkeley.edu':
-                    self.UpdateFiles2Upload(os.path.join(self.save_dir_local,'grid',str(round(grid_size,3)),'ODgrid.csv'),os.path.join(self.save_dir_server,'grid',str(round(grid_size,3)),'ODgrid.csv'))
-                    print('R Output: ',ROutput)
-                    for R in ROutput:
-                        self.UpdateFiles2Upload(os.path.join(self.save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(self.city,start,end,int(R))),os.path.join(self.save_dir_server,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,int(R))) )
