@@ -104,13 +104,16 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
         maskj = [j in IndexEdge for j in dd['j']]
         dd = dd.loc[maskj]        
         Smax = np.ones(NumGridEdge)*(1/NumGridEdge)#**2
-        return np.array(Smax).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
+        assert np.array_equal(dd["i"].unique(), dd["j"].unique()), 'The indices must be the same'
+        return np.array(Smax).astype(np.float64),dd['distance'].to_numpy(dtype = np.float64)
     else:
         maski = [i in IndexEdge for i in df_distance['i']]
         dd = df_distance.loc[maski]
         maskj = [j in IndexEdge for j in dd['j']]
         dd = dd.loc[maskj]
         PD = PotentialDataframe.loc[PotentialDataframe['index'].isin(IndexEdge)]
+        assert np.array_equal(dd["i"].unique(), dd["j"].unique()), 'The indices must be the same'
+        assert np.array_equal(dd["i"].unique(), PD['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
 #        result_vector = []
 #        for i, value in enumerate(PD['V_out'].values):
 #            for j,value2 in enumerate(PD['V_out'].values):
@@ -122,9 +125,54 @@ def PrepareJitCompiledComputeV(df_distance,IndexEdge,SumPot,NumGridEdge,Potentia
 
 #        for _, value in enumerate(PD['V_out'].values):
 #            result_vector.extend([value] * (len(PD)))
-        return np.array(PD['V_out'].values).astype(np.float32),dd['distance'].to_numpy(dtype = np.float32)
+        return np.array(PD['V_out'].values).astype(np.float64),dd['distance'].to_numpy(dtype = np.float64)
 
-@numba.jit(['(float32[:], float32[:])'],parallel = True)
+def PrepareJitCompiledComputeMass(df_distance,IndexEdge,SumPot,NumGridEdge,Grid,case = 'Vmax',verbose = False):
+    '''
+        Input:
+            1) df_distance: pd.DataFrame ['distance','direction vector','i','j'] -> NOTE: Stores the matrix in order in one dimension 'j' increases faster than 'i' index
+            2) IndexEdge: Index of the grid for which extracting distances and potential
+            3) SumPot: float [Total Sum of the Potential over the grid]
+            4) NumGridEdge: int
+            5) Grid: pd.DataFrame ['index','population'] -> Potential values for the grid
+        Output:
+            1) distance_filtered: np.array distance_vector between ordered couples i,j in IndexEdge [For each couple of grids for which the potential != 0]
+            2) PD['V_out']: np.array V_ij [For each couple of grids for which the potential != 0]
+        NOTE:
+            Usage: Compute the input for ComputeJitV
+    '''
+    if case == 'Vmax':
+        maski = [i in IndexEdge for i in df_distance['i']]
+        dd = df_distance.loc[maski]
+        maskj = [j in IndexEdge for j in dd['j']]
+        dd = dd.loc[maskj]        
+        Smax = np.ones(NumGridEdge)*(1/NumGridEdge)#**2
+        assert np.array_equal(dd["i"].unique(), dd["j"].unique()), 'The indices must be the same'
+        return np.array(Smax).astype(np.float64),dd['distance'].to_numpy(dtype = np.float64)
+    else:
+        maski = [i in IndexEdge for i in df_distance['i']]
+        dd = df_distance.loc[maski]
+        maskj = [j in IndexEdge for j in dd['j']]
+        dd = dd.loc[maskj]
+        PD = Grid.loc[Grid['index'].isin(IndexEdge)]
+        assert np.array_equal(dd["i"].unique(), dd["j"].unique()), 'The indices must be the same'
+        assert np.array_equal(dd["i"].unique(), Grid['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
+#        result_vector = []
+#        for i, value in enumerate(PD['V_out'].values):
+#            for j,value2 in enumerate(PD['V_out'].values):
+#                if i <=j:
+#                    result_vector.append(value*value2)
+#                    if verbose:
+#                        print('i: ',i,'\tj: ',j,'\tPD[i]: ',value,'\tPD[j]: ',value2)
+#                        print('index i: ',PD['index'].values[i],'\tindex j: ',PD['index'].values[j])
+
+#        for _, value in enumerate(PD['V_out'].values):
+#            result_vector.extend([value] * (len(PD)))
+        return np.array(Grid['population'].values).astype(np.float64),dd['distance'].to_numpy(dtype = np.float64)
+
+
+
+@numba.jit(['(float64[:], float64[:])'],parallel = True)
 def ComputeJitV(Filtered_Potential_Normalized,Filtered_Distance):
     '''
         Input:
@@ -139,10 +187,23 @@ def ComputeJitV(Filtered_Potential_Normalized,Filtered_Distance):
     index_distance = 0
     for i in prange(len(Filtered_Potential_Normalized)):
         for j in prange(len(Filtered_Potential_Normalized)):
-            V_in_PI += Filtered_Potential_Normalized[i]*Filtered_Potential_Normalized[j]*Filtered_Distance[index_distance]        # Si*Sj*Dij
+            V_in_PI += np.abs(Filtered_Potential_Normalized[i])*np.abs(Filtered_Potential_Normalized[j])*Filtered_Distance[index_distance]        # Si*Sj*Dij
             index_distance += 1
 #    V_in_PI = V_in_PI/len(Filtered_Potential_Normalized)**2
     return V_in_PI    
+
+def CheckRightMappingComputationV(Df_Filtered_Potential_Normalized,Df_Filtered_Distance):
+    index_distance = 0
+    for i in range(len(Df_Filtered_Potential_Normalized)):
+        for j in range(len(Df_Filtered_Potential_Normalized)):
+            if i != j:
+                Pidx = Df_Filtered_Potential_Normalized.iloc[i]["index"]
+                Pjdx = Df_Filtered_Potential_Normalized.iloc[j]["index"]
+                Didx = Df_Filtered_Distance.iloc[index_distance]["i"]
+                Djdx = Df_Filtered_Distance.iloc[index_distance]["j"]
+                assert Df_Filtered_Potential_Normalized.iloc[i]["index"] == Df_Filtered_Distance.iloc[index_distance]["i"], f'i: {i}, P.index: {Pidx} D.index: {Didx} The indices must be the same'
+                assert Df_Filtered_Potential_Normalized.iloc[j]["index"] == Df_Filtered_Distance.iloc[index_distance]["j"], f'j: {j}, P.index: {Pjdx} D.index: {Djdx} The indices must be the same'
+            index_distance += 1
 
 
 #@numba.jit(parallel = True)
@@ -158,33 +219,6 @@ def ComputePI(V,MaxV,verbose=True):
         print('PI: ',1-V/MaxV)
     return 1 - V/MaxV
 
-def LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe,verbose = True):
-    '''
-        Computes maximum value for the PI -> Vmax (considering just the edges of the cartography)
-        Computes the value for the PI -> V (considering all the points of the cartography with
-                                            1) grid['population']>0
-                                            2) PotentialDataframe['V_out']>0)
-        Returns the PI
-    '''
-    # Compute Vmax 
-    # Smax_i: (Vtot/N_edges,...,Vtot/N_edges)
-    # Dmax_ij: (distance between the edges)
-    Smax_i,Dmax_ij = PrepareJitCompiledComputeV(df_distance,GetIndexEdgePolygon(grid),SumPot,NumGridEdge,PotentialDataframe,case = 'Vmax')
-    Vmax = ComputeJitV(Smax_i,Dmax_ij)/2
-    if verbose:
-        print('Number of Squares that form the edge: ',len(Smax_i))
-        print('Number of Distances Among edges: ',len(Dmax_ij))
-        print('Control that the number of distances is equal to the Number of `grid units` in the edge squared: ',len(Smax_i)*(len(Smax_i)))
-    # Copmute V
-    # Si: Potential values for the grid with population > 0 and Potential > 0 [i is the index of the grid]
-    # D_ij: Distance between the grids with population > 0 and Potential > 0
-    PotentialDataframeMass = PotentialDataframe.loc[grid['population']>0]
-    Si,D_ij = PrepareJitCompiledComputeV(df_distance,PotentialDataframeMass.loc[PotentialDataframeMass['V_out']>0]['index'].values,SumPot,NumGridEdge,PotentialDataframe,case = 'V')
-    Si_Normalized = Si/np.sum(Si)
-    V = ComputeJitV(Si_Normalized,D_ij)/2
-    if verbose:
-        print('Vmax: ',Vmax,'V: ',V)
-    return ComputePI(V,Vmax)
     
 def LorenzCenters(potential,verbose =True):
     '''
@@ -192,27 +226,76 @@ def LorenzCenters(potential,verbose =True):
             Potential from grid.
         This function computes the indices of the centers in the linearized grid.
         We are using here the index column and not the double index.
+        NOTE: F* is the number of non-centers. Similar 1 if monocentric, 0 if polycentric.
     '''
+    min_pot = min(potential)
+    # Shift the potential to be positive
+    if min_pot < 0:
+        potential = potential - min_pot
+    else:
+        pass
+    x = np.arange(len(potential))
+    dx = x[1] -x[0]
     # Step 1: Sort the potential and compute the sorting map
     sorted_indices = np.argsort(potential)
     # Step 2: Compute the cumulative distribution
     sorted_potential = potential[sorted_indices]
     cumulative = np.cumsum(sorted_potential)
+    # Normalize the cumulative distribution (to make angle dy/dx) (dx = 1)
+    cumulative_norm = cumulative/np.sum(sorted_potential)
     # Step 3: Determine the angle and delta index
-    angle = cumulative[-1] - cumulative[-2]
+    dy_over_dx = (cumulative_norm[-1] - cumulative_norm[-2])/dx
 #    print('angle: ',angle)
-    Fstar = int(len(cumulative) +1 -cumulative[-1]/angle)
+    max_idx = len(cumulative_norm) +1
+    y_max = cumulative_norm[-1]
+    # NOTE: Count of Non-Centers
+    Fstar = int(max_idx -y_max/dy_over_dx)
+    assert Fstar <= len(cumulative), 'Fstar must be less than the length of the cumulative distribution'
+    assert Fstar >= 0, 'Fstar must be greater than 0'
     # Step 4: Retrieve the indices based on the delta index and mapping
     result_indices = [sorted_indices[-i] for i in range(len(cumulative) - int(Fstar))]
-    cumulative = cumulative/np.sum(sorted_potential)
-    if verbose:
-        print("*********** LORENZ CURVE ************")
-        print('cumulative: ',cumulative)
-        print('Fstar: ',Fstar)
-        print('index: ',int(Fstar*len(cumulative)))
-        print("*************************************")
-    return result_indices,angle,cumulative,Fstar
+    logger.info(f'Fstar: {Fstar}')
+    return result_indices,dy_over_dx,cumulative,Fstar
 
+
+def PlotGridUsedComputationUCI(grid):
+    import matplotlib.pyplot as plt
+    fig,ax = plt.subplots()
+    grid.plot(ax = ax,column = 'position',legend = True)
+    plt.savefig(os.path.join(os.environ['TRAFFIC_DIR'],'grid_used_UCI.png'))
+    plt.close()
+
+def PlotGridUsedComputationUCIEdges(grid):
+    import matplotlib.pyplot as plt
+    fig,ax = plt.subplots()
+    grid.plot(ax = ax,column = 'position',legend = True)
+    plt.savefig(os.path.join(os.environ['TRAFFIC_DIR'],'grid_edges_used_UCI.png'))
+    plt.close()
+
+def FilterDistancePotentialGrid(df_distance,grid,PotentialDataframe):
+    IndicesEdge = GetIndexEdgePolygon(grid)
+    # Mask For Inside Grids That have population
+    IndicesInside = [grid.loc[i]["index"] for i,row in grid.iterrows() if (row['position'] == 'inside' and row["population"] > 0)]
+    ## MASK GRID ##
+    GridInside = grid.loc[IndicesInside]
+    # Total Potential Copmuted for the generated OD
+#    SumPot = PotentialDataframe['V_out'].sum()
+    ## MASK POTENTIAL ##
+    PotentialInside = PotentialDataframe.loc[PotentialDataframe['index'].isin(IndicesInside)]
+    SumPot = np.sum(np.abs(PotentialInside['V_out']))
+    ## MASK DISTANCE MATRIX ##
+    df_distance_inside = df_distance.loc[df_distance['i'].isin(IndicesInside)]
+    df_distance_inside = df_distance_inside.loc[df_distance_inside['j'].isin(IndicesInside)]
+    return df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside
+
+#def FillDiiWithZero(df_distance):
+#    """
+#        Fill the diagonal of the distance matrix with 0.
+#    """
+#    df_distance['distance'] = df_distance.apply(lambda row: 0 if row['i'] == row['j'] else row['distance'], axis=1)
+#    return df_distance
+
+    
 def ComputeUCI(grid,PotentialDataframe,df_distance,verbose = True):
     '''
         Input:
@@ -225,23 +308,114 @@ def ComputeUCI(grid,PotentialDataframe,df_distance,verbose = True):
                 In particular the Lorenz Centers.
         
     '''
-    # Total Potential Copmuted for the generated OD
-    SumPot = PotentialDataframe['V_out'].sum()
-    # Number of squares in the grid that are edges
+    logger.info("Extract: Edges, Inside Indices, corresponding Potential, Grid and Distances ...")
+    df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside = FilterDistancePotentialGrid(df_distance,grid,PotentialDataframe)
+#    df_distance_inside = FillDiiWithZero(df_distance_inside)
+    PlotGridUsedComputationUCI(GridInside)   
+    PlotGridUsedComputationUCIEdges(grid.loc[grid["index"].isin(IndicesEdge)]) 
+    # Filter The Distance Just For the Inside Case
+    assert len(df_distance_inside) == len(GridInside)**2, f'The number of distances {len(df_distance_inside)} must be the same of square number of grids {len(GridInside)**2}, {len(GridInside)}'
+    assert np.array_equal(df_distance_inside["i"].unique(), df_distance_inside["j"].unique()), 'The indices must be the same'
+    assert np.array_equal(df_distance_inside["i"].unique(), GridInside['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
+    assert np.array_equal(PotentialInside["index"].unique(), GridInside['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
     NumGridEdge = grid[grid['relation_to_line']=='edge'].shape[0]
-    PI = LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe)
-    MaskOutside = [True if (row['position'] == 'outside' or row['position'] == 'edge') else False for i,row in grid.iterrows()]
-    PotentialFiltered = [PotentialDataframe.iloc[i]['V_out'] if not MaskOutside[i] else 0 for i in range(len(MaskOutside))] 
-    result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(PotentialFiltered))
+#    CheckRightMappingComputationV(PotentialInside,df_distance_inside)
+#    PI = LaunchComputationPI(df_distance,grid,SumPot,NumGridEdge,PotentialDataframe)
+#    MaskOutside = [True if (row['position'] == 'outside' or row['position'] == 'edge') else False for i,row in grid.iterrows()]
+#    PotentialFiltered = [PotentialDataframe.iloc[i]['V_out'] if not MaskOutside[i] else 0 for i in range(len(MaskOutside))] 
+#    result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(PotentialFiltered))
+    # Compute Vmax 
+    # Smax_i: (Vtot/N_edges,...,Vtot/N_edges)
+    # Dmax_ij: (distance between the edges)    
+    logger.info("Compute Vmax ...")
+    Smax_i,Dmax_ij = PrepareJitCompiledComputeV(df_distance,IndicesEdge,SumPot,NumGridEdge,PotentialInside,case = 'Vmax')
+    Smax_i = np.abs(Smax_i)
+    assert np.sum(Smax_i)-1 < 0.000005, 'The sum of the potential on the edge must be 1'
+    Vmax = ComputeJitV(Smax_i,Dmax_ij)/2
+    # Compute UCI per Mass
+    # Copmute V
+    # Si: Potential values for the grid with population > 0 and Potential > 0 [i is the index of the grid]
+    # D_ij: Distance between the grids with population > 0 and Potential > 0
+    logger.info("Compute V ...")
+    Si,D_ij = PrepareJitCompiledComputeV(df_distance_inside,IndicesInside,SumPot,NumGridEdge,PotentialInside,case = 'V')
+    Si = np.abs(Si)
+    Si_Normalized = Si/np.sum(Si)
+    assert np.sum(Si_Normalized)-1 < 0.000005, 'The sum of the potential on the edge must be 1'
+    V = ComputeJitV(Si_Normalized,D_ij)/2
+    # Compute UCI Mass
+    if verbose:
+        logger.info(f'Number of Squares that form the edge: {len(Smax_i)}')
+        logger.info(f'Number of Distances Among edges: {len(Dmax_ij)}')
+        logger.info(f"S_i: {np.sum(Si_Normalized)}")
+        logger.info(f"Smax_i: {np.sum(Smax_i)}")
+        logger.info(f'Control that the number of distances is equal to the Number of `grid units` in the edge squared: {len(Smax_i)*(len(Smax_i))}')
+        logger.info(f'Vmax: {Vmax}, V: {V}')
+    assert V <= Vmax, 'V must be less than Vmax'
+    PI = ComputePI(V,Vmax)
+    result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(PotentialInside['V_out']))
     LC = Fstar/len(cumulative)
     UCI = PI*LC
+    PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCIMAss(df_distance,IndicesEdge,SumPot,NumGridEdge,GridInside,df_distance_inside,IndicesInside)
+
     if verbose:
-        print('*********** COMPUTE UCI ************')
-        print('Sum Potential: ',SumPot)
-        print('Number of Edges boundary: ',NumGridEdge)
-        print('LC: ',LC,'PI: ',PI,'UCI: ',UCI)
-        print('*********** END UCI ************')
+        logger.info(f"Computing UCI: Tot Pot: {SumPot}, LC: {LC}, PI: {PI}, UCI: {round(UCI,3)}")
+        logger.info*(f"Computing UCI Mass: LC: {LCM}, PI: {PIM}, UCI: {round(UCIM,3)}")
+    return PI,LC,UCI,result_indices,angle,cumulative,Fstar,GridInside,PotentialInside,IndicesInside,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
+
+def ComputeUCIMAss(df_distance,IndicesEdge,SumPot,NumGridEdge,GridInside,df_distance_inside,IndicesInside):
+    SMmax_i,Dmax_ij = PrepareJitCompiledComputeMass(df_distance,IndicesEdge,SumPot,NumGridEdge,GridInside,case = 'Vmax',verbose = False)    
+    assert np.sum(SMmax_i)-1 < 0.000005, 'The sum of the mass normalized on the edge must be 1'
+    VMmax = ComputeJitV(SMmax_i,Dmax_ij)/2
+    SMi,D_ij = PrepareJitCompiledComputeMass(df_distance_inside,IndicesInside,SumPot,NumGridEdge,GridInside,case = 'V',verbose = False)
+    assert np.sum(SMi)-1 < 0.000005, 'The sum of the mass normalized on the edge must be 1'
+    VM = ComputeJitV(SMi,D_ij)/2
+    PI = ComputePI(VM,VMmax)
+    result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(GridInside['population']))
+    LC = Fstar/len(cumulative)
+    UCI = PI*LC
     return PI,LC,UCI,result_indices,angle,cumulative,Fstar
+
+
+##----------------- UCI MASS ---------------------------------##
+def FilterDistancelGrid(grid,df_distance):
+    IndicesEdge = GetIndexEdgePolygon(grid)
+    # Mask For Inside Grids That have population
+    IndicesInside = [grid.loc[i]["index"] for i,row in grid.iterrows() if (row['position'] == 'inside' and row["population"] > 0)]
+    ## MASK GRID ##
+    GridInside = grid.loc[IndicesInside]
+    SumMass = np.sum(GridInside['population'])
+    df_distance_inside = df_distance.loc[df_distance['i'].isin(IndicesInside)]
+    df_distance_inside = df_distance_inside.loc[df_distance_inside['j'].isin(IndicesInside)]
+    return SumMass,df_distance_inside,GridInside,IndicesEdge,IndicesInside
+
+def ComputeUCIMass(grid,df_distance,verbose = True):
+    '''
+        Input:
+            InfoConfigurationPolicentricity: dictionary {'grid': geopandas grid, 'potential': potential dataframe}
+            num_peaks: int -> number of peaks (centers)
+        Description:
+            Compute the UCI for the given number of centers.
+            NOTE: 
+                The UCI is computed just on the fraction of Cells that are inside the geometry.
+                In particular the Lorenz Centers.
+        
+    '''
+    logger.info("Extract: Edges, Inside Indices, Grid and Distances ...")
+    SumMass,df_distance,GridInside,IndicesEdge,IndicesInside = FilterDistancelGrid(grid,df_distance)
+    PlotGridUsedComputationUCI(GridInside)
+    PlotGridUsedComputationUCIEdges(GridInside.loc[GridInside["index"].isin(IndicesEdge)])
+    # Filter The Distance Just For the Inside Case
+    assert len(df_distance) == len(GridInside)**2, f'The number of distances {len(df_distance)} must be the same of square number of grids {len(GridInside)**2}, {len(GridInside)}'
+    assert np.array_equal(df_distance["i"].unique(), df_distance["j"].unique()), 'The indices must be the same'
+    assert np.array_equal(df_distance["i"].unique(), GridInside['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
+    NumGridEdge = grid[grid['relation_to_line']=='edge'].shape[0]
+    # Compute Vmax
+    # Smax_i: (Vtot/N_edges,...,Vtot/N_edges)
+    # Dmax_ij: (distance between the edges)
+    logger.info("Compute Vmax ...")
+
+
+
 
 ##------------------------------- CONFIGURATIONS -----------------------------------##    
 

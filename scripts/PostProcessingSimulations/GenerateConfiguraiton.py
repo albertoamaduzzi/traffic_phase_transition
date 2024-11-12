@@ -3,7 +3,7 @@ from collections import defaultdict,OrderedDict
 import json
 import numpy as np
 import sys
-sys.path.append(os.environ['TRAFFIC_DIR'],'scripts','GeometrySphere')
+sys.path.append(os.path.join(os.environ['TRAFFIC_DIR'],'scripts','GeometrySphere'))
 
 
 

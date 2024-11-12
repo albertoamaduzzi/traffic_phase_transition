@@ -8,6 +8,8 @@ import platform
 import numpy as np
 from multiprocessing import Pool
 import sys
+import logging
+logger = logging.getLogger(__name__)
 sys.path.append(os.path.join(os.environ["TRAFFIC_DIR"],"scripts","GeometrySphere"))
 #from ODfromfma import NUMBER_SIMULATIONS,CityName2RminRmax
 
@@ -38,30 +40,27 @@ def ModifyConfigIni(CityName,start,end,R,UCI,verbose = False):
             Write the configuration file that must be given in input to the LivingCity program
             NOTE: Do not change position in folder: ../LPSim/
     '''
-    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,UCI)
+    logger.info("Input File: {0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv".format(CityName,start,end,R,round(UCI,3)))
+    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,round(UCI,3))
     with open(os.path.join(TRAFFIC_DIR,'command_line_options.ini'),'w') as file:
         file.write(file_txt)
     file.close()
-    if verbose:
-        print("***** MODIFICATION CONFIG ******")
 #        print(file_txt)    
 
 
 def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
     saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
     source_file = os.path.join(LPSIM_DIR, output_file)
-    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{UCI}_{output_file}")
+    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
+    logger.info(f"Transfer: {output_file} -> {destination_file}")
     if not os.path.exists(saving_dir):
+        # Make Sure saving_dir exists
         os.mkdir(saving_dir)
-    if verbose:
-        print("***** RENAME SIMULATION OUTPUT FILES ******")
-        print('renamed output file:\t',output_file)
-        print('In dir:\t',saving_dir)
     if os.path.exists(source_file):
         os.rename(source_file, destination_file)
     else:
-        print(f"File {source_file} does not exist")
-#     shutil.move(os.path.join(LPSIM_DIR,f"R_{R}_UCI_{UCI}_{output_file}"),saving_dir)  
+        logger.info(f"File {source_file} does not exist")
+#     shutil.move(os.path.join(LPSIM_DIR,f"R_{R}_UCI_{round(UCI,3)}_{output_file}"),saving_dir)  
 
   
 def CheckUseDocker(verbose = False):
@@ -69,12 +68,10 @@ def CheckUseDocker(verbose = False):
     try:
         subprocess.run(docker_version, check=True)
         if verbose:
-            print("***** CHECK PERMISSION DOCKER COMMAND ******")
-            print("User has permission to execute Docker commands.")
+            logger.info("execution Docker Granted")
     except subprocess.CalledProcessError:
         if verbose:
-            print("***** CHECK PERMISSION DOCKER COMMAND ******")
-            print("User does not have permission to execute Docker commands.")    
+            logger.info("execution Docker DENIED")
 
 
 def compare_environment_variables(verbose = True):
@@ -106,88 +103,67 @@ def compare_environment_variables(verbose = True):
         if verbose:
             print("\nNo differences found in environment variables between shell and Python subprocess.")
 
-def DockerCommand(verbose = False):
+
+def DockerCommand(verbose=False):
     os.environ['PATH'] += os.pathsep + '/usr/bin/'
-    PWD ='/home/alberto/LPSim'
+    container_name = "xuanjiang1998/lpsim:v1"
+    PWD = '/home/alberto/LPSim'
     env = os.environ.copy()
-    docker_cmd = f'/usr/bin/docker run -it --rm --gpus all -v {PWD}:/lpsim -w /lpsim {container_name} bash'
-    docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash','-c','./LivingCity/LivingCity']
-#    if verbose:
-#        print("***** LAUNCH DOCKER ******")
-#        print('current working dir: ',os.getcwd())
+    docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']
 
-    # Execute the Docker command
-    if not verbose:
-        CheckUseDocker(verbose)
-        compare_environment_variables(verbose)
-    process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,env=env)#,shell = True
-    stdout, stderr = process.communicate()
-    if verbose:
-        print(stdout.decode())
-        print(stderr.decode())
-        print('Executing docker command')
+    while True:
+        # Execute the Docker command
+        logger.info("Executing Simulation...")
+        process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        stdout, stderr = process.communicate()
+        
+        # Log the output
+        logger.info(stdout.decode())
+        logger.error(stderr.decode())
+        
+        # Check if the command was successful
+        if process.returncode == 0:
+            logger.info("Docker command executed successfully.")
+            break
+        else:
+            logger.error("Docker command failed. Retrying...")
+            time.sleep(5)  # Wait for 5 seconds before retrying
 
-#    exec_commands = [
-#        "./LivingCity"
-#    ]
-#    for cmd in exec_commands:
-#        exec_result = subprocess.run(cmd,shell=True)
     return process
 
 def LaunchDockerFromServer(container_name,CityName,start,end,R,UCI,verbose = False):
-    if False:
-        process = DockerCommand()
-
-        # Check if Docker command was successful
-        if process.returncode == 0:
-            print("Docker command executed successfully.")
-            exec_commands = [
-                "cd",
-                "cd test",
-                "cd LPSim",
-                "cd LivingCity",
-                "./LivingCity"
-            ]
-            print('Current directory: ',os.getcwd())
-            for cmd in exec_commands:
-                exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], capture_output=True, text=True)
-                print(exec_result.stdout)
-            output_files = ['0_allPathsinEdgesCUDAFormat{0}to{1}.csv'.format(start,end),
-                            '0_indexPathInit{0}to{1}.csv'.format(start,end),
-                            '0_people{0}to{1}.csv'.format(start,end),
-                            '0_route{0}to{1}.csv'.format(start,end)
-                            ]
-            for output_file in output_files:
-                RenameMoveOutput(output_files,CityName,R,UCI)
-        else:
-            print(f"Error executing Docker command: {stderr.decode()}")
+    """
+        @params container_name: Name container from which launch the GPU simulations
+        @params CityName: Name simulation city
+        @params start,end: start and end simulation (int:hour)
+        @params R: Number of people per unit time
+        @params UCI: Urban Centrality Index
+    """
+    # Run Simulation Just If it does not exist the Output
+    saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
+    output_file = '0_people{0}to24.csv'.format(start)
+    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
+    logger.info(f"Launch Simulation")
+    if os.path.exists(destination_file):
+        print(f"File {destination_file} already exists")
+        pass
     else:
-        # Run Simulation Just If it does not exist the Output
-        saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
-        output_file = '0_people{0}to24.csv'.format(start)
-        destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{UCI}_{output_file}")
-        print('***** LAUNCH DOCKER *****')
-        if os.path.exists(destination_file):
-            print(f"File {destination_file} already exists")
-            pass
-        else:
-    #        CheckPlatform()
-            ModifyConfigIni(CityName,start,end,R,UCI, verbose)
-    #        os.chdir(TRAFFIC_DIR)
-            CheckUseDocker()
-            exec_result = DockerCommand(verbose)   
+#        CheckPlatform()
+        ModifyConfigIni(CityName,start,end,R,UCI, verbose)
+#        os.chdir(TRAFFIC_DIR)
+        exec_result = DockerCommand(verbose)   
 
-    #        exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #            exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], capture_output=True, text=True)
-    #        print(exec_result.stdout)
-            output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
-                            '0_indexPathInit{0}to24.csv'.format(start),
-                            '0_people{0}to24.csv'.format(start),
-                            '0_route{0}to24.csv'.format(start)
-                            ]
-    #        CheckPlatform()
-            for output_file in output_files:
-                RenameMoveOutput(output_file,CityName,R,UCI,verbose)
+#        exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#            exec_result = subprocess.run(['docker', 'exec', '-i', container_name, 'bash', '-c', cmd], capture_output=True, text=True)
+#        print(exec_result.stdout)
+        output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
+                        '0_indexPathInit{0}to24.csv'.format(start),
+                        '0_people{0}to24.csv'.format(start),
+                        '0_route{0}to24.csv'.format(start)
+                        ]
+#        CheckPlatform()
+        for output_file in output_files:
+            RenameMoveOutput(output_file,CityName,R,UCI,verbose)
 
 def RsUCIsFromDir(OD_dir):
     Rs = []
@@ -227,6 +203,18 @@ def UCIsFromDirRsFromMetaData(OD_dir,CityName,NUMBER_SIMULATIONS,CityName2RminRm
     UCIs = sorted(UCIs)
     return Rs,UCIs
     
+def DeleteInputSimulation(InputFile):
+    """
+        @params InputFile: File to delete (is the input of simulation that is very big and I do not want to use up all the memory of the PC, since it is retrievable)
+        @description : Free space deleting the input file 
+    """
+
+    if os.path.exists(InputFile):
+        logger.info(f"Deleting {InputFile}")
+        os.remove(InputFile)
+    else:
+        logger.info(f"Cannot delete: {InputFile} : It does not exist")
+
 #def LaunchProgram(config):
 #    subprocess.run(['your_program_executable', config_file])
 '''
@@ -274,7 +262,7 @@ if __name__ == '__main__':
             else:
                 for UCI in UCIs:
                     for R in Rs:
-                        if os.path.isfile(os.path.join(OD_dir,f"{CityName}_oddemand_{start}_{end}_R_{R}_UCI_{UCI}.csv")):
+                        if os.path.isfile(os.path.join(OD_dir,f"{CityName}_oddemand_{start}_{end}_R_{R}_UCI_{round(UCI,3)}.csv")):
                             print('Launching docker from server')
                             print('R: ',R)
                             print('UCI: ',UCI)

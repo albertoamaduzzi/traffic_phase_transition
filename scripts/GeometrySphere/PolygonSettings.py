@@ -44,21 +44,21 @@ def GetGeometryPopulation(gdf_hexagons,gdf_geometry,NameGeometry,NameCity):
     if gdf_hexagons is None:
         raise ValueError('gdf_hexagons is None')
     if NameGeometry == 'polygon':
-        cprint('getPolygonPopulation {}'.format(NameCity),'green')
+        logger.info(f"Initialize Polygon Population {NameCity}")
         if gdf_geometry is None:
             raise ValueError('gdf_{} is None'.format(NameGeometry))
         else:
             gdf_geometry = GetPopulation(gdf_hexagons,gdf_geometry)
             return gdf_geometry
     elif NameGeometry == 'grid':
-        cprint('getGridPopulation {}'.format(NameCity),'yellow')
+        logger.info(f"Initialize Population Grid {NameCity}")
         if gdf_geometry is None:
             raise ValueError('gdf_{} is None'.format(NameGeometry))
         else:
             gdf_geometry = GetPopulation(gdf_hexagons,gdf_geometry)
             return gdf_geometry
     elif NameGeometry == 'ring':
-        cprint('getRingPopulation {}'.format(NameCity),'blue')
+        logger.info(f"Initialize Population Ring {NameCity}")
         if gdf_geometry is None:
             raise ValueError('gdf_{} is None'.format(NameGeometry))
         else:
@@ -106,40 +106,40 @@ def Geometry2OD(gdf_geometry,
     '''
     if GeometryName == 'polygon':
         if os.path.isfile(os.path.join(save_dir_local,GeometryName,'polygon2origindest.json')) and os.path.isfile(os.path.join(save_dir_local,GeometryName,'origindest2polygon.json')):
-            cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,GeometryName,'polygon2origindest.json')),'magenta')
+            logger.info(f"{os.path.join(save_dir_local,GeometryName,'polygon2origindest.json')} ALREADY COMPUTED")
             OD2polygon,polygon2OD = UploadMapODPol(save_dir_local,GeometryName,'origindest2polygon.json','polygon2origindest.json')
             return OD2polygon,polygon2OD,gdf_geometry
         else:
-            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,GeometryName,'polygon2origindest.json')),'magenta')
+            logger.info(f"COMPUTING {os.path.join(save_dir_local,GeometryName,'polygon2origindest.json')} ...")
             key = NameCity2TractId[NameCity]
             OD2polygon,polygon2OD,gdf_geometry = MapPolygon2OD(gdf_geometry,GraphFromPhml,GeometryName,key,save_dir_local)
             return OD2polygon,polygon2OD,gdf_geometry
 
     elif GeometryName == 'grid':
         if os.path.isfile(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'grid2origindest.json')) and os.path.isfile(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'origindest2grid.json')):
-            cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'grid2origindest.json')),'yellow')
+            logger.info(f"{os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'grid2origindest.json')} ALREADY COMPUTED")
             OD2Geom,Geom2OD = UploadMapODGeom(save_dir_local,GeometryName,'origindest2grid.json','grid2origindest.json',round(resolution,3))
             return OD2Geom,Geom2OD,gdf_geometry
         else:
-            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'grid2origindest.json')),'yellow')
+            logger.info(f"COMPUTING {os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'grid2origindest.json')} ...")
             OD2Geom,Geom2OD,gdf_geometry = Map2Geom2OD(gdf_geometry,GraphFromPhml,GeometryName,save_dir_local,round(resolution,3))
             return OD2Geom,Geom2OD,gdf_geometry
     elif GeometryName == 'ring':
         if os.path.isfile(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'ring2origindest.json')) and os.path.isfile(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'origindest2ring.json')):
-            cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'ring2origindest.json')),'blue')
+            logger.info(f"{os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'ring2origindest.json')} ALREADY COMPUTED")
             OD2Geom,Geom2OD = UploadMapODGeom(save_dir_local,GeometryName,'origindest2ring.json','ring2origindest.json',round(resolution,3))
             return OD2Geom,Geom2OD,gdf_geometry
         else:
-            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'ring2origindest.json')),'blue')
+            logger.info(f"COMPUTING {os.path.join(save_dir_local,GeometryName,str(round(resolution,3)),'ring2origindest.json')} ...")
             OD2Geom,Geom2OD,gdf_geometry = Map2Geom2OD(gdf_geometry,GraphFromPhml,GeometryName,save_dir_local,round(resolution,3))
             return OD2Geom,Geom2OD,gdf_geometry
     elif GeometryName == 'hexagon':
         if os.path.isfile(os.path.join(save_dir_local,GeometryName,str(resolution),'hexagon2origindest.json')) and os.path.isfile(os.path.join(save_dir_local,GeometryName,str(resolution),'origindest2hexagon.json')):
-            cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,GeometryName,str(resolution),'hexagon2origindest.json')),'red')
+            logger.info(f"{os.path.join(save_dir_local,GeometryName,str(resolution),'hexagon2origindest.json')} ALREADY COMPUTED")
             OD2Geom,Geom2OD = UploadMapODGeom(save_dir_local,GeometryName,'origindest2hexagon.json','hexagon2origindest.json',resolution)
             return OD2Geom,Geom2OD,gdf_geometry
         else:
-            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,GeometryName,str(resolution),'hexagon2origindest.json')),'red')
+            logger.info(f"COMPUTING {os.path.join(save_dir_local,GeometryName,str(resolution),'hexagon2origindest.json')} ...")
             OD2Geom,Geom2OD,gdf_geometry = Map2Geom2OD(gdf_geometry,GraphFromPhml,GeometryName,save_dir_local,resolution)
             return OD2Geom,Geom2OD,gdf_geometry
     else:
@@ -233,7 +233,7 @@ def Map2Geom2OD(gdf_geometry,
     number_nodes_outside_box = 0
     numbr_nodes_inside_box = 0
     percentage_nodes_outside_box = 0
-    print('{} \nnumber nodes to control: '.format(save_dir_local),len(GraphFromPhml.nodes))
+    logger.info(f"Number Nodes To Control in {save_dir_local}: {len(GraphFromPhml.nodes)}")
     # Loop over the nodes of the graph
     for node in GraphFromPhml.nodes():
         # Check if the node is inside the geometry
@@ -252,10 +252,7 @@ def Map2Geom2OD(gdf_geometry,
             numbr_nodes_inside_box += 1
             if (number_nodes_outside_box + numbr_nodes_inside_box) % 100 == 0:
                 percentage_nodes_outside_box = number_nodes_outside_box/(number_nodes_outside_box+numbr_nodes_inside_box)
-                print('{}\nnumber_nodes_outside_box: '.format(save_dir_local),number_nodes_outside_box)
-                print('{}\nnumber_nodes_inside_box: '.format(save_dir_local),numbr_nodes_inside_box)
-                print('{}\npercentage_nodes_outside_box: '.format(save_dir_local),percentage_nodes_outside_box)
-
+                logger.info(f"Nodes outside {number_nodes_outside_box}, inside: {numbr_nodes_inside_box} the box. Percentage Missing: {percentage_nodes_outside_box}")
         elif len(tract_id_geom)>1:
             print('node: ',GraphFromPhml.nodes[node]['x'],GraphFromPhml.nodes[node]['y'])
             print(len([i for i in containing_geom if i==True]))
@@ -267,18 +264,13 @@ def Map2Geom2OD(gdf_geometry,
             number_nodes_outside_box += 1
             if (number_nodes_outside_box + numbr_nodes_inside_box) % 100 == 0:
                 percentage_nodes_outside_box = number_nodes_outside_box/(number_nodes_outside_box+numbr_nodes_inside_box)
-                print('{}\nnumber_nodes_outside_box: '.format(save_dir_local),number_nodes_outside_box)
-                print('{}\nnumber_nodes_inside_box: '.format(save_dir_local),numbr_nodes_inside_box)
-                print('{}\npercentage_nodes_outside_box: '.format(save_dir_local),percentage_nodes_outside_box)
+                logger.info(f"Nodes outside {number_nodes_outside_box}, inside: {numbr_nodes_inside_box} the box. Percentage Missing: {percentage_nodes_outside_box}")
 
-#            print('Point {} outside geometry: '.format(Point(GraphFromPhml.nodes[node]['x'],GraphFromPhml.nodes[node]['y'])))
-#            print('Point {} outside geometry: '.format(Point(GraphFromPhml.nodes[node]['y'],GraphFromPhml.nodes[node]['x'])))
             pass
     percentage_nodes_outside_box = number_nodes_outside_box/(number_nodes_outside_box+numbr_nodes_inside_box)
     if percentage_nodes_outside_box > 0.4:
         raise ValueError('More than 10% of the nodes are outside the geometry')
     # Generate the Column That Tells If Roads Are Present In The Grid
-    gdf_geometry["with_roads"] = gdf_geometry['index'].apply(lambda x: x in list(Geom2OD.keys()))
     WriteMapODGeom(save_dir_local,GeometryName,'origindest2'+GeometryName+'.json',GeometryName+'2origindest.json',OD2Geom,Geom2OD,resolution)
     return OD2Geom,Geom2OD,gdf_geometry
 

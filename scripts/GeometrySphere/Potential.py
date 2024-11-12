@@ -65,7 +65,7 @@ def GetVectorField(Tij,df_distance):
     return VectorField
 
 def SaveVectorField(VectorField,save_dir):
-    VectorField.to_csv(os.path.join(save_dir,'VectorField.csv'))
+    VectorField.to_csv(os.path.join(save_dir,'VectorField.csv'),index=False)
 
 def GetSavedVectorFieldDF(save_dir):
     return pd.read_csv(os.path.join(save_dir,'VectorField.csv'))
@@ -257,7 +257,7 @@ def AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice):
     return PotentialDataframe
 
 ## ---- Aggregeted Functions Generation Potential from Fluxes ---- ##
-def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city):
+def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city,save_dir):
     """
         @param Tij: Dataframe with the number of people from i to j
         @param df_distance: Dataframe with the distance matrix and the direction vector
@@ -266,16 +266,28 @@ def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city):
         @param city: Name of the city
         @return PotentialDataframe: Dataframe with the potential
     """
-    logger.info(f"Computing Vector Field {city} ...")
-    VectorField = GetVectorField(Tij,df_distance)
-    logger.info(f"Getting Potential in Lattice from VF {city} ...")
-    lattice = GetPotentialLattice(lattice,VectorField)
-    logger.info(f"Smoothing Potential in Lattice {city} ...")
-    lattice = SmoothPotential(lattice)
-    logger.info(f"Converting Lattice to Potential Dataframe {city} ...")
-    PotentialDataframe = ConvertLattice2PotentialDataframe(lattice)
-    logger.info(f"Add Population to Potential Dataframe {city} ...")
-    PotentialDataframe = CompletePotentialDataFrame(grid,PotentialDataframe)
+    if not os.path.exists(os.path.join(save_dir,'VectorField.csv')):
+        logger.info(f"Computing Vector Field {city} ...")
+        VectorField = GetVectorField(Tij,df_distance)
+        logger.info(f"Saving Vector Field {city} ...")
+        SaveVectorField(VectorField,save_dir)
+    else:
+        logger.info(f"Loading Vector Field {city} ...")
+        VectorField = GetSavedVectorFieldDF(save_dir)
+    if not os.path.exists(os.path.join(save_dir,'PotentialDataFrame.csv')):
+        logger.info(f"Getting Potential in Lattice from VF {city} ...")
+        lattice = GetPotentialLattice(lattice,VectorField)
+        logger.info(f"Smoothing Potential in Lattice {city} ...")
+        lattice = SmoothPotential(lattice)
+        logger.info(f"Converting Lattice to Potential Dataframe {city} ...")
+        PotentialDataframe = ConvertLattice2PotentialDataframe(lattice)
+        logger.info(f"Add Population to Potential Dataframe {city} ...")
+        PotentialDataframe = CompletePotentialDataFrame(grid,PotentialDataframe)
+        logger.info(f"Saving Potential Dataframe {city} ...")
+        SavePotentialDataframe(PotentialDataframe,save_dir)
+    else:
+        logger.info(f"Loading Potential Dataframe {city} ...")
+        PotentialDataframe = GetSavedPotentialDF(save_dir)
     return PotentialDataframe,lattice,VectorField
 
 
@@ -285,11 +297,14 @@ def CompletePotentialDataFrame(grid,PotentialDataframe):
         @param PotentialDataframe: Dataframe with the potential
         @description: Add the population to the PotentialDataframe
     """
-    PotentialDataframe['population'] = grid['population']    
+    if isinstance(grid,pd.DataFrame):
+        PotentialDataframe['population'] = grid['population']    
+    else:
+        PotentialDataframe['population'] = grid
     return PotentialDataframe
 
 def SavePotentialDataframe(PotentialDataFrame,save_dir):
-    PotentialDataFrame.to_csv(os.path.join(save_dir,'PotentialDataFrame.csv'))    
+    PotentialDataFrame.to_csv(os.path.join(save_dir,'PotentialDataFrame.csv'),index=False)    
 
 def GetSavedPotentialDF(save_dir):
     return pd.read_csv(os.path.join(save_dir,'PotentialDataFrame.csv'))

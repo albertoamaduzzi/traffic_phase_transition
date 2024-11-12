@@ -3,6 +3,7 @@ import pandas as pd
 import geopandas as gpd
 import os
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import logging
 logger = logging.getLogger(__name__)
 
@@ -61,10 +62,52 @@ def PlotNewPopulation(grid,gdf_polygons,dir_grid,UCI):
     plt.savefig(os.path.join(dir_grid,f'Population_Distribution_{round(UCI,3)}.png'),dpi = 200)
 #        plt.show()
 
-def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,top_fluxes = 50,UCI):
+def PlotInsideOutside(gdf_polygons,grid,dir_grid):
+    cmap = mcolors.ListedColormap(['red', 'green'])  # Red for False, Green for True
+    norm = mcolors.BoundaryNorm([0, 0.5, 1], cmap.N)
+    # Plot the data
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black', alpha=0.2)
+    grid.plot(column='position', ax=ax, alpha=0.5, cmap=cmap, norm=norm, legend=True)
+    # Customize the plot
+    ax.set_title('position')
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    plt.savefig(os.path.join(dir_grid,'InsideOutside.png'),dpi = 200)
+
+def PlotRoads(gdf_polygons,grid,dir_grid):
+    cmap = mcolors.ListedColormap(['red', 'green'])  # Red for False, Green for True
+    norm = mcolors.BoundaryNorm([0, 0.5, 1], cmap.N)
+    # Plot the data
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black', alpha=0.2)
+    grid.plot(column='with_roads', ax=ax, alpha=0.5, cmap=cmap, norm=norm, legend=True)
+
+    # Customize the plot
+    ax.set_title('With Roads')
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    plt.savefig(os.path.join(dir_grid,'WithRoads.png'),dpi = 200)
+
+def PlotEdges(gdf_polygons,grid,dir_grid):
+    cmap = mcolors.ListedColormap(['red', 'green'])  # Red for False, Green for True
+    norm = mcolors.BoundaryNorm([0, 0.5, 1], cmap.N)
+    # Plot the data
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black', alpha=0.2)
+    grid.plot(column='relation_to_line', ax=ax, alpha=0.5, cmap=cmap, norm=norm, legend=True)
+
+    # Customize the plot
+    ax.set_title('Edges')
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    plt.savefig(os.path.join(dir_grid,'Edges.png'),dpi = 200)
+
+
+def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,UCI,top_fluxes = 50):
     logger.info('Plotting Fluxes')
     fig,ax = plt.subplots(1,1, figsize = (8,6))
-    gdf_polygons.gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     highest_row = Tij.nlargest(top_fluxes, 'number_people')
     # Extract indices 'i' and 'j' from the highest row
     highest_i = highest_row['origin'].to_numpy()
@@ -73,13 +116,6 @@ def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,top_fluxes = 50,UCI):
     norm = plt.Normalize(fluxes.min(), fluxes.max())
 
     for grid_index in range(len(highest_i)):
-#        if verbose:
-#            print('Grid index: ',grid_index)
-#            print('i: ',highest_i[grid_index],' j: ',highest_j[grid_index])
-#            print('x of i: ',grid.loc[grid['index']==highest_i[grid_index]]['centroidx'].values[0])
-#            print('y of i: ',grid.loc[grid['index']==highest_i[grid_index]]['centroidy'].values[0])
-#            print('x of j: ',grid.loc[grid['index']==highest_j[grid_index]]['centroidx'].values[0])
-#            print('y of j: ',grid.loc[grid['index']==highest_j[grid_index]]['centroidy'].values[0])
         pointi = [grid.loc[grid['index']==highest_i[grid_index]]['centroidx'].values[0],grid.loc[grid['index']==highest_i[grid_index]]['centroidy'].values[0]]
         pointj = [grid.loc[grid['index']==highest_j[grid_index]]['centroidx'].values[0],grid.loc[grid['index']==highest_j[grid_index]]['centroidy'].values[0]]
         if pointi == pointj:
@@ -91,6 +127,7 @@ def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,top_fluxes = 50,UCI):
     sm.set_array([])    
     plt.colorbar(sm, label='Flux',ax=plt.gca())         
     plt.savefig(os.path.join(dir_grid,f'Fluxes_{round(UCI,3)}.png'),dpi = 200)
+    plt.close()
     gammas = [1,5,10,20,30,50,100]
     for gamma in gammas:
         print("Number of people in grid with flux > ",gamma,": ",(Tij['number_people'].to_numpy()>gamma).sum())
@@ -194,7 +231,7 @@ def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,UCI):
     ax.set_ylabel('Count')
     plt.savefig(os.path.join(dir_grid,f'HarmonicDistr_{round(UCI,3)}.png'),dpi = 200)
 
-def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose = False):
+def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,verbose = False):
     
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
@@ -219,6 +256,44 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,shift = 0.1,verbose
     logger.info(f"F* = {Fstar}")
     return line1,line2
 
+def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,dir_grid,UCI,UCIM,shift = 0.1,verbose = False):
+    
+    fig,ax = plt.subplots(1,1,figsize = (8,6))
+    x = np.arange(len(cumulative))/len(cumulative)
+    xm = np.arange(len(cumulativeM))/len(cumulativeM)
+    idxFstar = Fstar #int(Fstar*len(cumulative))
+    idxFstarM = FstarM #int(Fstar*len(cumulative))
+    line1, = ax.plot(x,cumulative,c='black',label='Potential')
+    line1m, = ax.plot(xm,cumulativeM,c='blue',label='Mass')
+    # Plot the straight line to F*
+    line2, = ax.plot([x[idxFstar], 1], [0, cumulative[-1]], color='red',label = 'Potential angle')
+    line2m, = ax.plot([xm[idxFstarM], 1], [0, cumulativeM[-1]], color='blue',label = 'Mass angle')
+    ax.plot(x[idxFstar],cumulative[idxFstar],'ro',label='Potential F*')
+    ax.plot(xm[idxFstarM],cumulativeM[idxFstarM],'bo',label='Mass F*')
+    if result_indices is not None and result_indicesM is not None:
+        # POT
+        ax.text(x[Fstar] + shift, 0, f'I* = {x[Fstar]:.2f}', ha='right', va='bottom', color='black')
+        ax.text(x[Fstar] + 2*shift , 0.1, f'Centers', ha='right', va='bottom', color='green')
+        ax.text(x[Fstar] - 1.5*shift , 0.1, f'No Centers', ha='right', va='bottom', color='yellow')        
+        # MASS
+        ax.text(xm[FstarM] + shift, 0.01, f'I* = {xm[FstarM]:.2f}', ha='right', va='bottom', color='black')
+        ax.text(xm[FstarM] + 2*shift , 0.11, f'Centers', ha='right', va='bottom', color='green')
+        ax.text(xm[FstarM] - 1.5*shift , 0.11, f'No Centers', ha='right', va='bottom', color='yellow')
+        # POT
+        ax.axhline(y=0.05, xmin=0 , xmax=(x[Fstar]), color='yellow', linestyle='--')
+        ax.axhline(y=0.05, xmin=x[Fstar], xmax=1, color='green', linestyle='--')
+        # MASS
+        ax.axhline(y=0.04, xmin=0 , xmax=(xm[FstarM]), color='yellow', linestyle='--')
+        ax.axhline(y=0.04, xmin=xm[FstarM], xmax=1, color='green', linestyle='--')
+
+    ax.set_ylim(0)
+    ax.set_title('Lorenz Curve Potential/Mass')
+    ax.set_xlabel('Index sorted grid')
+    ax.set_ylabel('Cumulative Potential/Mass')
+    plt.savefig(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}_{round(UCIM,3)}.png'),dpi = 200)
+    logger.info(f"F* = {Fstar}")
+    return line1,line2
+
 
 ##-------- ##
 
@@ -236,7 +311,7 @@ def PlotDistributionDistance(Tij,distance_df):
     ax.set_ylabel('Count')
 #    plt.show()
 
-def PlotVFPotMass(grid,gdf_polygons,PotentialDataframe,VectorField,dir_grid,label_potential = 'V_out',label_fluxes = 'Ti',UCI,plot_mass = True,verbose = False):
+def PlotVFPotMass(grid,gdf_polygons,PotentialDataframe,VectorField,dir_grid,UCI,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True,verbose = False):
     '''
         NOTE:
             label_potential:    V_in, V_out
@@ -260,12 +335,15 @@ def PlotVFPotMass(grid,gdf_polygons,PotentialDataframe,VectorField,dir_grid,labe
     else:
         raise KeyError(label_potential,' Neither in grid nor potential columns: ',grid.columns,PotentialDataframe.columns)
     if plot_mass:
-        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'Greys',edgecolor='black', alpha=0.3)
+        grid_plot = grid.plot(ax=ax, column = label_potential, cmap = 'viridis',edgecolor='black', alpha=0.3)
         grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
         grid_cbar.set_label('{}'.format(label_potential), rotation=270, labelpad=15)
     else:
         pass
-    VF = np.stack(VectorField[label_fluxes].to_numpy(dtype = np.ndarray))
+    if type(VectorField[label_fluxes].iloc[0]) == str:
+        VF = np.array([np.fromstring(vector_str.strip('[]'), sep=' ') for vector_str in VectorField[label_fluxes]])
+    else:
+        VF = np.stack(VectorField[label_fluxes].to_numpy(dtype = np.ndarray))
     VF_norm = np.linalg.norm(VF, axis=1)
     VF_normalized = np.stack(np.array([VF[i] / VF_norm[i] if VF_norm[i] !=0 else [0, 0] for i in range(len(VF_norm))]))
     mask = [True if VF_norm[i]!=0 else False for i in range(len(VF_norm))]
@@ -289,16 +367,16 @@ def PlotRoutineOD(grid,Tij,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,
         @param fraction_fluxes: Fraction of fluxes to plot
         @param verbose: Print information
     """
-    PlotFluxes(grid,Tij,gdf_polygons,dir_grid,fraction_fluxes,UCI)
+    PlotFluxes(grid,Tij,gdf_polygons,dir_grid,UCI,fraction_fluxes)
     if index_centers is not None:
         PlotPositionCenters(grid,gdf_polygons,index_centers,dir_grid,UCI)
     PlotNewPopulation(grid, gdf_polygons,dir_grid,UCI)
     # Comparison New Fluxes and From File
     if Tij1 is not None:
         PlotOldNewFluxes(Tij,Tij1)
-    PlotVFPotMass(grid,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,'population','Ti',UCI)
+    PlotVFPotMass(grid,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,UCI,'population','Ti')
     PotentialContour(grid,PotentialDataFrame,gdf_polygons,dir_grid,UCI)
-    PotentialSurface(grid,gdf_polygons,PotentialDataFrame,dir_grid,UCI)
+#    PotentialSurface(grid,PotentialDataFrame,dir_grid,UCI)
     PlotRotorDistribution(grid,PotentialDataFrame,dir_grid,UCI)
-    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, 0.1,UCI)
+    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, UCI,0.1)
     PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid,UCI)

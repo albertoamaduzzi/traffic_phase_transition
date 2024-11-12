@@ -24,7 +24,7 @@ def GetAvailableTypesKeys(grid2OD):
     return AvailableTypesKeys
 
 
-def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,seconds_in_minute = 60):
+def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,NOffset,seconds_in_minute = 60):
     '''
         @brief: Generate the Input for the Simulation from the Grid2OD
         @param: O_vector: (np.array 1D) -> origin subset with repetition [0,...,Ngridx*Ngridy-1]
@@ -45,7 +45,7 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
     assert start is not None, 'start must be provided'
     total_number_people_considered = 0
     total_number_people_not_considered = 0
-    count_line = 0
+    count_line = NOffset
     users_id = []
     time_ = []
     origins = []
@@ -146,7 +146,7 @@ def ODVectorFromTij(Tij_modified):
     OD_vector = np.array(Tij_modified['number_people'],dtype=int)
     return O_vector,D_vector,OD_vector
 
-def GenerateDfFluxesFromGravityModel(Tij_modified,osmid2index,grid2OD,start):
+def GenerateDfFluxesFromTij(Tij_modified,osmid2index,grid2OD,start,NOffset):
     """
         Input:
             Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
@@ -164,61 +164,6 @@ def GenerateDfFluxesFromGravityModel(Tij_modified,osmid2index,grid2OD,start):
                 'destination':destinations,
                 })
     """
-    logger.info("Generate Df Fluxes From Gravity Model...")
     O_vector,D_vector,OD_vector = ODVectorFromTij(Tij_modified)
-    df1 = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,60)
+    df1 = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,NOffset,60)
     return df1
-def GetODForSimulation(Tij_modified,
-                       CityName2RminRmax,
-                       NameCity,
-                       osmid2index,
-                       grid2OD,
-                       p,
-                       save_dir_local,
-                       start = 7,
-                       end = 8,
-                       UCI = None,
-                       df2 = None
-                       ):
-    # Set the number of OD files to generate
-    NumberOfConfigurationsR = 20
-    ROutput = []
-    # NOTE: ADD HERE THE POSSIBILITY OF HAVING OD FROM POTENTIAL CONSIDERATIONS
-    O_vector = np.array(Tij_modified['origin'],dtype=int)
-    D_vector = np.array(Tij_modified['destination'],dtype=int)
-    OD_vector = np.array(Tij_modified['number_people'],dtype=int)
-    # START TAB
-    R = np.sum(OD_vector)/3600 # R is the number of people that move in one second (that is the time interval for the evolution )
-    Rmin = CityName2RminRmax[NameCity][0]
-    Rmax = CityName2RminRmax[NameCity][1]
-    spacing = (Rmax/R - Rmin/R)/NumberOfConfigurationsR
-    print("Generation Fluxes UCI: ",UCI)
-    for multiplicative_factor in np.arange(Rmin/R,Rmax/R,spacing):
-        R = np.sum(OD_vector)/3600 
-#        if os.path.isfile(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))):
-        if os.path.isfile(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))):
-#            cprint(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI)),'cyan')
-            cprint(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI)),'cyan')
-            ROutput.append(int(multiplicative_factor*R))
-            continue
-        else:
-#            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))),'cyan')
-            cprint('COMPUTING {}'.format(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(multiplicative_factor*R),UCI))),'cyan')
-            users_id,time_,origins,destinations,osmid_origin,osmid_destination = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,multiplicative_factor,60)
-            df1 = pd.DataFrame({
-                'SAMPN':users_id,
-                'PERNO':users_id,
-                'origin_osmid':osmid_origin,
-                'destination_osmid':osmid_destination,
-                'dep_time':time_,
-                'origin':origins,
-                'destination':destinations,
-                })
-            print('df1:\n',df1.head())
-            R = multiplicative_factor*R
-            ROutput.append(int(R))
-            df2 = pd.concat([df1,df2],ignore_index = True)
-            df2 = df2.sort_values(by = ['dep_time'],ascending=True)
-#            df1.to_csv(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(R),UCI)))
-            df2.to_csv(os.path.join(save_dir_local,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(NameCity,start,end,int(R),UCI)))
-    return df1    
