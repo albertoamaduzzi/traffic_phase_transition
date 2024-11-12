@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import geopandas as gpd
-import geoplot as gplt
-import geoplot.crs as gcrs
+#import geoplot as gplt
+#import geoplot.crs as gcrs
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.colors import LogNorm
 from matplotlib.gridspec import GridSpec
-import imageio
+#import imageio
 import os
 
 # Unloading Curve
@@ -33,7 +33,7 @@ def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
     plt.show()
 
 # Hopefully traffic in the road network
-def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFile,Title,dpi = 300,IsLognorm = False):
+'''def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFile,Title,dpi = 300,IsLognorm = False):
     fig = plt.figure(figsize=(10, 8), dpi=dpi)
     gs = GridSpec(1, 2, width_ratios=[20, 1])
     ax = fig.add_subplot(gs[0,0],projection=gcrs.AlbersEqualArea())
@@ -84,7 +84,7 @@ def AnimateNetworkTraffic(PlotDir,TrafficGdf,Column2InfoSavePlot,dpi = 300,IsLog
         images.append(imageio.imread(PlotFile))
     imageio.mimsave(Column2InfoSavePlot[Column]["animationfile"], images, duration = 0.5)
     return 'movie.gif'
-
+'''
 
 # Fondamental Diagram
 
@@ -155,7 +155,7 @@ def PlotNtAndFitSingleR(t,Nt,tau,NtFitted,R,UCI,PlotDir):
     ax.set_xlabel('t',fontsize=15)
     ax.set_ylabel('N(t)',fontsize=15)
     ax.set_title('Number of People in network',fontsize=15)
-    plt.savefig(os.path.join(PlotDir,f'{R}_{UCI}_Nt.png'))
+    plt.savefig(os.path.join(PlotDir,f'{R}_{round(UCI,3)}_Nt.png'))
 
 def PlotNtAndFit(Rs,Nt,tau,NtFitted,PlotDir):
     """
@@ -187,4 +187,4 @@ def PlotErrorFitAlphaWindow(Time2ErrorFit,R,UCI,PlotDir):
     ax.set_xlabel('Window Time',fontsize=15)
     ax.set_ylabel('Error',fontsize=15)
     ax.set_title('Error Fit',fontsize=15)
-    plt.savefig(os.path.join(PlotDir,f'{R}_{UCI}_ErrorFitAlphaWindow.png'))
+    plt.savefig(os.path.join(PlotDir,f'{R}_{round(UCI,3)}_ErrorFitAlphaWindow.png'))

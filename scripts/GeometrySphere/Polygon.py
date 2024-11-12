@@ -27,10 +27,10 @@ def SavePolygon(save_dir_local,polygon):
         Save the polygon
     '''
     if not os.path.isfile(os.path.join(save_dir_local,'polygon.geojson')):
-        cprint('COMPUTING: {} '.format(os.path.join(save_dir_local,'polygon.geojson')),'green')
+        logger.info('COMPUTING: {} '.format(os.path.join(save_dir_local,'polygon.geojson')))
         polygon.to_file(os.path.join(save_dir_local,'polygon','polygon.geojson'), driver="GeoJSON")  
     else:
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,'polygon','polygon.geojson')),'green')
+        pass
     return polygon
 
 def getPolygonPopulation(gdf_hexagons,gdf_polygons,city):
@@ -39,7 +39,6 @@ def getPolygonPopulation(gdf_hexagons,gdf_polygons,city):
         Any time we have that a polygon is intersected by the hexagon, we add to the population column
         of the polygon the population of the hexagon times the ratio of intersection area with respect to the hexagon area
     '''
-    cprint('getPolygonPopulation {}'.format(city),'green')
     if gdf_hexagons is None:
         raise ValueError('grid is None')
     elif gdf_polygons is None:
@@ -59,6 +58,8 @@ def getPolygonPopulation(gdf_hexagons,gdf_polygons,city):
                         raise ValueError('Error the area of the intersection is greater than 1: ',int_.geometry.intersection(hex.geometry).area/hex.geometry.area)
             else:
                 pass
-            gdf_polygons['population'] = populationpolygon
+        gdf_polygons['population'] = populationpolygon
+        logger.info(f'Population Hex -> Pol: {city}')
+
     return gdf_polygons
 

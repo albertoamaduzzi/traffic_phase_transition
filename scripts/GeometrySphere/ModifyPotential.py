@@ -224,7 +224,7 @@ def GravitationalModel(population,df_distance,k,alpha,beta,d0):
 #    print('<p**beta>: ',np.mean(population**beta))
 #    print('<exp(-d/d0)>: ',np.mean(np.exp(df_distance*d0)))
 #    print('<k*population**(alpha)*population**(beta)>: ',np.mean(k*np.tensordot(population**(alpha),population**(beta),axes = 0)))
-    kMiMjedij = np.zeros(len(population)*len(population),dtype=np.float32)
+    kMiMjedij = np.zeros(len(population)*len(population),dtype=np.float64)
     count_close_centers = 0
     for i in range(len(population)):
         for j in range(len(population)):
@@ -275,7 +275,7 @@ def ComputeNewPotential(New_Vector_Field,lattice,grid,verbose = False):
     lattice = SmoothPotential(lattice)
     t1 = time.time()
     New_Potential_DataFrame = ConvertLattice2PotentialDataframe(lattice)
-    New_Potential_DataFrame = CompletePotentialDataFrame(New_Vector_Field,grid,New_Potential_DataFrame)
+    New_Potential_DataFrame = CompletePotentialDataFrame(grid,New_Potential_DataFrame)
     if verbose:
         print('Time to compute Lattice: ',time.time() - t0)
         print('Time to compute Potential: ',time.time() - t1)

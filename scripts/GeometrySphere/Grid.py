@@ -55,11 +55,8 @@ def SaveGrid(save_dir_local,grid_size,grid):
         Save the grid
     '''
     SetGridDir(save_dir_local,grid_size)
-    if not os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson")):
-        cprint('COMPUTING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson")),'yellow')
-        grid.to_file(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson"), driver="GeoJSON")  
-    else:
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson")),'yellow')
+    logger.info('SAVING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson")))
+    grid.to_file(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"grid.geojson"), driver="GeoJSON")  
     return grid
 
 def SaveLattice(save_dir_local,grid_size,lattice):
@@ -68,10 +65,10 @@ def SaveLattice(save_dir_local,grid_size,lattice):
     '''
     SetGridDir(save_dir_local,grid_size)
     if not os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"centroid_lattice.graphml")):
-        cprint('COMPUTING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"centroid_lattice.graphml")),'yellow')
+        logger.info('SAVING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"centroid_lattice.graphml")))
         nx.write_graphml(lattice, os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"centroid_lattice.graphml"))  
     else:
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"centroid_lattice.graphml")),'yellow')
+        pass
     return lattice
 
 def SaveDirectionDistanceMatrix(save_dir_local,grid_size,df_direction_distance_matrix):
@@ -80,10 +77,11 @@ def SaveDirectionDistanceMatrix(save_dir_local,grid_size,df_direction_distance_m
     '''
     SetGridDir(save_dir_local,grid_size)
     if not os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")):
-        cprint('COMPUTING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")),'yellow')
+        logger.info('SAVING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")))
         df_direction_distance_matrix.to_csv(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv"))
     else:
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")),'yellow')
+        logger.info("Direction Matrix already exists in {}".format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")))
+        pass
     return df_direction_distance_matrix
 
 
@@ -110,10 +108,9 @@ def GetGrid(grid_size,
         Usage:
             grid and lattice are together containing spatial and network information
     '''
-    logger.info("Getting Grid ...")
     dir_grid = SetGridDir(save_dir_local,grid_size)
     if os.path.isfile(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")):
-        logger.info(f"Uploading grid with size {grid_size} from file...")
+        logger.info(f"Uploading grid from file {os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")} ...")
         grid = gpd.read_file(os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson"))
         bbox = shp.geometry.box(*bounding_box)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox], crs=crs)
@@ -121,7 +118,7 @@ def GetGrid(grid_size,
         y = np.arange(bounding_box[1], bounding_box[3], grid_size)
 
     else:
-        logger.info(f"Computing grid with size {grid_size} from file...")
+        logger.info(f"Computing grid with size {grid_size}, to be saved in {os.path.join(dir_grid,str(round(grid_size,3)),"grid.geojson")}...")
         bbox = shp.geometry.box(*bounding_box)
         bbox_gdf = gpd.GeoDataFrame(geometry=[bbox], crs=crs)
         x = np.arange(bounding_box[0], bounding_box[2], grid_size)
@@ -156,7 +153,6 @@ def ObtainDirectionMatrix(grid,save_dir_local,grid_size):
             The direction_distance_df is a DataFrame that contains the information of the direction matrix and the distance matrix.
             The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
     """
-    logger.info("Obtaining Direction Matrix ...")
     direction_distance_df,IsComputed = GetDirectionMatrix(save_dir_local,grid_size)
     if IsComputed:
         return direction_distance_df
@@ -168,13 +164,14 @@ def ObtainDirectionMatrix(grid,save_dir_local,grid_size):
     
 def GetDirectionMatrix(save_dir_local,grid_size):
     if os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")):
+        logger.info(f"Uploading direction matrix from: {os.path.join(save_dir_local,'grid',str(round(grid_size,3)),'direction_distance_matrix.csv')} ...")
         direction_distence_df = pd.read_csv(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv"))   
         return direction_distence_df,True
     else:
         return None,False
 
 
-def ComputeDirectionMatrix(grid,verbose = True):
+def ComputeDirectionMatrix(grid):
     '''
         Input:
             grid: GeoDataFrame -> grid of points
@@ -186,21 +183,18 @@ def ComputeDirectionMatrix(grid,verbose = True):
     t0 = time.time()
     direction_matrix = {i: {j: np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])/np.linalg.norm(np.array([grid.iloc[j]['centroidx']-grid.iloc[i]['centroidx'],grid.iloc[j]['centroidy']-grid.iloc[i]['centroidy']])) for j in range(len(grid))} for i in range(len(grid))}
     t1 = time.time()
-    if verbose:
-        print("Time to compute Direction Matrix: ",t1-t0)
-        print("Size direction Matrix: ",len(direction_matrix))
+    logger.info("Time to compute Direction Matrix: {}".format(t1-t0))
+    logger.info("Size direction Matrix: {}".format(len(direction_matrix)))
     t0 = time.time()
     distance_matrix = {i: {j: hs.haversine((grid.iloc[i]['centroidy'],grid.iloc[i]['centroidx']),(grid.iloc[j]['centroidy'],grid.iloc[j]['centroidx'])) for j in range(len(grid))} for i in range(len(grid))}
     t1 = time.time()
-    if verbose:
-        print("Time to compute Distance Matrix: ",t1-t0)
-        print("Size distance Matrix: ",len(distance_matrix))
+    logger.info("Time to compute Distance Matrix: {}".format(t1-t0))
+    logger.info("Size distance Matrix: {}".format(len(distance_matrix)))
     return direction_matrix,distance_matrix 
 
 def DirectionDistance2Df(direction_matrix,distance_matrix,verbose = True):
     rows = []
     columns = ['i', 'j', 'dir_vector', 'distance']
-    logger.info("Getting DataFrame with direction,distance informations...")
     # Iterate over the direction and distance matrices to construct DataFrame rows
     for i, dir_row in direction_matrix.items():
         for j, dir_vector in dir_row.items():
@@ -226,15 +220,14 @@ def GetLattice(grid,
     '''
     dir_grid = SetGridDir(save_dir_local,grid_size)
     ## BUILD GRAPH OBJECT GRID
-    logger.info(f"Building lattice with grid size {grid_size}...")
     x = np.arange(bounding_box[0], bounding_box[2], grid_size)
     y = np.arange(bounding_box[1], bounding_box[3], grid_size)
     if os.path.isfile(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")):
-        logger.info("Uploading lattice from file...")
+        logger.info(f"Uploading lattice from: {os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")}...")
         lattice = nx.read_graphml(os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml"))
         return lattice
     else:
-        logger.info("Computing lattice...")
+        logger.info(f"Computing lattice to be stored in: {os.path.join(dir_grid,str(round(grid_size,3)),"centroid_lattice.graphml")}...")
         lattice = nx.grid_2d_graph(len(x),len(y))
         node_positions = {(row['i'],row['j']): {'x': row['centroidx'],'y':row['centroidy']} for idx, row in grid.iterrows()}
         # Add position attributes to nodes
@@ -276,7 +269,8 @@ def ODGrid(gridIdx2dest,
         Input:
             gridIdx2dest: dict -> {(i,j): number_people}
             gridIdx2ij: dict -> {index: (i,j)}
-        Output:
+             ODGrid DataFrame: [origin,destination,number_people,(i,j)O,(i,j)D]...
+                    Output:
     ''' 
     logger.info("Computing Fluxes in the Grid ...")   
     orig = []
@@ -284,7 +278,6 @@ def ODGrid(gridIdx2dest,
     number_people = []
     idxorig = []
     idxdest = []
-    logger.info("Computing ODGrid DataFrame: [origin,destination,number_people,(i,j)O,(i,j)D]...")
     for k in gridIdx2dest.keys():
         orig.append(k[0])
         dest.append(k[1])
@@ -295,7 +288,33 @@ def ODGrid(gridIdx2dest,
     return df
 
 ##---------------------- INTERIOR AND BOUNDARY ----------------------
-def GetBoundariesInterior(grid,SFO_obj,verbose = True):
+def PlotBoundaryLines(boundary_lines,city):
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'brown', 'pink', 'gray', 'olive', 'cyan']
+    for i,boundary_line in enumerate(boundary_lines):
+        x, y = boundary_line.xy
+        ax.plot(x, y, color=colors[i], alpha=0.7, linewidth=3, solid_capstyle='round', zorder=2,label = f"Boundary {i}")
+    ax.set_title(f"{city} Boundary Lines")
+    ax.legend()
+    plt.savefig(os.path.join(os.environ["TRAFFIC_DIR"],f"{city}_Lines.png"))
+
+def PlotBoundariesHull(grid,city):
+    import matplotlib.pyplot as plt
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    grid.plot(column = 'position',legend = True,ax = ax)
+    ax.set_title(f"{city} Position to Boundaries")
+    ax.legend()
+    plt.savefig(os.path.join(os.environ["TRAFFIC_DIR"],f"{city}_position.png"))
+    plt.close()
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    grid.plot(column = 'relation_to_line',legend = True,ax = ax)
+    ax.set_title(f"{city} Boundaries")
+    ax.legend()
+    plt.savefig(os.path.join(os.environ["TRAFFIC_DIR"],f"{city}_Boundaries.png"))
+    plt.close()
+
+def GetBoundariesInterior(grid,gdf_polygons,city):
     """
         Input:
             grid: GeoDataFrame -> grid of points
@@ -307,34 +326,52 @@ def GetBoundariesInterior(grid,SFO_obj,verbose = True):
             the city. The position can be inside, outside or edge. The relation to the line can be edge or not_edge.
             If There are connected Components Then Something Must Be Done.
     """
-    logger.info("Adding Boundaries and Interior to Grid ...")
-    boundary = gpd.overlay(SFO_obj.gdf_polygons, SFO_obj.gdf_polygons, how='union',keep_geom_type=False).unary_union
+    crs_grid = grid.crs
+    crs_gdf_polygons = gdf_polygons.crs
+    if crs_grid != crs_gdf_polygons:
+        grid = grid.to_crs(crs_gdf_polygons)    
+    boundary = gpd.overlay(gdf_polygons, gdf_polygons, how='union',keep_geom_type=False).unary_union
+    convex_hull = gdf_polygons.unary_union.convex_hull
+
     # CREATE BOUNDARY LINE
     if isinstance(boundary, Polygon):
+        logger.info(f"Boundaries and Interior Polygon Case for {city} ...")
         boundary_line = LineString(boundary.exterior.coords)
+#        grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
+        grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if convex_hull.boundary.crosses(poly) else 'not_edge')        
+#        grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
+        grid['position'] = grid.apply(lambda x: 'inside' if (x["geometry"].within(boundary) or x["geometry"].intersects(boundary_line)) else 'outside',axis = 1)
+        PlotBoundaryLines([boundary_line],city)
+        PlotBoundariesHull(grid,city)
     elif isinstance(boundary, MultiPolygon):
-        exterior_coords = []
-        for polygon in boundary.geoms:
-            exterior_coords.extend(polygon.exterior.coords)
-        boundary_line = LineString(exterior_coords)
-    if verbose:
-        print("Get Boundaries: ")
-        print("Boundary Type: ",type(boundary))
-        try:
-            print("Boundary Head: ",boundary.head())
-        except:
-            pass
-        try:
-            print("Boundary Line Head: ",boundary_line.head())
-        except: 
-            pass
-    grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
-    grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
-    if verbose:
-        try:
-            print("Grid Head: ",grid.head())
-        except:
-            pass
+        logger.info(f"Boundaries and Interior MultiPolygon Case for {city} ...")
+        grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if convex_hull.boundary.crosses(poly) else 'not_edge')        
+        grid['position'] = grid.apply(lambda x: 'inside' if (x["geometry"].within(boundary) or x["geometry"].intersects(convex_hull)) else 'outside',axis = 1)
+        PlotBoundariesHull(grid,city)
+#        boundary_lines = [LineString(polygon.exterior.coords) for polygon in boundary.geoms]
+#        boundaries = [polygon for polygon in boundary.geoms]
+#        PlotBoundaryLines(boundary_lines,city)
+#        for i,boundary_line in enumerate(boundary_lines):
+#            grid[f'position_{i}'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))            
+#            grid[f'relation_to_line_{i}'] = grid.geometry.apply(lambda poly: 'edge' if boundary_line.crosses(poly) else 'not_edge')
+#            grid[f'position_{i}'] = grid.apply(lambda x: 'inside' if (x["geometry"].within(boundaries[i]) or x["geometry"].intersects(boundary_line)) else 'outside',axis = 1)
+#            logger.info(f"Is Inside in Boundary {i}: {len([True for x in grid[f'position_{i}'] if x == 'inside'])} ...")
+#        InsideEdge2Bool = {"inside":True,"outside":False,"edge":True,"not_edge":False}    
+#        Bool2Edge = {True:"edge",False:"not_edge"}
+#        Bool2Inside = {True:"inside",False:"outside"}    
+#        for i in range(len(boundary_lines)-1):
+#            if i == 0:
+#                new_col = np.logical_or(grid[f'position_{i}'].apply(lambda x: InsideEdge2Bool[x]),grid[f'position_{i+1}'].apply(lambda x: InsideEdge2Bool[x]))
+#                new_col1 = np.logical_or(grid[f'relation_to_line_{i}'].apply(lambda x: InsideEdge2Bool[x]),grid[f'relation_to_line_{i+1}'].apply(lambda x: InsideEdge2Bool[x]))
+#            else:
+#                new_col = np.logical_or(new_col,grid[f'position_{i}'].apply(lambda x: InsideEdge2Bool[x]))
+#                new_col1 = np.logical_or(new_col1,grid[f'relation_to_line_{i}'].apply(lambda x: InsideEdge2Bool[x]))
+#        grid['position'] = [Bool2Inside[bv] for bv in new_col] 
+#        grid['relation_to_line'] = [Bool2Edge[bv] for bv in new_col1]
+#        for i in range(len(boundary_lines)):
+#            grid.drop(columns=[f'position_{i}', f'relation_to_line_{i}'], inplace=True)    
+    grid = grid.to_crs(crs_grid)            
+    logger.info(f"{city} Grid.columns\n {grid.columns}")
     return grid
 
 

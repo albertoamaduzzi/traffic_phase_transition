@@ -86,9 +86,8 @@ def GetHexagon(gdf_polygons,
         tif population file just for that
     '''
     ## READ TIF FILE
-    cprint('Get Hexagon','green')
     if not os.path.exists(os.path.join(save_dir_local,'hexagon',str(resolution),'hexagon.geojson')):
-        cprint('COMPUTING: {} '.format(os.path.join(save_dir_local,'hexagon',str(resolution),'hexagon.geojson')),'green')
+        logger.info(f"Computing hexagon for {CityName}")
         if 0 == 1: # CASE TIFF FILES -> NOT WORKING WELL
             hexagon_geometries, population_data_hexagons = HexagonFromTiff(tif_file,gdf_polygons,CityName,resolution)
     #            print('population_data_hexagons: ',np.shape(population_data_hexagons))
@@ -100,7 +99,7 @@ def GetHexagon(gdf_polygons,
         else:
             gdf_hexagons,resolution = HexagonFromGpkg(tif_file,CityName,gdf_polygons,resolution=8)
     else:
-        cprint('{} ALREADY COMPUTED'.format(os.path.join(save_dir_local,'hexagon',str(resolution),'hexagon.geojson')),'green')
+        logger.info(f"Reading hexagon for {CityName}")
         gdf_hexagons = ReadHexagon(save_dir_local,resolution)
     if 0 == 1: # CASE TIFF FILES -> NOT WORKING WELL
         gdf_hexagons['area'] = gdf_hexagons.to_crs({'proj':'cea'}).area / 10**6

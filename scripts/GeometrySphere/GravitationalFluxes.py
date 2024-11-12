@@ -171,7 +171,7 @@ def GetEstimationFluxesVector(Vnpeople, Vorigins, Vdestinations, VgridIdx, Vgrid
         raise ValueError('You forgot to filter the fluxes')
     count = 0 
     max_size = ComputeMaxSizek(Vnpeople, Vorigins, Vdestinations)
-    EstimateFluxesScaled = np.zeros(max_size,dtype = np.float32)
+    EstimateFluxesScaled = np.zeros(max_size,dtype = np.float64)
     Fluxes = np.zeros(max_size,dtype = np.float32)
     Massi = np.zeros(max_size,dtype = np.float32)
     Massj = np.zeros(max_size,dtype = np.float32)
@@ -393,8 +393,8 @@ def VespignaniBlock(df_distance,grid,Tij,potentialdir):
     logger.info("Checking Fit ...")
     n,bins = np.histogram(DistanceVector,bins = 50)
     # PLOT '$W_{ij}/(m_i^{{\\alpha}} m_j^{{\\gamma}})$'
-    assert len(Fluxes) == len(EstimatedVectorFluxesVespignani),"Estimated Fluxes and Fluxes have not same shape"
     EstimatedVectorFluxesVespignani = multilinear4variables(VespignaniVector,k[0],k[1],k[2],k[3])
+    assert len(Fluxes) == len(EstimatedVectorFluxesVespignani),"Estimated Fluxes and Fluxes have not same shape"
     logger.info("EFluxes_ij/(M_i*Mj)...")
     WOverMM = [EstimatedVectorFluxesVespignani[np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))]/(VespignaniVector[0][np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))]**k[0]*VespignaniVector[1][np.where(((VespignaniVector[2]>bins[i]) & (VespignaniVector[2] < bins[i+1])))])**k[1] for i in range(len(bins)-1)]
     error = [np.std(WOverMM[i])/np.sqrt(len(WOverMM[i])) for i in range(len(WOverMM))]
