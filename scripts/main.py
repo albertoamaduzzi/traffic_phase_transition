@@ -15,10 +15,16 @@ import logging.handlers
 # M
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from multiprocessing import Pool,cpu_count
+from multiprocessing import Pool,Queue,Barrier,cpu_count,Manager,Process,Value
+import ctypes
+# P
+import psutil
+# S
 import socket
 import sys
-# 
+# T
+import time
+
 TRAFFIC_DIR = os.environ["TRAFFIC_DIR"]
 current_dir = os.path.join(os.getcwd()) 
 mother_path = os.path.abspath(os.path.join(current_dir, os.pardir))
@@ -36,6 +42,7 @@ from AlgorithmCheck import *
 # C
 from ComputeGrid import *
 from ComputeHexagon import *
+from ConcurrencyManager import *
 # F
 from FittingProcedures import *
 # G
@@ -69,7 +76,9 @@ from GenerateConfiguraiton import *
 
 
 from threading import Thread,Lock
+import threading
 import queue
+import subprocess
 ## BASIC PARAMS
 gc.set_threshold(10000,50,50)
 plt.rcParams.update({
@@ -101,89 +110,44 @@ def configure_logger(log_file):
     return logger,queue_listener
 logger,queue_listener = configure_logger(os.path.join(TRAFFIC_DIR,'main.log')) 
 
+def CheckIndexUCI(UCIInterval2UCIAccepted,UCI):
+    """
+        @param UCIInterval2UCIAccepted: dict -> Dictionary with the interval of UCIs that are accepted.
+        @param UCI: float -> UCI to check
+        This function checks if the UCI is in the interval of UCIs that are accepted.
+    """
+    for k in range(len(list(UCIInterval2UCIAccepted.keys()))):
+        index_UCI_represents = list(UCIInterval2UCIAccepted.keys())[k]
+        index_UCI_represents_next = list(UCIInterval2UCIAccepted.keys())[k+1]
+        # It must lie in the interval 
+        if UCI >= index_UCI_represents and UCI <= index_UCI_represents_next:
+            return index_UCI_represents
+    assert index_UCI_represents is not None, "UCI is not in the interval of UCIs that are accepted."
+    return index_UCI_represents
 
-def Threaded_main(rank, num_threads, lock):
-    CityName = NameCities[rank]
-    City2RUCI = {CityName:{"UCI":[],"R":[]}}
-    # Everything is handled inside the object
-    GeoInfo = GeometricalSettingsSpatialPartition(NameCities[rank],TRAFFIC_DIR)
-    GeoInfo.GetGeometries()
-    # Compute the Potential and Vector field for non modified fluxes
-    UCI = GeoInfo.RoutineVectorFieldAndPotential()
-    # Compute the Fit for the gravity model
-    GeoInfo.ComputeFit()
-    # Initialize the Concatenated Df for Simulation [It is common for all different R]
-    GeoInfo.InitializeDf4Sim()
-    GeoInfo.ComputeEndFileInputSimulation()    
-    # NOTE: Can Parallelize this part and launch the simulations in parallel.
-    City2RUCI[CityName]["R"] = list(GeoInfo.ArrayRs)
-    for R in GeoInfo.ArrayRs:
-        # Simulation for the monocentric case.
-        NotModifiedInputFile = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,R)
-        City2RUCI[CityName]["UCI"].append(UCI)
+def CheckUCIIsFull(UCIInterval2UCIAccepted):
+    """
+        @param UCIInterval2UCIAccepted: dict -> Dictionary with the interval of UCIs that are accepted.
+        This function checks if the UCI is in the interval of UCIs that are accepted.
+    """
+    for index_UCI_represents in UCIInterval2UCIAccepted.keys():
+        if UCIInterval2UCIAccepted[index_UCI_represents] is None:
+            return False
+    return True
 
-        while(True):
-            lock.acquire()
-            # Tells that the process is occupied
-            LaunchDockerFromServer(container_name,CityName,GeoInfo.start,GeoInfo.start + 1,R,UCI)
-            DeleteInputSimulation(NotModifiedInputFile)
-            lock.release()
-            break
-        # Generate modified Fluxes
-    for cov in GeoInfo.config['covariances']:
-        for distribution in ['exponential']:
-            for num_peaks in GeoInfo.config['list_peaks']:
-                for R in GeoInfo.ArrayRs:
-                    Modified_Fluxes,UCI1 = GeoInfo.ChangeMorpholgy(cov,distribution,num_peaks)
-                    City2RUCI[CityName]["UCI"].append(UCI1)
-                    ModifiedInputFile = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-                    start = GeoInfo.start
-                    end = start + 1
-                    InputSimulation = (container_name,CityName,start,end,R,UCI1)
-                    # Launch the processes one after the other since you may have race conditions on GPUs (we have just two of them)
-                    while(True):
-                        # Start a lock into the window (ensures that each process have syncronous access to the window from a queue)
-                        lock.acquire()
-                        # Tells that the process is occupied
-                        if os.path.isfile(os.path.join(OD_dir,f"{CityName}_oddemand_{start}_{end}_R_{R}_UCI_{round(UCI1,3)}.csv")):
-                            logger.info(f"Launching docker, {CityName}, R: {R}, UCI: {round(UCI1,3)}")
-                            LaunchDockerFromServer(InputSimulation)
-                            DeleteInputSimulation(ModifiedInputFile)
-                        lock.release()
-                        break
-                    # Post Process
-                    City2Config = InitConfigPolycentrismAnalysis([CityName])                        
-                    PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName])  
-                    PCTA.CompleteAnalysis()
-                    with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
-                        json.dump(City2Config,f,indent=4)    
-
-def ComputeSimulationFileAndLaunchDocker(GeoInfo,UCI,R):
-    NotModifiedInputFile = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,R)
-    while(True):
-        lock.acquire()
-        # Tells that the process is occupied
-        LaunchDockerFromServer(container_name,CityName,GeoInfo.start,GeoInfo.start + 1,R,UCI)
-        DeleteInputSimulation(NotModifiedInputFile)
-        lock.release()
-        break
-
-def ComputeSimulationFileAndLaunchDockerFromModifiedMob(GeoInfo,R):
-    Modified_Fluxes,UCI1 = GeoInfo.ChangeMorpholgy(cov,distribution,num_peaks)
-    ModifiedInputFile = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-    start = GeoInfo.start
-    end = start + 1
-    if os.path.isfile(ModifiedInputFile):
-        logger.info(f"Launching docker, {CityName}, R: {R}, UCI: {round(UCI1,3)}")
-        LaunchDockerFromServer(container_name,CityName,start,end,R,UCI1)
-        DeleteInputSimulation(ModifiedInputFile)
-    # Launch the processes one after the other since you
-
+def RedefineRsWhenError(Rmax,Step,NumberRs):
+    """
+        @param Rmax: float -> Maximum Radius
+        @param Step: float -> Step to reduce the Radius
+        This function redefines the Rs that are going to be used in the simulation.
+    """
+    ArrayRs = np.array([Rmax -Step*(i+1) for i in range(NumberRs)])
+    return ArrayRs
 
 if __name__ == '__main__':
     #NameCities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
 #    NameCities = ["BOS","LAX","SFO","LIS","RIO"]
-    NameCities = ["SFO"]
+    NameCities = ["BOS"]
     container_name = "xuanjiang1998/lpsim:v1"    
     OD_dir = os.path.join(TRAFFIC_DIR,'berkeley_2018',"new_full_network")
     # Post Processing
@@ -204,6 +168,18 @@ if __name__ == '__main__':
             thread.join()
     
     else:
+        # Create a shared dictionary
+        manager = Manager()
+        shared_dict = manager.dict()
+        # Create a monitor thread
+        monitor_thread = threading.Thread(target=monitor_processes,args=(shared_dict,))
+        monitor_thread.daemon = True
+        monitor_thread.start()
+        # Queue
+        queue = Queue()
+        error_flag = Value(ctypes.c_bool, False)
+        R_error = Value(ctypes.c_int, 0)
+        # Start the main process
         for CityName in NameCities:
             City2RUCI = {CityName: {"UCI": [], "R": []}}
             # Everything is handled inside the object
@@ -212,6 +188,12 @@ if __name__ == '__main__':
             GeoInfo.GetGeometries()
             # Compute the Potential and Vector field for non modified fluxes
             UCI = GeoInfo.RoutineVectorFieldAndPotential()
+            # Check that UCI is in a valid interval
+            index_UCI_represents = CheckIndexUCI(GeoInfo.UCIInterval2UCIAccepted,UCI)
+            if GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] is None:
+                 GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] = UCI
+            else:
+                pass
             # Compute the Fit for the gravity model
             GeoInfo.ComputeFit()
             # Initialize the Concatenated Df for Simulation [It is common for all different R]
@@ -222,15 +204,63 @@ if __name__ == '__main__':
                 N = len(GeoInfo.ArrayRs)
             else:
                 N = cpu_count() - 2
-            with Pool(len(GeoInfo.ArrayRs)) as p:
-                p.map(ComputeSimulationFileAndLaunchDocker,[(GeoInfo,UCI,R) for R in GeoInfo.ArrayRs])
-#            for R in GeoInfo.ArrayRs:
-                # Simulation for the monocentric case.
-#                NotModifiedInputFile = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,R)
-#                end = GeoInfo.start + 1
-#                if os.path.isfile(NotModifiedInputFile):
-#                    LaunchDockerFromServer(container_name,CityName,GeoInfo.start,GeoInfo.start + 1,R,UCI)
-#                    DeleteInputSimulation(NotModifiedInputFile)
+            concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
+#            barrier = Barrier(N)
+            processes = []
+#            lock = Lock()
+            # Do not Compute RArray if not necessary, stick with the given by CityRminRmax
+            FirstTry = True
+            # Run The Processes Until for All The Rs I do not Have A Docker Error
+            # NOTE: GPU related Problems Act on ArrayRs
+            while(not concurrency_manager.Docker_error.value):
+                concurrency_manager.Reset()
+                if FirstTry:
+                    ArrayRs = GeoInfo.ArrayRs
+                    FirstTry = False
+                else:
+                    # Keep the Number Of Rs Tried in the Simulation
+                    ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
+                for R in ArrayRs:
+                    p = Process(target=ProcessMain, args=("NonModified",GeoInfo,None,R,UCI,concurrency_manager))
+                    # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
+#                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
+                    processes.append(p)
+                    p.start()
+                # Every Time A Process Join
+                for p in processes:
+                    p.join()
+                    # If Error From Docker or Container
+                    if concurrency_manager.Docker_error.value:
+                        for p in processes:
+                            if p.is_alive():
+                                p.terminate()
+                    # If No Docker Errors
+                    else:
+                        # Error From GPU index
+                        if concurrency_manager.GPU_error_index.value >= 0: 
+                            # Extract The 
+                            if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                                for p in processes:
+                                    if p.is_alive():
+                                        p.terminate()
+                        # No Error From GPU
+                        else:
+                            # This Is The Only Case I Break The Loop
+                            # NOTE: No Docker Problem, No GPU Problem 
+                            break
+
+
+#            barrier.wait()
+            logger.info(f"Finished the simulations not changed for {CityName}")
+
+            # Synchronize in the main process
+#            City2Config = InitConfigPolycentrismAnalysis(CityName)                        
+#            PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName])  
+#            PCTA.CompleteAnalysis()
+#            with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
+#                json.dump(City2Config,f,indent=4)    
+
+
             # Generate modified Fluxes
             for cov in GeoInfo.config['covariances']:
                 for distribution in ['exponential']:
@@ -239,19 +269,102 @@ if __name__ == '__main__':
                             N = len(GeoInfo.ArrayRs)
                         else:
                             N = cpu_count() - 2
-                        with Pool(len(GeoInfo.ArrayRs)) as p:
-                            p.map(ComputeSimulationFileAndLaunchDockerFromModifiedMob,[(GeoInfo,R) for R in GeoInfo.ArrayRs])
-#                        for R in GeoInfo.ArrayRs:
-#                            Modified_Fluxes,UCI1 = GeoInfo.ChangeMorpholgy(cov,distribution,num_peaks)
-#                            ModifiedInputFile = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-#                            start = GeoInfo.start
-#                            end = start + 1
-#                            if os.path.isfile(ModifiedInputFile):
-#                                logger.info(f"Launching docker, {CityName}, R: {R}, UCI: {round(UCI1,3)}")
-#                               LaunchDockerFromServer(container_name,CityName,start,end,R,UCI1)
-#                                DeleteInputSimulation(ModifiedInputFile)
+                        barrier = Barrier(N)
+                        processes = []
+                        # NOTE: We are going to compute 20 UCIs, fixing an interval in the UCI space.
+                        # All these if else are just to ensure that this will happen
+                        # Check That The Grid Is Not Already Computed
+                        GridNew,UCI1 = CheckAlreadyComputedGrids(GeoInfo.save_dir_local,cov,distribution,num_peaks)
+                        if GridNew is not None:
+                            Modified_Fluxes = GeoInfo.RecoverChangedMorpholgyFromGridNew(GridNew)
+                        else:
+                            # Compute The Modified Fluxes Otherwhise keep the old Computed ones. NOTE: To save computation
+                            Modified_Fluxes,UCI1,GridNew = GeoInfo.ChangeMorpholgy(cov,distribution,num_peaks)
+                        # Check that UCI is in a valid interval
+                        index_UCI_represents = CheckIndexUCI(GeoInfo.UCIInterval2UCIAccepted,UCI1)
+                        if GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] is None:
+                            # Add it if it is not already in an valid interval
+                            GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] = UCI1
+                            GridNew.to_csv(os.path.join(GeoInfo.save_dir_local,f'GridNew_{cov}_{distribution}_{num_peaks}_{UCI1}.csv'),index=False)                    
+                        else:
+                            pass
+                        
+                        while(not concurrency_manager.Docker_error.value):
+                            concurrency_manager.Reset()
+                            if FirstTry:
+                                ArrayRs = GeoInfo.ArrayRs
+                                FirstTry = False
+                            else:
+                                # Keep the Number Of Rs Tried in the Simulation
+                                ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
+                            for R in ArrayRs:
+                                p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI,concurrency_manager))
+                                # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
+            #                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
+                                processes.append(p)
+                                p.start()
+                            # Every Time A Process Join
+                            for p in processes:
+                                p.join()
+                                # If Error From Docker or Container
+                                if concurrency_manager.Docker_error.value:
+                                    for p in processes:
+                                        if p.is_alive():
+                                            p.terminate()
+                                # If No Docker Errors
+                                else:
+                                    # Error From GPU index
+                                    if concurrency_manager.GPU_error_index.value >= 0: 
+                                        # Extract The 
+                                        if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                                            for p in processes:
+                                                if p.is_alive():
+                                                    p.terminate()
+                                    # No Error From GPU
+                                    else:
+                                        # This Is The Only Case I Break The Loop
+                                        # NOTE: No Docker Problem, No GPU Problem 
+                                        break
+'''                        
+                        while(True):
+                            if FirstTry:
+                                ArrayRs = GeoInfo.ArrayRs
+                                FirstTry = False
+                            else:
+                                # Keep the Number Of Rs Tried in the Simulation
+                                ArrayRs = RedefineRsWhenError(R_error,GeoInfo.Step,len(GeoInfo.ArrayRs))
+                            for R in ArrayRs:
+                                p = Process(target = ProcessLauncherModified, args=(shared_dict,queue,barrier,lock,GeoInfo, Modified_Fluxes,R,UCI1,error_flag,R_error))
+                                processes.append(p)
+                                p.start()
 
-        #NOTE: TODO Change the code in such a way that I compute the UCI,R  -> construct the file.
-        # Launch the simulations, delete the input files and save the output in parallel.
-        # Then I can run the simulation for the different R in parallel.
+                            # Every Time A Process Join
+                            for p in processes:
+                                p.join()
+                                # Check if It Executed Or Gave an Error
+                                # If I have encountered an Erro in the GPU out-of-memory I recompute the Rs that are best for the simulation, that will cause no memory error.
+                                if error_flag.value:
+                                    print("Error detected, terminating all processes.")
+                                    for p in processes:
+                                        if p.is_alive():
+                                            p.terminate()
+                            # If All The Processes Are Completed Without Error: Break
+                            if not error_flag.value: 
+                                break                
+
+#                        barrier.wait()
+                        logger.info(f"All simulations for {CityName} with cov={cov}, distribution={distribution}, num_peaks={num_peaks} completed successfully.")
+                        # Check If I collected all UCIs
+                        Terminate = CheckUCIIsFull(GeoInfo.UCIInterval2UCIAccepted)
+                        if Terminate:
+                            with open(os.path.join(GeoInfo.save_dir_local,'UCIInterval2UCI.json'),'w') as f:
+                                json.dump(GeoInfo.UCIInterval2UCIAccepted,f,indent=4)
+                            break
+'''
+#                        City2Config = InitConfigPolycentrismAnalysis(CityName)                        
+#                        PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName])  
+#                        PCTA.CompleteAnalysis()
+#                        with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
+#                            json.dump(City2Config,f,indent=4)    
+
         
