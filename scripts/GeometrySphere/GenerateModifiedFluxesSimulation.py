@@ -130,7 +130,7 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
     print('ratio: ',total_number_people_considered/(total_number_people_considered+total_number_people_not_considered))
     return df1
 
-def ODVectorFromTij(Tij_modified):
+def ODVectorFromTij(Tij_modified,R):
     """
         Input:
             Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
@@ -144,9 +144,13 @@ def ODVectorFromTij(Tij_modified):
     O_vector = np.array(Tij_modified['origin'],dtype=int)
     D_vector = np.array(Tij_modified['destination'],dtype=int)
     OD_vector = np.array(Tij_modified['number_people'],dtype=int)
+    TotPeople = np.sum(OD_vector)
+    WantedPeople = R*3600
+    Multiply = WantedPeople/TotPeople
+    OD_vector = np.array([int(OD_vector[i]*Multiply) for i in range(len(OD_vector))])
     return O_vector,D_vector,OD_vector
 
-def GenerateDfFluxesFromTij(Tij_modified,osmid2index,grid2OD,start,NOffset):
+def GenerateDfFluxesFromTij(Tij_modified,osmid2index,grid2OD,start,NOffset,R):
     """
         Input:
             Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
@@ -164,6 +168,6 @@ def GenerateDfFluxesFromTij(Tij_modified,osmid2index,grid2OD,start,NOffset):
                 'destination':destinations,
                 })
     """
-    O_vector,D_vector,OD_vector = ODVectorFromTij(Tij_modified)
+    O_vector,D_vector,OD_vector = ODVectorFromTij(Tij_modified,R)
     df1 = GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,NOffset,60)
     return df1

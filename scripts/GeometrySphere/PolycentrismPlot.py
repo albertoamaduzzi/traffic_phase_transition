@@ -232,9 +232,19 @@ def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,UCI):
     plt.savefig(os.path.join(dir_grid,f'HarmonicDistr_{round(UCI,3)}.png'),dpi = 200)
 
 def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,verbose = False):
-    
+    """
+        @param cumulative: Cumulative Potential
+        @param Fstar: Index of the Lorenz Curve
+        @param result_indices: Indices of the Lorenz Curve
+        @param dir_grid: Directory to save the plots
+        @param UCI: UCI of the simulation
+        @param shift: Shift of the text in the plot
+        @param verbose: Print information
+        @description: Plot the Lorenz Curve of the Potential
+    """
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
+    cumulative = np.array(cumulative)/np.sum(cumulative)
     idxFstar = Fstar #int(Fstar*len(cumulative))
     line1, = ax.plot(x,cumulative,c='black',label='Potential')
     # Plot the straight line to F*
@@ -257,10 +267,21 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,ver
     return line1,line2
 
 def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,dir_grid,UCI,UCIM,shift = 0.1,verbose = False):
-    
+    """
+        @param cumulative: Cumulative Potential
+        @param Fstar: Index of the Lorenz Curve
+        @param result_indices: Indices of the Lorenz Curve
+        @param dir_grid: Directory to save the plots
+        @param UCI: UCI of the simulation
+        @param shift: Shift of the text in the plot
+        @param verbose: Print information
+        @description: Plot the Lorenz Curve of the Potential
+    """
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
     xm = np.arange(len(cumulativeM))/len(cumulativeM)
+    cumulative = np.array(cumulative)/np.sum(cumulative)
+    cumulativeM = np.array(cumulativeM)/np.sum(cumulativeM)
     idxFstar = Fstar #int(Fstar*len(cumulative))
     idxFstarM = FstarM #int(Fstar*len(cumulative))
     line1, = ax.plot(x,cumulative,c='black',label='Potential')
@@ -291,7 +312,7 @@ def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,re
     ax.set_xlabel('Index sorted grid')
     ax.set_ylabel('Cumulative Potential/Mass')
     plt.savefig(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}_{round(UCIM,3)}.png'),dpi = 200)
-    logger.info(f"F* = {Fstar}")
+    logger.info(f"F* = {Fstar}, F*M = {FstarM}, UCIM: {round(UCIM,3)}, UCI: {round(UCI,3)}")
     return line1,line2
 
 
@@ -380,3 +401,24 @@ def PlotRoutineOD(grid,Tij,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,
     PlotRotorDistribution(grid,PotentialDataFrame,dir_grid,UCI)
     PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, UCI,0.1)
     PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid,UCI)
+
+
+def PlotDepTime(Df, CityName, PlotDir):
+    from collections import Counter
+    import datetime
+    time2c = Counter(Df["dep_time"])
+    times = [datetime.datetime.fromtimestamp(int(time)).strftime("%Y-%m-%d %H:%M:%S") for time in time2c.keys()]
+    counts = list(time2c.values())
+
+    fig, ax = plt.subplots()
+    ax.scatter(times, counts, label='Dep Time')
+
+    # Set x-axis labels, rotate them, and choose one every 20
+    ax.set_xticks(np.arange(0, len(times)))
+    ax.set_xticklabels(times[::30], rotation=90)
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Number of People')
+    plt.tight_layout()
+    plt.savefig(os.path.join(PlotDir, f'{CityName}_DepTime.png'))
+    plt.close()

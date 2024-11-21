@@ -154,6 +154,7 @@ class GeometricalSettingsSpatialPartition:
         self.save_dir_plots = os.path.join(self.save_dir_local,'plots')
         self.save_dir_server = self.config['save_dir_server'] # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/LPSim/LivingCity/{city}
         self.new_full_network_dir = '/home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network' 
+        self.berkeley_2018 = SERVER_TRAFFIC_DIR
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
         else:
@@ -198,6 +199,8 @@ class GeometricalSettingsSpatialPartition:
         self.Rmin = CityName2RminRmax[self.city][0]
         self.Rmax = CityName2RminRmax[self.city][1]
         self.R = 1
+        # INFO UCI
+        self.NumberUCIs = self.config["NumberUCIs"]  
         # INFO NUMBer SIMULATIONS
         self.number_simulation_per_UCI = self.config["number_simulation_per_UCI"]
         self.InfoConfigurationPolicentricity = None
@@ -211,6 +214,8 @@ class GeometricalSettingsSpatialPartition:
         self.beta = None
         self.d0 = None
         self.SetRmaxDivisibleByNSim()
+        # Control that I have a configuration for each interval of UCI accepted
+        self.UCIInterval2UCIAccepted = {UCIInterval:None for UCIInterval in np.linspace(0,1,self.NumberUCIs)}
 
 
 #### GEOMETRICAL SETTINGS ####
@@ -315,7 +320,7 @@ class GeometricalSettingsSpatialPartition:
 
 
 #### Vector Fields ####
-
+    # this comment is not a bug
     def RoutineVectorFieldAndPotential(self):
         """
             Computes:
@@ -329,27 +334,45 @@ class GeometricalSettingsSpatialPartition:
         if not os.path.isfile(os.path.join(self.save_dir_grid,'PotentialDataframe.csv')):
             SavePotentialDataframe(PotentialDf,self.save_dir_grid)
         logger.info(f"Compute UCI {self.city}")        
-        PI,LC,UCI,result_indices,_,cumulative,Fstar,GridInside,PotentialInside,IndicesInside,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(self.grid,PotentialDf,self.df_distance)
-        I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}      
-        UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
-        Tij_Inside = self.Tij[self.Tij['origin'].isin(IndicesInside) & self.Tij['destination'].isin(IndicesInside)]
-        VectorFieldInside = VectorField.iloc[IndicesInside]
-        os.makedirs(UCI_dir,exist_ok=True)     
-        SaveJsonDict(I,os.path.join(UCI_dir,f'UCI_{round(UCI,3)}.json'))
-        PlotInsideOutside(self.gdf_polygons,GridInside,self.save_dir_grid)
-        PlotEdges(self.gdf_polygons,GridInside,self.save_dir_grid)
-        PlotRoads(self.gdf_polygons,GridInside,self.save_dir_grid)
-        PlotFluxes(GridInside,Tij_Inside,self.gdf_polygons,UCI_dir,UCI,80)
-        PlotNewPopulation(GridInside, self.gdf_polygons,UCI_dir,UCI)
-        PlotVFPotMass(GridInside,self.gdf_polygons,PotentialInside,VectorFieldInside,UCI_dir,UCI,'population','Ti')
-        PotentialContour(GridInside,PotentialInside,self.gdf_polygons,UCI_dir,UCI)
-#        PotentialSurface(GridInside,PotentialInside,UCI_dir,UCI)
-        PlotRotorDistribution(GridInside,PotentialInside,UCI_dir,UCI)
-        PlotLorenzCurve(cumulative,Fstar,result_indices,UCI_dir, UCI,0.1)
-        PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)
-        PlotHarmonicComponentDistribution(GridInside,PotentialInside,UCI_dir,UCI)
-        PrintInfoFluxPop(GridInside,Tij_Inside)    
-        return UCI  
+        if not os.path.isfile(os.path.join(self.save_dir_grid,f'UCI_base.json')):
+            df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside = FilterDistancePotentialGrid(self.df_distance,self.grid,PotentialDf)
+            if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.csv')):
+                self.Smaxi,_ = PrepareJitCompiledComputeV(df_distance_inside,IndicesEdge,SumPot,len(IndicesEdge),PotentialDf,case = 'Vmax')                
+#                self.Smaxi = ComputeVmaxUCI(df_distance_inside)
+                self.Smaxi_Mass,_ = PrepareJitCompiledComputeV(df_distance_inside,IndicesEdge,SumPot,len(IndicesEdge),self.grid,case = 'Vmax')                
+#                self.Smaxi_Mass = ComputeVMaxUCIMass(df_distance_inside)
+                pd.DataFrame({"Smax":self.Smaxi,"SmaxM":self.Smaxi_Mass}).to_csv(os.path.join(self.save_dir_grid,f'Smax.csv'),index=False)
+            else:
+                self.Smaxi = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["Smax"].to_numpy()
+                self.Smaxi_Mass = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["SmaxM"].to_numpy()
+            PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside,self.grid,self.df_distance,self.Smaxi,self.Smaxi_Mass)
+            I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}      
+            UCIskip = {'UCI':UCI,"UCIM":UCIM}
+            UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
+            Tij_Inside = self.Tij[self.Tij['origin'].isin(IndicesInside) & self.Tij['destination'].isin(IndicesInside)]
+            VectorFieldInside = VectorField.iloc[IndicesInside]
+            os.makedirs(UCI_dir,exist_ok=True)     
+            SaveJsonDict(I,os.path.join(UCI_dir,f'UCI_{round(UCI,3)}.json'))
+            SaveJsonDict(UCIskip,os.path.join(self.save_dir_grid,f'UCI_base.json'))
+            PlotInsideOutside(self.gdf_polygons,GridInside,self.save_dir_grid)
+            PlotEdges(self.gdf_polygons,GridInside,self.save_dir_grid)
+            PlotRoads(self.gdf_polygons,GridInside,self.save_dir_grid)
+            PlotFluxes(GridInside,Tij_Inside,self.gdf_polygons,UCI_dir,UCI,80)
+            PlotNewPopulation(GridInside, self.gdf_polygons,UCI_dir,UCI)
+            PlotVFPotMass(GridInside,self.gdf_polygons,PotentialInside,VectorFieldInside,UCI_dir,UCI,'population','Ti')
+            PotentialContour(GridInside,PotentialInside,self.gdf_polygons,UCI_dir,UCI)
+    #        PotentialSurface(GridInside,PotentialInside,UCI_dir,UCI)
+            PlotRotorDistribution(GridInside,PotentialInside,UCI_dir,UCI)
+            PlotLorenzCurve(cumulative,Fstar,result_indices,UCI_dir, UCI,0.1)
+            PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)
+            PlotHarmonicComponentDistribution(GridInside,PotentialInside,UCI_dir,UCI)
+            PrintInfoFluxPop(GridInside,Tij_Inside) 
+        else:
+            with open(os.path.join(self.save_dir_grid,f'UCI_base.json')) as f:
+                UCIskip = json.load(f)
+            UCI = UCIskip['UCI']
+            UCIM = UCIskip['UCIM']
+        return UCIM  
 ## FIT ##
 
     def ComputeFit(self):
@@ -366,12 +389,14 @@ class GeometricalSettingsSpatialPartition:
 
         '''
         if not os.path.isfile(os.path.join(TRAFFIC_DIR,'data','carto',self.city,'potential','FitVespignani.json')):
+            logger.info(f'Computing Fit {self.city}')
             logk,alpha,gamma,d0_2min1 = VespignaniBlock(self.df_distance,self.grid,self.Tij,self.save_dir_potential)            
             self.k = np.exp(logk)
             self.alpha = alpha
             self.beta = gamma
             self.d0 = d0_2min1
         else:
+            logger.info(f'Loading Fit {self.city}')
             self.k,self.alpha,self.beta,self.d0 = UploadGravitationalFit(TRAFFIC_DIR,self.city)
     def TotalPopAndFluxes(self):
         """
@@ -408,13 +433,21 @@ class GeometricalSettingsSpatialPartition:
         New_Vector_Field = ComputeNewVectorField(Tij_Modified,self.df_distance)
         logger.info(f'Computing New Potential {self.city}')
         New_Potential_Dataframe = ComputeNewPotential(New_Vector_Field,self.lattice,new_population)
-        logger.info(f"Compute UCI {self.city}")        
         Grid_New = self.grid.copy()
         Grid_New['population'] = new_population
-        PI,LC,UCI,result_indices,_,cumulative,Fstar,GridInside,PotentialInside,IndicesInside,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(Grid_New,New_Potential_Dataframe,self.df_distance)
+        logger.info(f"Compute New UCI {self.city}")     
+        df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside = FilterDistancePotentialGrid(self.df_distance,Grid_New,New_Potential_Dataframe)
+        if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.csv')):
+            self.Smaxi = ComputeVmaxUCI(df_distance_inside)
+            self.Smaxi_Mass = ComputeVMaxUCIMass(df_distance_inside)
+            pd.DataFrame({"Smax":self.Smaxi,"SmaxM":self.Smaxi_Mass}).to_csv(os.path.join(self.save_dir_grid,f'Smax.csv'),index=False)
+        else:
+            self.Smaxi = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["Smax"].to_numpy()
+            self.Smaxi_Mass = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["SmaxM"].to_numpy()
+        PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside,Grid_New,self.df_distance,self.Smaxi,self.Smaxi_Mass)
         Tij_InsideModified = Tij_Modified[Tij_Modified['origin'].isin(IndicesInside) & Tij_Modified['destination'].isin(IndicesInside)]
         Tij_Inside = self.Tij[self.Tij['origin'].isin(IndicesInside) & self.Tij['destination'].isin(IndicesInside)]
-        I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar}           
+        I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}           
         SaveJsonDict(I,os.path.join(self.save_dir_local,f'UCI_{round(UCI,3)}.json'))         
         UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
         os.makedirs(UCI_dir,exist_ok=True)
@@ -433,7 +466,24 @@ class GeometricalSettingsSpatialPartition:
                     cumulative,
                     Fstar,
                     result_indices)
-        return Tij_Modified,UCI
+        return Tij_Modified,UCIM,Grid_New
+
+    def RecoverChangedMorpholgyFromGridNew(self,Grid_New):
+        """
+            @params cov: Covariance that sets the width of population
+            @params distribution: [exponential,gaussian]
+            @params num_peaks: Number of peaks in the population
+            Change the Morphology of the City
+        """
+        # Number of People and Fluxes
+        self.TotalPopAndFluxes()
+        # From Population, using the gravitational model, generate the fluxes
+        logger.info(f'Recovering Modified Fluxes {self.city}')
+        Modified_Fluxes = GenerateModifiedFluxes(Grid_New['population'].to_numpy(),self.df_distance,self.k,self.alpha,self.beta,self.d0,self.total_flux,False)
+        Tij_Modified = self.Tij.copy()
+        Tij_Modified['number_people'] = Modified_Fluxes
+        return Tij_Modified
+
 
 ##### FILE SIMULATIONS
     def InitializeDf4Sim(self):
@@ -543,20 +593,28 @@ class GeometricalSettingsSpatialPartition:
             @params R: int -> fraction of people per second
             @params Modified_Fluxes: DataFrame: [number_people,i,j] (Fluxes produced by gravitational model)
         """
-        NPeopleOffset = len(self.DfBegin)
-        logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
-        Df_GivenR = GenerateDfFluxesFromTij(Modified_Fluxes,
-                                                        self.osmid2index,
-                                                        self.grid2OD,
-                                                        self.start,
-                                                        NPeopleOffset) 
-        Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
-        NPeopleOffset += len(Df_GivenR)
-        DfEnd = self.ShiftFinalInputSimulation(NPeopleOffset) 
-        Df = pd.concat([DfEnd,Df_GivenR],ignore_index=True)
+        # If it has not been computed or it is already saved the simulation
         end = self.start + 1
-        logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
-        Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
+        if not os.path.isfile(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))):
+            # Computte the Df for Simulation
+            NPeopleOffset = len(self.DfBegin)
+            logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
+            Df_GivenR = GenerateDfFluxesFromTij(Modified_Fluxes,
+                                                            self.osmid2index,
+                                                            self.grid2OD,
+                                                            self.start,
+                                                            NPeopleOffset,
+                                                            R) 
+            Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
+            NPeopleOffset += len(Df_GivenR)
+            DfEnd = self.ShiftFinalInputSimulation(NPeopleOffset) 
+            Df = pd.concat([Df,DfEnd],ignore_index=True)
+            end = self.start + 1
+            logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
+#            PlotDepTime(Df, self.city, self.save_dir_local)
+            Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
+        else:
+            pass
         return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
         
 
@@ -566,21 +624,22 @@ class GeometricalSettingsSpatialPartition:
             Compute the Df for Simulation without changing the morphology of the city
         """
         NPeopleOffset = len(self.DfBegin)
-        logger.info(f"Append Sim-File ControlGroup NOT Generated {self.city}, R: {R}, UCI: {UCI}...")
+        logger.info(f"Append Sim-File ControlGroup NOT Generated {self.city}, R: {R}, UCI: {round(UCI,3)}...")
         Df_GivenR = GenerateDfFluxesFromTij(self.Tij,
                                             self.osmid2index,
                                             self.grid2OD,
                                             self.start,
-                                            NPeopleOffset) 
+                                            NPeopleOffset,
+                                            R) 
         Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
         NPeopleOffset += len(Df_GivenR)
         DfEnd = self.ShiftFinalInputSimulation(NPeopleOffset) 
-        Df = pd.concat([DfEnd,Df_GivenR],ignore_index=True)
+        Df = pd.concat([Df,DfEnd],ignore_index=True)
         end = self.start + 1
         logger.info(f"Save Sim-File ControlGroup NOT Generated {self.city}, R: {R}, UCI: {UCI}...")
+        
         Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
         return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
-
 
 
 #### Prepare Input For Simulation ####
@@ -591,10 +650,10 @@ class GeometricalSettingsSpatialPartition:
         """
         Delta = self.Rmax - self.Rmin
         self.Rmax = self.Rmin + Delta + Delta%self.number_simulation_per_UCI
-        Step = int((self.Rmax - self.Rmin)/self.number_simulation_per_UCI)        
+        self.Step = int((self.Rmax - self.Rmin)/self.number_simulation_per_UCI)        
         self.config["Rmax"] = self.Rmax
         self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI + 1
-        self.ArrayRs = np.arange(self.Rmin,self.Rmax,Step,dtype=int)
+        self.ArrayRs = np.arange(self.Rmin,self.Rmax,self.Step,dtype=int)
         self.config["ArrayRs"] = list(self.ArrayRs)
         SaveJsonDict(self.config_dir_local,self.city + '_geometric_info.json')        
         logger.info(f'New Rmax {self.Rmax}, New number of simulations {self.number_simulation_per_UCI}')

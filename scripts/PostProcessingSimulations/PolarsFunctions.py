@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-def FilterDfPeopleInNetInTSlice(t0,t1,DfPeople,StrTimeDeparture,StrLastTimeSimulated):
+def FilterDfPeopleControlGroup(t0,t1,DfPeople,StrTimeDeparture,StrLastTimeSimulated):
     """
         Description:
             Filter the people in the network at a given time interval
@@ -15,11 +15,30 @@ def FilterDfPeopleInNetInTSlice(t0,t1,DfPeople,StrTimeDeparture,StrLastTimeSimul
     """
     condition = (
         (pl.col(StrTimeDeparture) >= int(t0)) &
-        (pl.col(StrTimeDeparture) < int(t1)) &  # Corrected condition
-        (int(t1) < pl.col(StrLastTimeSimulated))
+        (pl.col(StrTimeDeparture) < int(t1))
+#          &  # Corrected condition
+#        (int(t1) < pl.col(StrLastTimeSimulated))
     )
     DfPeopleInNetAtTimet = DfPeople.filter(condition)
     return DfPeopleInNetAtTimet
+
+def FilterDfPeopleStilInNet(t_start_interval,t_end_interval,StrLastTimeSimulated,DfPeople):
+    """
+        Description:
+            Filter the people still in the network
+        Args:
+            t1: int -> Time
+            StrLastTimeSimulated: str -> Column name of the last time simulated
+            DfPeople: pl.DataFrame -> People DataFrame
+        Returns:
+            DfPeopleStillInNet: pl.DataFrame -> People still in the network
+    """
+    condition = (
+        (pl.col(StrLastTimeSimulated) >= int(t_start_interval)) &
+        (pl.col(StrLastTimeSimulated) < int(t_end_interval))
+    )
+    DfPeopleStillInNet = DfPeople.filter(condition)
+    return DfPeopleStillInNet
 
 def ApplyPeople2Time(personId,People2Time,i):
     return People2Time[personId][i]

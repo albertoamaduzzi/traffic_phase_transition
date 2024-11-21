@@ -24,11 +24,14 @@ def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
     fig,ax = plt.subplots(1,1,figsize = (15,15))
     Interval2Plot = [t for t in interval15 if Interval2NumberPeopleInNet[t] > 0]
     NPeople2Count = [Interval2NumberPeopleInNet[t] for t in interval15 if Interval2NumberPeopleInNet[t] > 0]
-    ax.plot(Interval2Plot,NPeople2Count)
+    ax.plot(Interval2Plot[1:-1],NPeople2Count[1:-1])
 #    ax.set_xticks(second2hour(interval15))
-#    ax.set_xticklabels([str(t) for t in second2hour(interval15)])
+#    ax.set_xticklabels([str(t) for t in interval15])
     ax.set_xlabel('time')
     ax.set_ylabel('Number people in graph')
+    ax.set_xticks(ticks = interval15[1:-1],labels = interval15[1:-1],rotation=90)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
     plt.savefig(FileName,dpi = 200)
     plt.show()
 

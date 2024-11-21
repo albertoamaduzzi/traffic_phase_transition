@@ -280,3 +280,26 @@ def ComputeNewPotential(New_Vector_Field,lattice,grid,verbose = False):
         print('Time to compute Lattice: ',time.time() - t0)
         print('Time to compute Potential: ',time.time() - t1)
     return New_Potential_DataFrame
+
+
+## Control That The Grid NEw is Not COmputed
+def CheckAlreadyComputedGrids(save_dir_local,cov,distribution,num_peaks):
+    """
+        @param save_dir_local: str -> Directory where the Grids are saved
+        @param cov: int -> Covariance of the peaks
+        @param distribution: str -> Distribution of the peaks
+        @param num_peaks: int -> Number of peaks
+        This function checks if the Grids are already computed.
+        NOTE: Called in main when one needs to decide wheter the Grids Need to be recomputed or not
+    """
+    for File in os.listdir(save_dir_local):
+        if 'GridNew' in File:
+            if cov == File.split('_')[1] and distribution == File.split('_')[2] and num_peaks == File.split('_')[3]:
+                UCI1 = File.split('_')[4].split('.csv')[0]
+                return pd.read_csv(os.path.join(save_dir_local,File)),UCI1
+            else:
+                pass
+        else:
+            pass
+    return None
+

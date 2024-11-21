@@ -32,6 +32,8 @@ class OutputStats:
         self.GetPeopleInfo()
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
+        self.t_start_control_group = 7*3600
+        self.t_end_control_group = 8*3600
     def CompleteAnalysis(self):
         """
             This is the Function one wants to Call to get the Analysis of the Simulation
@@ -99,12 +101,15 @@ class OutputStats:
             # Convert it to minutes seconds and hour for the plot Labels (0 -> 24)        
             self.HourTimeArray = ConvertArray2HMS(np.linspace(TIMESTAMP_OFFSET,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals))
             self.Interval2NumberPeopleInNet = {Interval:0 for Interval in self.HourTimeArray}
+            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfPeople,"time_departure","last_time_simulated")
             for t in range(len(self.Interval2NumberPeopleInNet.keys())-1):
                 # DataFrame Filtered With People in the Network at time t in the time interval t,t+1
-                DfPeopleInNetAtTimet = FilterDfPeopleInNetInTSlice(self.IntTimeArray[t],self.IntTimeArray[t+1],self.DfPeople,"time_departure","last_time_simulated")
+                DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
                 # Number Of People in the Network at time t
                 self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
-            pd.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople"]).to_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)),index = False)
+            DfUnload = pd.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople"])
+            DfUnload["Time_seconds"] = self.IntTimeArray
+            DfUnload.to_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)),index = False)
             self.CountFunctions += 1
 #            Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Compute the number of people in the network at each time interval"
 #            AddMessageToLog(Message,self.LogFile)
@@ -149,9 +154,10 @@ class OutputStats:
             IntRoads = [int(value) for value in self.GeoJsonEdges["uv"].to_list()]
             self.Time2Road2MFDNotProcessed = Init_Time2Road2MFDNotProcessed(self.HourTimeArray,IntRoads,StrSpeed,StrUsersId,StrNumberPeople)
             self.Time2Road2MFD = Init_Time2Road2MFD(self.Time2Road2MFDNotProcessed,StrSpeed,StrNumberPeople)
+            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfPeople,"time_departure","last_time_simulated")
             for t  in range(len(self.IntTimeArray)-1):    
                 # People in Array at time t
-                DfPeopleInNetAtTimet = FilterDfPeopleInNetInTSlice(self.IntTimeArray[t],self.IntTimeArray[t+1],self.DfPeople,"time_departure","last_time_simulated")
+                DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
                 # Add time_departure: int last_time_simulated: int avg_v(mph): float time: np.array
                 self.DfRoute,self.Column2IndexDfRoute = AddTimeList2DfRoute(self.DfRoute,self.DfPeople)
                 # People in the network at time t NOTE: route df

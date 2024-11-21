@@ -3,6 +3,8 @@ from collections import defaultdict,OrderedDict
 import json
 import numpy as np
 import sys
+import logging
+logger = logging.getLogger(__name__)
 sys.path.append(os.path.join(os.environ['TRAFFIC_DIR'],'scripts','GeometrySphere'))
 
 
@@ -44,12 +46,17 @@ def SelectUCIsIfAllR(Rs,UCIs,OD_dir):
             maxR = len(UCI2AvailableRs[uci])
             U = uci
     UCIs = [uci for uci in UCI2AvailableRs.keys() if len(UCI2AvailableRs[uci]) == maxR]
-    UCIs = ['0.166','0.205','0.214','0.216','0.225','0.235','0.244','0.253','0.256','0.263','0.274','0.309','0.318','0.333','0.349','0.361','0.374','0.392']
+#    UCIs = ['0.166','0.205','0.214','0.216','0.225','0.235','0.244','0.253','0.256','0.263','0.274','0.309','0.318','0.333','0.349','0.361','0.374','0.392']
     print("Selected UCIs: ",UCIs)
     print("Selected Rs: ",Rs)
     return UCIs
 
 def RsUCIsFromDir(OD_dir):
+    """
+        @param OD_dir: str -> Directory where the output files are stored
+        @description: Force a distance between different UCIs of 0.01.
+        In this way we can have
+    """
     Rs = []
     UCIs = []
     for file in os.listdir(OD_dir):
@@ -57,7 +64,7 @@ def RsUCIsFromDir(OD_dir):
             R = file.split('_')[1]
             UCI = file.split('_')[3].split('.csv')[0]
             if R not in Rs:
-                Rs.append(R)
+                Rs.append(int(R))
             if float(UCI) not in UCIs:
                 UCIs.append(float(UCI))
     Rs = sorted(Rs)
@@ -89,6 +96,7 @@ def GenerateConfig(BaseData,Config,City,Rs,UCIs):
     list_UCI = []
     for File in os.listdir(BaseData):
         if os.path.isfile(os.path.join(BaseData,File)):
+            logger.info(f"Reading {File}")
             UCI = File.split('_')[3]
             R  = File.split('_')[1]
             if UCI in UCIs:
@@ -127,16 +135,19 @@ def GenerateConfig(BaseData,Config,City,Rs,UCIs):
 
     return Config
 
-def InitConfigPolycentrismAnalysis(CityNames):
-    City2Config = {CityName:defaultdict() for CityName in CityNames}
-    for CityName in CityNames:
-        # 
-        City2Config[CityName] = defaultdict()
-        if "LPSim" not in os.environ.keys():
-            BaseData = "/home/alberto/LPSim/LivingCity/berkeley_2018/{}/Output".format(CityName)
-        else:
-            BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",CityName,"Output")
-        Rs,UCIs = RsUCIsFromDir(BaseData)
-        UCIs = SelectUCIsIfAllR(Rs,UCIs,BaseData)
-        City2Config[CityName] = GenerateConfig(BaseData,City2Config[CityName],CityName,Rs,UCIs)  
+def InitConfigPolycentrismAnalysis(CityName):
+    """
+        @param CityName: str -> Name of the City
+        This Function Initializes the Configuration for the Polycentrism2TrafficAnalyzer Class.
+        It is useful to give in input the Rs and UCIs that are plausible.
+        It is useful to give in input the Rs and UCIs that are plausible.
+    """
+    City2Config = {CityName:defaultdict()}
+    if "LPSim" not in os.environ.keys():
+        BaseData = "/home/alberto/LPSim/LivingCity/berkeley_2018/{}/Output".format(CityName)
+    else:
+        BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",CityName,"Output")
+    Rs,UCIs = RsUCIsFromDir(BaseData)
+    UCIs = SelectUCIsIfAllR(Rs,UCIs,BaseData)
+    City2Config[CityName] = GenerateConfig(BaseData,City2Config[CityName],CityName,Rs,UCIs)  
     return City2Config
