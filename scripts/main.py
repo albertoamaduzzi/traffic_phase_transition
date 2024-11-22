@@ -15,7 +15,7 @@ import logging.handlers
 # M
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from multiprocessing import Pool,Queue,Barrier,cpu_count,Manager,Process,Value
+from multiprocessing import Pool,Queue,Barrier,cpu_count,Manager,Process,Value,log_to_stderr
 import ctypes
 # P
 import psutil
@@ -85,6 +85,7 @@ plt.rcParams.update({
     "text.usetex": False,
 })
 logger = logging.getLogger(__name__)
+
 StateAlgorithm = InitWholeProcessStateFunctions()
 
 def configure_logger(log_file):
@@ -141,7 +142,10 @@ def RedefineRsWhenError(Rmax,Step,NumberRs):
         @param Step: float -> Step to reduce the Radius
         This function redefines the Rs that are going to be used in the simulation.
     """
-    ArrayRs = np.array([Rmax -Step*(i+1) for i in range(NumberRs)])
+    assert Rmax > 0, "Rmax must be positive."
+    assert Step > 0, "Step must be positive."
+    ArrayRs = np.array([Rmax - Step*(i+1) for i in range(NumberRs)])
+    assert np.all(ArrayRs > 0), f"All Rs must be positive. Rmax: {Rmax}, Step: {Step}, NumberRs: {NumberRs}"
     return ArrayRs
 
 if __name__ == '__main__':
@@ -206,13 +210,14 @@ if __name__ == '__main__':
                 N = cpu_count() - 2
             concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
 #            barrier = Barrier(N)
-            processes = []
 #            lock = Lock()
             # Do not Compute RArray if not necessary, stick with the given by CityRminRmax
             FirstTry = True
             # Run The Processes Until for All The Rs I do not Have A Docker Error
             # NOTE: GPU related Problems Act on ArrayRs
             while(not concurrency_manager.Docker_error.value):
+                # Reset The Processes
+                processes = []
                 concurrency_manager.Reset()
                 if FirstTry:
                     ArrayRs = GeoInfo.ArrayRs
@@ -243,6 +248,7 @@ if __name__ == '__main__':
                                 for p in processes:
                                     if p.is_alive():
                                         p.terminate()
+                    
                         # No Error From GPU
                         else:
                             # This Is The Only Case I Break The Loop
@@ -288,8 +294,10 @@ if __name__ == '__main__':
                             GridNew.to_csv(os.path.join(GeoInfo.save_dir_local,f'GridNew_{cov}_{distribution}_{num_peaks}_{UCI1}.csv'),index=False)                    
                         else:
                             pass
-                        
+                        log_to_stderr()
                         while(not concurrency_manager.Docker_error.value):
+                            # Reset The Processes
+                            processes = []
                             concurrency_manager.Reset()
                             if FirstTry:
                                 ArrayRs = GeoInfo.ArrayRs

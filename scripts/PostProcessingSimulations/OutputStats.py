@@ -2,6 +2,7 @@ import polars as pl
 import pandas as pd
 import numpy as np
 import osmnx as ox
+from FittingProcedures import *
 from OsFunctions import *
 from DateTimeHandler import *
 from Plots import *
@@ -10,10 +11,27 @@ from StructuresOfInterest import *
 from PolarsFunctions import *
 import ast
 
+def ReadRouteAndPeopleFileFromBaseDir(BaseDir):
+    """
+        Read the Route and People File from the BaseDir
+        Returns:
+            RouteFile: str
+            PeopleFile: str
+    """
+    RouteFile = []
+    PeopleFile = []
+    for file in os.listdir(BaseDir):
+        if "route" in file:
+            RouteFile.append(file)
+        if "people" in file:
+            PeopleFile.append(file)
+    return RouteFile,PeopleFile
 
 class OutputStats:
     def __init__(self,R,UCI,config,GeoJsonEdges):
+        
         self.verbose = True
+        # Add Logic to Take All The Files From The Base Dir
         self.RouteFile = config[UCI][R]['route_file']
         self.PeopleFile = config[UCI][R]['people_file']
         self.R = R
@@ -32,8 +50,11 @@ class OutputStats:
         self.GetPeopleInfo()
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
+        # Group Control
         self.t_start_control_group = 7*3600
         self.t_end_control_group = 8*3600
+        # Total Volume Traffic
+        self.VolumeTraffic = 0
     def CompleteAnalysis(self):
         """
             This is the Function one wants to Call to get the Analysis of the Simulation
@@ -60,7 +81,8 @@ class OutputStats:
                       "last_time_simulated":pl.Int64,
                       "path_length_cpu":pl.Int64,
                       "path_length_gpu":pl.Int64}
-            self.DfPeople = pl.read_csv(self.PeopleFile,dtypes = dtypes,ignore_errors = True)
+            self.DfPeople = pl.read_parquet(self.PeopleFile,dtypes = dtypes,ignore_errors = True)
+#            self.DfPeople = pl.read_csv(self.PeopleFile,dtypes = dtypes,ignore_errors = True)
             self.ReadPeopleInfoBool = True
             self.CountFunctions += 1
             Message = f"Function {self.CountFunctions}: GetPeopleInfo: {self.PeopleFile} was read"
@@ -68,6 +90,9 @@ class OutputStats:
 
 
     def GetRouteInfo(self):
+        """
+            NOTE: Translate The column of the RouteDf into array from string 
+        """
         if IsFile(self.RouteFile):
             self.DfRoute = pd.read_csv(self.RouteFile,sep = ':')
             self.DfRoute = pl.from_pandas(self.DfRoute)
@@ -90,6 +115,7 @@ class OutputStats:
             Compute the number of people in the network at each time interval
             Returns:
                 Interval2NumberPeopleInNet: Dictionary containing the number of people in the network at each time interval
+            NOTE: self.DfUnload: DataFrame
         """
         if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI))):
             SecondsInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR*SECONDS_IN_MINUTE)
@@ -107,19 +133,38 @@ class OutputStats:
                 DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
                 # Number Of People in the Network at time t
                 self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
-            DfUnload = pd.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople"])
+            self.VolumeTraffic = np.sum(DfUnload["NumberPeople"].to_numpy())
+            DfUnload["FractionPeople"] = DfUnload["NumberPeople"].to_numpy()/self.VolumeTraffic
+            DfUnload = pd.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople","FractionPeople"])
             DfUnload["Time_seconds"] = self.IntTimeArray
             DfUnload.to_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)),index = False)
-            self.CountFunctions += 1
-#            Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Compute the number of people in the network at each time interval"
-#            AddMessageToLog(Message,self.LogFile)
+            self.DfUnload = DfUnload
         else:
-            self.Interval2NumberPeopleInNet = pd.read_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)))
+            self.DfUnload = pd.read_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)))
             self.HourTimeArray = self.Interval2NumberPeopleInNet["Time"]
             self.Interval2NumberPeopleInNet = self.Interval2NumberPeopleInNet["NumberPeople"]
-            self.CountFunctions += 1
-#            Message = f"Function {self.CountFunctions}: ComputeUnloadCurve: Read the number of people in the network at each time interval"
-#            AddMessageToLog(Message,self.LogFile)        
+
+
+    def FindRcritical(self):
+        """
+            Find the critical value of R
+        """
+        t_vect = self.DfUnload["Time_seconds"].to_numpy()
+        dt = np.diff(t_vect)
+        nt = self.DfUnload["NumberPeople"].to_numpy()
+        # Check The t For Which The Power Law Fit the Best and Is Better Than The Exponential
+        ErrorFitExp = []
+        ErrorFitPl = []
+        for t in t_vect[10:-1]:
+            # Cut Until t
+            WeightFit = len(t_vect[:t]) 
+            Z = np.sum(nt[:t]*dt[:t])
+            nt_norm = nt[:t]/Z
+            initial_guess_powerlaw = (1,0.3) 
+            initial_guess_exp = (1,-1)
+            fitpl = Fitting(t[:t], nt_norm[:t],'powerlaw', initial_guess_powerlaw)
+            fitexp = Fitting(t[:t], nt_norm[:t],'exponential', initial_guess_exp)
+
     def PlotUnloadCurve(self):
         PlotPeopleInNetwork(self.Interval2NumberPeopleInNet,self.HourTimeArray,JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
         self.CountFunctions += 1
@@ -182,6 +227,11 @@ class OutputStats:
             self.CountFunctions += 1
             ReturnMessageTime2Road(self.CountFunctions,self.LogFile,self.Time2Road2MFDNotProcessed,self.Time2Road2MFD,self.Road2MFD2Plot)
     
+
+
+
+
+
     def AddGeoJsonTimeColumns(self,StrNumberPeople,StrSpeed):
         """
             Add the columns to the GeoJsonEdges that contains the number of people and the speed in the
