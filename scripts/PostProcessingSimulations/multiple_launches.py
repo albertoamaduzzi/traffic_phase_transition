@@ -7,7 +7,7 @@ import shutil
 import psutil
 import platform
 import numpy as np
-from multiprocessing import Pool
+from multiprocessing import Pool,log_to_stderr,get_logger
 import sys
 import logging
 from pynvml import *
@@ -51,28 +51,7 @@ def ModifyConfigIni(CityName,start,end,R,UCI,verbose = False):
 #        print(file_txt)    
 
 
-def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
-    """
-        @params output_file: File to move
-        @params CityName: Name of the city
-        @params R: Number of people per unit time
-        @params UCI: Urban Centrality Index
-        @description: Move the output file in the correct
-    """
-    saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
-    source_file = os.path.join(LPSIM_DIR, output_file)
-    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
-    logger.info(f"Transfer: {output_file} -> {destination_file}")
-    if not os.path.exists(saving_dir):
-        # Make Sure saving_dir exists
-        os.mkdir(saving_dir)
-    if os.path.exists(source_file):
-        os.rename(source_file, destination_file)
-    else:
-        logger.info(f"File {source_file} does not exist")
-#     shutil.move(os.path.join(LPSIM_DIR,f"R_{R}_UCI_{round(UCI,3)}_{output_file}"),saving_dir)  
 
-  
 def CheckUseDocker(verbose = False):
     """
         Check if the Docker is installed in the system
@@ -117,6 +96,29 @@ def compare_environment_variables(verbose = True):
             print("\nNo differences found in environment variables between shell and Python subprocess.")
 
 
+def check_out_of_memory_error(stderr_output):
+    out_of_memory_errors = [
+        "out of memory",
+        "CUDA_ERROR_OUT_OF_MEMORY",
+        "failed to allocate memory",
+        "memory allocation error"
+        "GPUAssert"
+    ]
+    
+    for error_message in out_of_memory_errors:
+        if error_message.lower() in stderr_output.lower():
+            return True
+    return False
+
+
+def check_transportation_error(stderr_output):
+    if "transport: Error while dialing" in stderr_output:
+        TransportError = True
+        return TransportError
+    else:
+        TransportError = False
+        return TransportError
+    
 
 
 def check_gpu_availability():
@@ -135,100 +137,6 @@ def check_gpu_availability():
         logger.error("An error occurred while querying GPU status: %s", str(e))
         return False,None    
 
-def DockerCommand(shared_dict,save_dir,pid,R,UCI,CityName):
-    """
-        @description:
-            Once the process arrives here starts to check if the GPUis available.
-            If it is available, it launches the docker command to run the simulation.
-            Once run the command, checks if there is an error.
-            Return False if an error occurred in GPU or in the docker command
-    """
-    os.environ['PATH'] += os.pathsep + '/usr/bin/'
-    container_name = "xuanjiang1998/lpsim:v1"
-    PWD = '/home/alberto/LPSim'
-    env = os.environ.copy()
-    docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']
-    NumberTrials = 0
-    while True:
-        # Execute the Docker command
-#        logger.info(f"Executing Simulation Trial {NumberTrials}...")
-        GpuAvailable,gpu_id = check_gpu_availability()
-        if GpuAvailable:
-            logger.info(f"{pid} Free GPU {gpu_id}")
-            free_gpu_memory(gpu_id)            
-            logger.info(f"{pid} Launch Simulation in GPU {gpu_id}")
-            process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-            stdout, stderr = process.communicate()
-            
-            # Log the output
-            logger.info(stdout.decode())
-            logger.error(stderr.decode())
-            
-            # Check if the command was successful
-            if process.returncode == 0:
-                if check_gpu_errors():
-                    logger.error("GPU error detected. Breaking the loop.")
-                    successful = False
-                    InfoAboutFailureInSharedDict(shared_dict,save_dir,UCI,R,CityName,successful)
-                    return successful
-                else:
-                    logger.info("Docker command executed successfully.")
-                    successful = True
-                    InfoAboutFailureInSharedDict(shared_dict,save_dir,UCI,R,CityName,successful)
-                    return successful
-            else:
-                logger.error(f"Docker command Number {NumberTrials} failed. Retrying...")
-                NumberTrials += 1
-                if check_gpu_errors():
-                    logger.error("GPU error detected. Breaking the loop.")
-                    successful = False
-                    InfoAboutFailureInSharedDict(shared_dict,save_dir,UCI,R,CityName,successful)
-                    return successful
-                else:
-                    successful = False
-                    InfoAboutFailureInSharedDict(shared_dict,save_dir,UCI,R,CityName,successful)
-
-                    return successful
-        else:
-            pass 
-        NumberTrials += 1
-
-
-def LaunchDockerFromServer(CityName,start,end,R,UCI,lock,shared_dict,save_dir):
-    """
-        @params container_name: Name container from which launch the GPU simulations
-        @params CityName: Name simulation city
-        @params start,end: start and end simulation (int:hour)
-        @params R: Number of people per unit time
-        @params UCI: Urban Centrality Index
-    """
-    # Run Simulation Just If it does not exist the Output
-    saving_dir = os.path.join(HOME_DIR,'berkeley_2018',CityName,'Output')
-    output_file = '0_people{0}to24.csv'.format(start)
-    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
-    if os.path.exists(destination_file):
-        print(f"File {destination_file} already exists")
-        return True
-    else:
-        logger.info(f"Launch Simulation")
-        # NOTE: No Further Locks in the Continuing of this Tree of Computation since we lock here.
-        # In particular not in DockerCommand and SaveSharedDict
-        lock.acquire()
-        ModifyConfigIni(CityName,start,end,R,UCI, True)
-        pid = os.getpid()
-        succesful = DockerCommand(shared_dict,save_dir,pid,R,UCI,CityName)   
-        lock.release(block=True)
-        if succesful:
-            output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
-                            '0_indexPathInit{0}to24.csv'.format(start),
-                            '0_people{0}to24.csv'.format(start),
-                            '0_route{0}to24.csv'.format(start)
-                            ]
-            for output_file in output_files:
-                RenameMoveOutput(output_file,CityName,R,UCI,True)
-            return True
-        else:
-            return False
 def RsUCIsFromDir(OD_dir):
     Rs = []
     UCIs = []
@@ -312,24 +220,8 @@ def monitor_processes(shared_dict,interval=600):
 
 
 
-def convert_numpy_int64(obj):
-    if isinstance(obj, np.int64):
-        return int(obj)
-    elif isinstance(obj, np.float32):
-        return float(obj)
-    elif isinstance(obj, np.float64):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()    
-    elif isinstance(obj, np.int32):
-        return int(obj)
-    else:
-        raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
-def save_shared_dict(shared_dict, filename):
-    with open(filename, 'w') as f:
-        json.dump(dict(shared_dict), f,default=convert_numpy_int64,indent=4)
 
 def free_gpu_memory(gpu_id):
     try:
@@ -341,211 +233,6 @@ def free_gpu_memory(gpu_id):
     except FileNotFoundError:
         logger.warning("nvidia-smi command not found. Ensure that NVIDIA drivers are installed.")
 
-########### Launch Simulation Non-Modified OD ############
-def ProcessLauncherNonModified(shared_dict,queue,barrier,lock,GeoInfo,UCI,R,error_flag,R_error):
-    """
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param R: float
-        @description: This function launches:
-         - SharedDict2Dict
-         - Synchronize
-         - ComputeSimulationFileAndLaunchDocker
-        the simulation for the non-modified OD.
-        It does this by queuing writing of the shared dict: 
-        (the information about the processes running that then I check via)
-    """
-    SharedDict2DictNon(shared_dict,queue,barrier,GeoInfo,R,UCI)
-    error_flag,R_error = ComputeSimulationFileAndLaunchDocker(GeoInfo,UCI,R,queue,lock,shared_dict)
-    return Succesfull,R
-def SharedDict2DictNon(shared_dict,queue,barrier,GeoInfo,R,UCI):
-    """
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param R: float
-        @description: This function writes the shared dictionary to a file
-                     avoiding concurrency among different processes
-    """
-    pid = os.getpid()
-    queue.put(pid)
-    while queue.get() != pid:
-        time.sleep(0.1)
-    shared_dict[pid] = {
-        'name': 'NonModifiedSimulation',
-        'R': R,
-        'UCI': UCI,
-        'city': GeoInfo.city,
-        'modified_mobility': True,
-        "failed_simulation": False
-    }
-    saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
-    save_shared_dict(shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-    # Synchronize the processes
-    barrier.wait()
-
-
-
-def ComputeSimulationFileAndLaunchDocker(GeoInfo,UCI,R,queue,lock,shared_dict):
-    """
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param UCI: float
-        @param R: float
-        @param shared_dict: Manager.dict()
-        @param barrier: Barrier
-        @return: bool
-        @description: This function computes the simulation file and launches the docker container.
-    """
-    logger.info(f"Running simulation for R: {R}")
-    # Simulate some work
-    saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
-    output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
-    check_file = f"R_{R}_UCI_{round(UCI,3)}_{output_file}"
-    if not os.path.isfile(os.path.join(saving_dir,check_file)):
-        NotModifiedInputFile = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,R)
-        pid = os.getpid()
-        queue.put(pid)
-        while queue.get() != pid:
-            time.sleep(0.1)
-
-        while(True):
-            # Tells that the process is occupied
-            success = LaunchDockerFromServer(GeoInfo.city,GeoInfo.start,GeoInfo.start + 1,R,UCI,lock,shared_dict,saving_dir)
-            # Delete in any case the input file
-            if success:
-                DeleteInputSimulation(NotModifiedInputFile)
-                return True,None
-            else:
-                return True,R
-    else:
-        return True
-
-
-
-########### Launch Simulation Non-Modified OD ############
-    
-########### Launch Simulation Modified OD ############
-
-def ProcessLauncherModified(shared_dict,queue,barrier,GeoInfo,Modified_Fluxes,R,UCI1,lock,error_flag,R_error):
-    """
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param R: float
-        @description: This function launches:
-         - SharedDict2Dict
-         - Synchronize
-         - ComputeSimulationFileAndLaunchDocker
-        the simulation for the non-modified OD.
-        It does this by queuing writing of the shared dict: 
-        (the information about the processes running that then I check via)
-    """
-    SharedDict2Dict(shared_dict,queue,barrier,GeoInfo,R)
-    error_flag.value,R_error.value = ComputeSimulationFileAndLaunchDockerFromModifiedMob(GeoInfo,Modified_Fluxes,R,UCI1,queue,lock,shared_dict)
-
-def SharedDict2Dict(shared_dict,queue,barrier,GeoInfo,R):
-    """
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param R: float
-        @description: This function writes the shared dictionary to a file
-                     avoiding concurrency among different processes
-    """
-    pid = os.getpid()
-    queue.put(pid)
-    while queue.get() != pid:
-        time.sleep(0.1)
-    shared_dict[pid] = {
-        'name': 'ComputeSimulationFileAndLaunchDockerFromModifiedMob',
-        'R': R,
-        'city': GeoInfo.city,
-        'modified_mobility': True,
-        "failed_simulation": False
-    }
-    saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
-    save_shared_dict(shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-    # Synchronize the processes
-    barrier.wait()
-
-
-
-def ComputeSimulationFileAndLaunchDockerFromModifiedMob(GeoInfo,Modified_Fluxes,R,UCI1,queue,lock,shared_dict):
-    """
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param R: float
-        @param shared_dict: Manager.dict()
-        @param barrier: Barrier
-        @return: bool
-        @description: This function computes the simulation file and launches the docker container.
-    """
-    logger.info(f"Running modified simulation for R: {R}")
-    # Simulate some work
-#    barrier.wait()  # Wait for all processes to reach this point
-#    barrier.wait()
-    saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
-    output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
-    check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file}"
-#    save_shared_dict(shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-    if not os.path.isfile(os.path.join(saving_dir,check_file)):
-
-        ModifiedInputFile = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-        start = GeoInfo.start
-        end = start + 1
-        if os.path.isfile(ModifiedInputFile):
-            logger.info(f"Launching docker, {GeoInfo.city}, R: {R}, UCI: {round(UCI1,3)}")
-            pid = os.getpid()
-            queue.put(pid)
-            while queue.get() != pid:
-                time.sleep(0.1)
-            while(True):                
-                succesful = LaunchDockerFromServer(GeoInfo.city,start,end,R,UCI1,lock,shared_dict,saving_dir)
-                if succesful:
-                    DeleteInputSimulation(ModifiedInputFile)
-                    return True,None
-                else:
-                    return True,R
-    else:
-        logger.info(f"Simulation {check_file} already exists.")
-        return True
-    # Launch the processes one after the other since you
-def get_pid(x):
-    return os.getpid()
-
-def queue_listener(queue,shared_dict):
-    while True:
-        result = queue.get()
-        if result is None:
-            break
-        shared_dict[result['pid']] = result
-        
-
-
-# ERROR GPU
-def InfoAboutFailureInSharedDict(shared_dict,save_dir,UCI,R,CityName,successful):
-    """
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-    """
-    pid = os.getpid()
-    shared_dict[pid] = {
-        'name': 'NonModifiedSimulation',
-        'R': R,
-        'UCI': UCI,
-        'city': CityName,
-        'modified_mobility': True,
-        "failed_simulation": successful
-    }
-    saving_dir = os.path.join(save_dir,CityName,'Output')
-    save_shared_dict(shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-    # Synchronize the processes
 
 
 
@@ -577,43 +264,29 @@ def ProcessMain(case,
     env = os.environ.copy()
     docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']
 
-    ##### FILE NAMES ##### 
-    # /home/alberto/LPSim/LivingCity/berkeley_2018/boston/Output
+    ##### FILE NAMES #####  /home/alberto/LPSim/LivingCity/berkeley_2018/boston/Output
     dir_new_full_network = os.path.join(GeoInfo.berkeley_2018,'new_full_network')
     saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
     output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
+    output_file_parquet = output_file.replace('.csv','.parquet')
     check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file}"
     destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
     InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_R_{R}_UCI_{round(UCI1,3)}.csv"
-    # Get the Information about the Process 
+    ##### PID ##### 
     pid = os.getpid()
-    # Put in the Queue the Process
-    concurrent_manager.queue.put(pid)
-    # Align the Processes to Write in the Shared Dictionary
-    while concurrent_manager.queue.get() != pid:
-        time.sleep(0.1)
-    concurrent_manager.shared_dict[pid] = {
-        'name': case,
-        'R': R,
-        'UCI': round(UCI1,3),
-        'city': GeoInfo.city,
-        'GPU_occupied': False,
-        "GPU_error": False,
-        "docker_error": False,
-        "failed_simulation": False
-    }
-    save_shared_dict(concurrent_manager.shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-    # Synchronize the processes
-    concurrent_manager.barrier.wait()
+    #### INIT SHARED DICT #####
+    concurrent_manager.InitSharedDict(pid,case,R,UCI1,GeoInfo.city,f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Init Dict")
+    # BRANCH VARIABLES
     InputDocker = os.path.join(dir_new_full_network,InputFile)
+    ComputedDockerInput = os.path.isfile(InputDocker) # Input Exists: True -> SKIP COMPUTATION 
+    ComputedOutput = os.path.isfile(destination_file) or os.path.isfile(os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file_parquet}"))# Output Exists: True -> NOT LAUNCH DOCKER: SuccessSimulation = True
     # Compute The Docker Only If I Do Not Have Already Computed It and The OutputFile does not Exist
-    logger.info(f"InputDocker: {InputDocker} {os.path.isfile(InputDocker)}")
-    logger.info(f"OutputFile: {destination_file} {os.path.isfile(destination_file)}")
-    ComputedDockerInput = os.path.isfile(InputDocker) # True If The Input is There
-    ComputedOutput = os.path.isfile(destination_file) # True If The Output is There
+#    Messages = [f"InputDocker: {InputDocker} {os.path.isfile(InputDocker)}",f"OutputFile: {destination_file} {os.path.isfile(destination_file)}"]
+#    concurrent_manager.LogMessage(Messages)
     # Check If The Simulation is Already There (DO NOT REPEAT IT!)
     if ComputedOutput:
-        logger.info(f"Simulation {check_file} already exists.")
+        Messages = [f"Simulation {check_file} already exists."]
+        concurrent_manager.LogMessage(Messages)
         SuccessSimulation = True
         return SuccessSimulation
     # The Simulation Output is Not There
@@ -622,72 +295,70 @@ def ProcessMain(case,
         if not ComputedDockerInput:
             # Not Modified Mobility
             if case == 'NonModified':
-                logger.info(f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}")
+                Messages = [f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}"]
+                concurrent_manager.LogMessage(Messages)
                 InputDocker = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI1,R)
             # Modified Mobility
             else:
-                logger.info(f"ID-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}")
+                Messages = [f"ID-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}"]
+                concurrent_manager.LogMessage(Messages)
                 if not ComputedDockerInput:
                     InputDocker = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-        else:        
-            logger.info(f"InputDocker {InputDocker} already exists.")
+        else:
+            Messages = [f"InputDocker {InputDocker} already exists."]
+            concurrent_manager.LogMessage(Messages)
         # Launch Docker Process
         start = GeoInfo.start
         end = start + 1
-        logger.info(f"Launching docker, {GeoInfo.city}, R: {R}, UCI: {round(UCI1,3)}")
-        concurrent_manager.queue.put(pid)
-        while concurrent_manager.queue.get() != pid:
-            time.sleep(0.1)
         # Keep Launching Docker
         while(True):
-            logger.info(f"Launch Simulation {check_file}")
-            # Check if the GPU is available and Bound The Lock To The GPU Availability
             # NOTE: This Will Be False 
-            concurrent_manager.GPULock.acquire(block = True)
+            concurrent_manager.AcquireLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Check GPU Availability")
             gpu_id = check_first_gpu_available()
-            concurrent_manager.GPULock.release()            
+            concurrent_manager.ReleaseLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Available: {gpu_id}")
             GpuAvailable = gpu_id>=0            
             # Block All The Processes Until The GPU is Available (When Simulation Is Returned)
-            concurrent_manager.locks[gpu_id].acquire(block = True)   
             # Tell That You Are Occupying The GPU
-            concurrent_manager.shared_dict[pid]['GPU_occupied'] = True    
-            save_shared_dict(concurrent_manager.shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
+            concurrent_manager.UpdateSharedDict(pid = pid,key = 'GPU_occupied',value = True,Message = f"{R}, {round(UCI1,3)}: Update ShareDic GPU {gpu_id} Occupied: True")
             if GpuAvailable:
                 # Change The Configuration File Just One GPU at A Time
-                concurrent_manager.lock_Config_ini.acquire(block = True)
+                concurrent_manager.AcquireLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Acquire Config_ini Lock")
                 ModifyConfigIni(GeoInfo.city,start,end,R,round(UCI1,3), True)
-                logger.info(f"pid {pid}: {R}, {round(UCI1,3)} Free GPU {gpu_id}")
-                free_gpu_memory(gpu_id)            
-                logger.info(f"Launch Simulation {R}, {round(UCI1,3)} in GPU {gpu_id}")
-                process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-                stdout, stderr = process.communicate()
-                concurrent_manager.lock_Config_ini.release()
-                # Log the output
-#                logger.info(stdout.decode())
-#                logger.error(stderr.decode())
+                Messages = [f"pid {pid}: {R}, {round(UCI1,3)} Free GPU {gpu_id}",f"Launch Simulation {R}, {round(UCI1,3)} in GPU {gpu_id}"]
+                concurrent_manager.LogMessage(Messages)
+#                free_gpu_memory(gpu_id)
+                TransportError = False
+                while(not TransportError):            
+                    process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+                    stdout, stderr = process.communicate()
+                    TransportError = check_transportation_error(stderr.decode())
+                concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
                 # Check if the command was successful
-                ErrorDocker = (process.returncode == 0)
+                ErrorDocker = (process.returncode != 0)
                 # Check Errors in GPU
-                Bit1,Bit2 = check_gpu_errors()
-                ErrorGPU = Bit1 or Bit2
-                # Save The Shared Dict With Information About The Process            
-                concurrent_manager.shared_dict[pid]["GPU_error"] = ErrorGPU
-                concurrent_manager.shared_dict[pid]["docker_error"] = ErrorDocker
+                concurrent_manager.LogMessage([f"Decode/Encode Message: {R}, {round(UCI1,3)}",stdout.decode(),stderr.decode(),f"Error Docker: {ErrorDocker}"])
+                concurrent_manager.AcquireLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Check GPU Errors")
+                ErrorGPU = check_out_of_memory_error(stderr.decode())                
+                concurrent_manager.ReleaseLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Release Check GPU Errors")                
+                concurrent_manager.LogMessage([f"{R}, {round(UCI1,3)},, {GeoInfo.city} Error GPU: {ErrorGPU}"])
+                # Save The Shared Dict With Information About The Process 
+                concurrent_manager.UpdateSharedDict(pid = pid, key = 'GPU_error',value = ErrorGPU,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update GPU Error: {ErrorGPU}")           
+                concurrent_manager.UpdateSharedDict(pid = pid, key = 'docker_error',value = ErrorDocker,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update Docker Error: {ErrorDocker}")
                 FailedSimulation = ErrorGPU or ErrorDocker
-                concurrent_manager.shared_dict[pid]["failed_simulation"] = FailedSimulation
-                save_shared_dict(concurrent_manager.shared_dict, os.path.join(saving_dir, 'shared_dict.json'))
-                # Bring Information Error Outside the Process
-                # NOTE: We are in a lock, so we do not give a shit about other processes
-                concurrent_manager.GPU_errors[gpu_id].value = ErrorGPU 
-                concurrent_manager.R_errors[gpu_id].value = R
-                concurrent_manager.Docker_error.value = ErrorDocker
+                concurrent_manager.UpdateSharedDict(pid = pid, key = 'failed_simulation',value = FailedSimulation,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update Failed Simulation: {FailedSimulation}")
+                # NOTE: We are in a lock, so we do not give a shit about other processes                
+                concurrent_manager.UpdateGPUError(gpu_id, ErrorGPU,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} ErrorGPU.value = {ErrorGPU}")
+                concurrent_manager.UpdateRError(gpu_id,R,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
+                concurrent_manager.UpdateDockerError(ErrorDocker,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} Docker_error.value")
+                concurrent_manager.LogMessage([f"Shared: GPU Error, {concurrent_manager.GPU_errors[gpu_id].value}, R: {concurrent_manager.R_errors[gpu_id].value}, Docker: {concurrent_manager.Docker_error.value}"])
                 # If Failed Simulation 
                 if FailedSimulation:
-                    concurrent_manager.GPU_error_index.value = gpu_id
+                    concurrent_manager.UpdateGPUErrorIndex(gpu_id,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} GPUError_index.value: {concurrent_manager.GPU_error_index.value}")                
                 else:
                     pass
-                free_gpu_memory(gpu_id)
-                concurrent_manager.locks[gpu_id].release()  
+#               concurrent_manager.AcquireLockByName("GPULock",Message = f"{R}, {round(UCI1,3)} Free Memory")
+#                free_gpu_memory(gpu_id)
+#                concurrent_manager.ReleaseLockByName("GPULock",Message = f"{R}, {round(UCI1,3)} Free Memory")
                 # OutputFile Is There, we can move it
                 if not FailedSimulation:
                     output_files = ['0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start),
@@ -697,6 +368,7 @@ def ProcessMain(case,
                                     ]
                     for output_file in output_files:
                         RenameMoveOutput(output_file,GeoInfo.city,R,UCI1,True)
+                        DeleteFile(InputDocker)
                 return not FailedSimulation
 
 #def LaunchProgram(config):
