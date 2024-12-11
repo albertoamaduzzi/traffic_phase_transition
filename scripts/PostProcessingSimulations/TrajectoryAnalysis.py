@@ -24,7 +24,6 @@ from GeoJsonFunctions import *
 from OutputStats import *
 
 BASE_PATH = "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/"
-BASE_PATH = "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/Monocentric"
 
 class Polycentrism2TrafficAnalyzer:
     def __init__(self,config):
@@ -44,6 +43,10 @@ class Polycentrism2TrafficAnalyzer:
         self.GetGeoJson()
         self.Rs = []
         self.UCIs = []
+        # Aggregated Variables
+
+
+
     def CompleteAnalysis(self):
         """
             Description:
@@ -54,19 +57,30 @@ class Polycentrism2TrafficAnalyzer:
                         - Animate the network traffic
         """
 
-    
+        # Treat each UCI independently
         for UCI in self.config.keys():
             if UCI != 'name' and UCI != 'delta_t' and UCI != 'output_simulation_dir' and UCI != 'graphml_file':
+                
                 self.R2UCI2OutputStats[UCI] = defaultdict()
                 for R in self.config[UCI].keys():
                     self.Rs.append(R)
+                    # Make The Analysis For The sinle Couple Of UCI and R
                     OS = OutputStats(R,UCI,self.config,self.GeoJsonEdges)
                     OS.CompleteAnalysis()
+                    # Extract The informations for the analysis to be Global.
+                    # In this way I do not loose Informations but the process is very power consuming
                     self.R2UCI2OutputStats[UCI][R] =  OS
 
         pass
 
 
+    def CollectUnloadAndFitAllRGivenUCI(self,UCI):
+        """
+            @UCI: float
+            This Function is used to collect time and n(t),fit_nt and plot the unload curve for all Rs.
+            The DfUnloads: pd.DataFrame -> Columns: nt_{R},n_fit_{R},time_{R} for all Rs
+        """
+        pass
     def GetGeoJson(self):
         """
             Description:

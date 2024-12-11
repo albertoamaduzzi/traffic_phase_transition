@@ -26,6 +26,7 @@ import haversine as hs
 from collections import defaultdict
 import pandas as pd
 import socket
+import numba
 if socket.gethostname()=='artemis.ist.berkeley.edu':
     sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','GenerationNet'))
 else:
@@ -137,6 +138,88 @@ def GetGrid(grid_size,
     return grid
 
 
+def ExtractGridFromBoundariesConstraintMeters(gdf_polygons,save_dir_local,Lx = 2.5,Ly = 2):
+    """
+        Description: 
+            Tessellates the Geometry given as input with rectangles of length Lx,Ly in meters
+            Columns:
+                gdf_polygons: GeoDataFrame -> GeoDataFrame containing the polygons
+                i: index in the x direction
+                j: index on y
+                component: Component of the beach
+                geometry: grid
+    """
+    dir_grid = SetGridDir(save_dir_local,Lx)
+    if os.path.isfile(os.path.join(dir_grid,str(round(Lx,3)),"grid.geojson")):
+        logger.info(f"Uploading grid from file {os.path.join(dir_grid,str(round(Lx,3)),"grid.geojson")} ...")
+        grid = gpd.read_file(os.path.join(dir_grid,str(round(Lx,3)),"grid.geojson"))
+        return grid
+    else:
+        from shapely.ops import unary_union
+        Ly = Lx
+        # Extract crs from the polygons
+        crs_ = gdf_polygons.crs
+
+        gdf_polygons = gdf_polygons.to_crs(gdf_polygons.estimate_utm_crs()) # "EPSG:4326"
+        beach_polygons = list(unary_union(gdf_polygons['geometry']).geoms)
+        maxPeopleSpots = 0
+        all_squares_gdf = gpd.GeoDataFrame(columns=['geometry']) # , crs="EPSG:32632"
+        maxPeopleRec = gdf_polygons['area'].sum() / (Lx*Ly)
+        # Creating an overall box to have a rectangular grid and avoid dishomogeneities in the grid indices
+        overall_bounds = unary_union(beach_polygons).bounds
+        minx, miny, maxx, maxy = overall_bounds
+        # Count That are useful to define the grid indexing
+        CountPolygons,CountIsPolygon,CountJsPolygon = 0,0,0
+        Is,Js = [], []    
+        for poly in beach_polygons:
+            CountIsPolygon = CountIsPolygon + len(Is)
+            CountJsPolygon = CountJsPolygon + len(Js)
+    #        minx, miny, maxx, maxy = poly.bounds
+            # Columns GeoDataFrame squares
+            squares = []
+            Is,Js = [], []
+            Component = []
+            Insides = []
+            # 
+            coord_x = minx
+            coord_y = miny
+            i = 0
+            while (coord_x < maxx):
+                j = 0
+                while (coord_y < maxy):
+                    square = Polygon([(coord_x, coord_y), (coord_x + Lx, coord_y), (coord_x + Lx, coord_y + Ly), (coord_x, coord_y + Ly)])
+                    squares.append(square)
+                    Is.append(int(i + CountIsPolygon*CountPolygons))
+                    Js.append(int(j + CountJsPolygon*CountPolygons))
+                    Component.append(int(CountPolygons))
+                    inside = any(poly.contains(square) for poly in beach_polygons)
+                    Insides.append(inside)
+                    j += 1
+                    coord_y += Ly
+                i += 1
+                coord_x += Lx
+                coord_y = miny
+            squares_gdf = gpd.GeoDataFrame(geometry=squares) # crs= "EPSG:32632"
+            squares_gdf["i"] = Is
+            squares_gdf["j"] = Js   
+            squares_gdf["component"] = Component   
+            squares_gdf["inside"] = Insides    
+    #        squares_gdf = squares_gdf[poly.contains(squares_gdf['geometry'])]
+            all_squares_gdf = pd.concat([all_squares_gdf, squares_gdf], ignore_index=True)
+            maxPeopleSpots += squares_gdf.shape[0]
+            CountPolygons += 1
+            print("Polygon Number: ",CountPolygons)        
+            print("Number of squares Beach in I: ",CountIsPolygon)
+            print("Number of squares Beach in J: ",CountJsPolygon)
+            print("Max People if side by side: ",int(maxPeopleSpots/2))
+        grid = gpd.GeoDataFrame(geometry=all_squares_gdf.geometry,crs = gdf_polygons.crs) # crs= "EPSG:32632"
+        grid["i"] =all_squares_gdf["i"]
+        grid["j"] = all_squares_gdf["j"]   
+        grid["component"] = all_squares_gdf["component"]   
+        grid["inside"] = all_squares_gdf["inside"]    
+        grid = grid.to_crs(crs_)
+    return grid
+
 ## Direction matrix
 def ObtainDirectionMatrix(grid,save_dir_local,grid_size):
     """
@@ -191,6 +274,28 @@ def ComputeDirectionMatrix(grid):
     logger.info("Time to compute Distance Matrix: {}".format(t1-t0))
     logger.info("Size distance Matrix: {}".format(len(distance_matrix)))
     return direction_matrix,distance_matrix 
+
+@numba.jit(parallel= True)
+def ComputeDirectionMatrixParallel(centroidx,centroidy):
+    '''
+        centroidx: np.array -> x coordinates of the grid, grid["centroidx"].to_numpy(dtype = np.float64)
+        centroidy: np.array -> y coordinates of the grid, grid["centroidy"].to_numpy(dtype = np.float64)
+        NOTE: The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
+    '''
+    logger.info("Computing Direction Matrix ...")
+    t0 = time.time()
+    direction_matrix = {i: {j: np.array([centroidx[j]- centroidx[i],centroidy[j]-centroidy[i]])/np.linalg.norm(np.array([centroidx[j]-centroidx[i],centroidy[j]-centroidy[i]])) for j in range(len(centroidy))} for i in range(len(centroidx))}
+    t1 = time.time()
+    logger.info("Time to compute Direction Matrix: {}".format(t1-t0))
+    logger.info("Size direction Matrix: {}".format(len(direction_matrix)))
+    t0 = time.time()
+    distance_matrix = {i: {j: hs.haversine((centroidy[i],centroidx[i]),(centroidy[j],centroidx[j])) for j in range(len(centroidy))} for i in range(len(centroidx))}
+    t1 = time.time()
+    logger.info("Time to compute Distance Matrix: {}".format(t1-t0))
+    logger.info("Size distance Matrix: {}".format(len(distance_matrix)))
+    return direction_matrix,distance_matrix 
+
+
 
 def DirectionDistance2Df(direction_matrix,distance_matrix,verbose = True):
     rows = []
@@ -347,6 +452,11 @@ def GetBoundariesInterior(grid,gdf_polygons,city):
         logger.info(f"Boundaries and Interior MultiPolygon Case for {city} ...")
         grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if convex_hull.boundary.crosses(poly) else 'not_edge')        
         grid['position'] = grid.apply(lambda x: 'inside' if (x["geometry"].within(boundary) or x["geometry"].intersects(convex_hull)) else 'outside',axis = 1)
+        PlotBoundariesHull(grid,city)
+    else:
+        logger.info(f"Boundaries and Interior Case {type(boundary)} for {city} ...")
+        grid['relation_to_line'] = grid.geometry.apply(lambda poly: 'edge' if convex_hull.boundary.crosses(poly) else 'not_edge')        
+        grid['position'] = grid.geometry.apply(lambda x: 'inside' if x.within(boundary) else ('edge' if x.touches(boundary) else 'outside'))
         PlotBoundariesHull(grid,city)
 #        boundary_lines = [LineString(polygon.exterior.coords) for polygon in boundary.geoms]
 #        boundaries = [polygon for polygon in boundary.geoms]

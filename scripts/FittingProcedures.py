@@ -18,12 +18,12 @@ def powerlaw(x, amp, index):
     
 
 def exponential(x, amp, index):
-    return amp * np.exp(-index*np.array(x))
+    return amp * np.exp(index*np.array(x))
 
 def linear(x, amp,q):
     return amp * np.array(x) + q
 
-def multilinear4variables(x, a,b,c,log_d):
+def multilinear4variables(x, log_k,beta,gamma,d0minus1):
     '''
         N is the couples of Origin and Destination
         Fitting like Vespignani:
@@ -37,7 +37,7 @@ def multilinear4variables(x, a,b,c,log_d):
                 3) b: exponent mass j
                 4) c: exp(-1/d0)                        
     '''
-    return a * x[0] + b * x[1] + c * x[2] + log_d
+    return log_k + beta * x[0] + gamma * x[1] + d0minus1 * x[2] 
 
 def lognormal(x, mean, sigma):
     return (np.exp(-(np.log(x) - mean)**2 / (2 * sigma**2)) / (x * sigma * np.sqrt(2 * np.pi)))
@@ -86,7 +86,7 @@ Name2Function = {'powerlaw':powerlaw,'exponential':exponential,'linear':linear,'
 Name2LossFunction = {'powerlaw':objective_function_powerlaw,'exponential':objective_function_exponential,'linear':objective_function_linear,'vespignani':objective_function_multilinear4variables}
     
 
-def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 10000):
+def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 50000):
     '''
         Input:
             label: 'powerlaw' or 'exponential' or 'linear'
@@ -96,6 +96,11 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
         USAGE:
 
     '''
+    dx = np.diff(x)
+    # NORMALIZE THE INTEGRAL
+    if np.sum(y_measured[1:]*dx)!=1:
+        Z = np.sum(y_measured[1:]*dx)
+        y_measured = y_measured/Z
     print('Fitting {}'.format(label))
     result_powerlaw = minimize(Name2LossFunction[label], initial_guess, args = (x, y_measured))#,maxfev = maxfev
     optimal_params_pl = result_powerlaw.x
@@ -105,7 +110,7 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
     print('Convergence fit {}: '.format(label),result_powerlaw.success)
     print('Optimal parameters: ',result_powerlaw.x)
     print('Message: ',result_powerlaw.message)
-    return fit
+    return fit,result_powerlaw.success
 
 def ComparePlExpo(x,y,initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-1),maxfev = 10000):
     '''
@@ -119,41 +124,58 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-
             - The error of the best fit and the parameters of the best fit
             - Parameters Fitted:
             - Boolean Value indicating if the Power Law is better than the Exponential
+            - y_fit: The fitted y values
     '''
     # Fit on the log-log scale POWERLAW
-    x0 =[x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0]
-    y0 =[y[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0]
-    print('x\n',x,'\ny\n',y,'\nx0\n',x0,'\ny0\n',y0)
-
+    dx = np.diff(x)
+    if np.sum(y[1:]*dx)!=1:
+        Z = np.sum(y[:-1]*dx)
+        y = y/Z
+    x0 = np.array([x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
+    y0 = np.array([y[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
+    # Fit on the log-log scale POWERLAW
     logx = np.log(x0)
     logy = np.log(y0)
-    result_powerlaw = minimize(objective_function_linear, initial_guess_powerlaw, args = (logx, logy))
+    # Adjust The Initial Guess
+    log_initial_guess_pl = (np.log(initial_guess_powerlaw[0]),initial_guess_powerlaw[1])
+    result_powerlaw = minimize(objective_function_linear, log_initial_guess_pl, args = (logx, logy))
     optimal_params_pl = result_powerlaw.x
     fit = curve_fit(linear, xdata = logx, ydata = logy,p0 = list(optimal_params_pl),maxfev = maxfev)
     # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
-    A = np.exp(fit[0][1])
-    alpha = fit[0][0]
+    A_pl = np.exp(fit[0][0])
+    alpha_pl = fit[0][0]
     ## EXPO
-    result_expo = minimize(objective_function_exponential, initial_guess_expo, args = (x0, y0))
+    log_initial_guess_expo = (np.log(initial_guess_expo[0]),initial_guess_expo[1])
+    # NOTE: Just y changes
+    result_expo = minimize(objective_function_linear, log_initial_guess_expo, args = (x0, logy))
     optimal_params_expo = result_expo.x
     fit = curve_fit(exponential, xdata = logx, ydata = logy,p0 = list(optimal_params_expo),maxfev = maxfev)
-    A0 = fit[0][0]
-    tau = fit[0][1]
+    A0 = np.exp(fit[0][0])
+    alpha_exp = fit[0][1]
+    y_fit_exp = exponential(x0,A0,alpha_exp)
+    y_fit_pl = powerlaw(x0,A_pl,alpha_pl)
     if len(y0)!=0:
         # Compare the two fits NOTE: Scale for the number of samples since the 
-        ErrorExp = np.sqrt(np.sum((exponential(x0,A0,tau)-y0)**2)/len(y0))
-        ErrorPL = np.sqrt(np.sum((powerlaw(x0,A,alpha)-y0)**2)/len(y0))
-        if ErrorExp<ErrorPL:
-            print('Exponential is better')
-            PowerLawFitted = False
-            return ErrorExp,A0,tau,PowerLawFitted
-        else:
-            print('Power Law is better')
-            PowerLawFitted = True
-            return ErrorPL,A,alpha,PowerLawFitted
+        ErrorExp = np.sqrt(np.sum((exponential(x0,A0,alpha_exp)-y0)**2)/len(y0))
+        ErrorPL = np.sqrt(np.sum((powerlaw(x0,A_pl,alpha_pl)-y0)**2)/len(y0))
+        return ErrorExp,A0,alpha_exp,Z*y_fit_exp,ErrorPL,A_pl,alpha_pl,Z*y_fit_pl
     else:
-        return 1000000,0,0,False    
+        raise ValueError(f'ComparePlExpo: x {x} and y {y} are empty')
 
-if FoundPyMC3:
-    def FitWithPymc(x,y,label):
-        return x,y,label
+class Fitter:
+    def __init__(self, x, y_measured, label = 'powerlaw', initial_guess = (6000,0.3), maxfev = 10000):
+        self.x = x
+        self.y_measured = y_measured
+        self.label = label
+        self.initial_guess = initial_guess
+        self.maxfev = maxfev
+        self.Name2Function = {'powerlaw':powerlaw,'exponential':exponential,'linear':linear,'vespignani':multilinear4variables}
+        self.Name2LossFunction = {'powerlaw':objective_function_powerlaw,'exponential':objective_function_exponential,'linear':objective_function_linear,'vespignani':objective_function_multilinear4variables}
+        # Holds Informations About Success Fit
+        self.Error = None
+        self.fit = None
+        self.success = None
+        
+    def Fit(self):
+        Fitting(self.x,self.y_measured,label = self.label,initial_guess = self.initial_guess,maxfev = self.maxfev)
+        

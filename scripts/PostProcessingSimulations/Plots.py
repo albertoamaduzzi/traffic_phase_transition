@@ -186,8 +186,28 @@ def PlotErrorFitAlphaWindow(Time2ErrorFit,R,UCI,PlotDir):
             - Time2ErrorFit: dict -> {time:{'error':0,"A":0,"b":0,"is_powerlaw":False}}
     """
     fig,ax = plt.subplots(1,1,figsize = (10,10))
-    ax.scatter(Time2ErrorFit.keys(),Time2ErrorFit.values())
+    ax.scatter(list(Time2ErrorFit.keys()),list(Time2ErrorFit.values()))
     ax.set_xlabel('Window Time',fontsize=15)
     ax.set_ylabel('Error',fontsize=15)
     ax.set_title('Error Fit',fontsize=15)
     plt.savefig(os.path.join(PlotDir,f'{R}_{round(UCI,3)}_ErrorFitAlphaWindow.png'))
+
+
+
+
+################### AGGREGATE AT R LEVEL ############################
+# Fig. 10 Supplementay
+
+def PlotR2Tau(R2Tau,PlotDir):
+    """
+        Description:
+            - Plots the R2Tau
+        Args:
+            - R2Tau: dict -> {R:tau}
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.scatter(list(R2Tau.keys()),list(R2Tau.values()))
+    ax.set_xlabel('R',fontsize=15)
+    ax.set_ylabel(r'$\\tau(R)$',fontsize=15)
+    ax.set_title('Tau',fontsize=15)
+    plt.savefig(os.path.join(PlotDir,'R2Tau.png'))

@@ -147,23 +147,26 @@ def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
     fig, ax = plt.subplots(figsize=(10, 10))
     gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
     grid.plot(ax=ax, edgecolor='black', facecolor='none',alpha = 0.2)
-    contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
-                                    grid['geometry'].apply(lambda geom: geom.centroid.y), 
-                                    grid['potential'], cmap='inferno', alpha=0.5)
+#    contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
+#                                    grid['geometry'].apply(lambda geom: geom.centroid.y), 
+#                                    grid['potential'], cmap='RdGy', alpha=0.5)
 
     # Create contour lines
     contour_lines = ax.tricontour(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                 grid['geometry'].apply(lambda geom: geom.centroid.y), 
-                                grid['potential'], colors='black')
+                                grid['potential'], cmap='RdGy')#,colors='black'
 
     #contour = ax.tricontour(grid['geometry'].apply(lambda geom: geom.centroid.x), 
     #                         grid['geometry'].apply(lambda geom: geom.centroid.y), 
     #                         grid['potential'], alpha=1, cmap='inferno')
-    cbar = plt.colorbar(contour_filled)
+#    cbar = plt.colorbar(contour_filled)
+    cbar = plt.colorbar(contour_lines)
     cbar.set_label('Potential')
     ax.set_title('Curve Level of Potential')
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
+#    plt.gca().set_aspect('image', adjustable='box')
+#    plt.axis(aspect='image')
     plt.savefig(os.path.join(dir_grid,f'CountorPlot_{round(UCI,3)}.png'),dpi = 200)
 #    if verbose:
         #plt.show()
@@ -244,7 +247,8 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,ver
     """
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
-    cumulative = np.array(cumulative)/np.sum(cumulative)
+    assert cumulative[-1] == 1,f"The last value of the Lorenz Curve should be 1, but it is {cumulative[-1]}"
+    cumulative = np.array(cumulative)
     idxFstar = Fstar #int(Fstar*len(cumulative))
     line1, = ax.plot(x,cumulative,c='black',label='Potential')
     # Plot the straight line to F*
@@ -332,6 +336,24 @@ def PlotDistributionDistance(Tij,distance_df):
     ax.set_ylabel('Count')
 #    plt.show()
 
+def PlotMass(grid,gdf_polygons,dir_grid,UCI):
+    '''
+        NOTE:
+            label_potential:    V_in, V_out
+            label_fluxes:       Tj  , Ti
+        USAGE:
+            PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,label_potential = 'V_out',label_fluxes = 'Ti')
+            PlotVFPotMass(grid,SFO_obj,PotentialDataframe,VectorField,label_potential = 'population',label_fluxes = 'Ti')
+
+    '''
+    label2save = {'V_in':'Potential','V_out':'Potential','population':'Mass'}
+    fig, ax = plt.subplots(figsize=(15, 15))
+    gdf_polygons.plot(ax=ax, color='white', edgecolor='black')
+    grid_plot = grid.plot(ax=ax, column = "population", cmap = 'viridis',edgecolor='black', alpha=0.3)
+    grid_cbar = plt.colorbar(grid_plot.get_children()[1], ax=ax)
+    grid_cbar.set_label('population', rotation=270, labelpad=15)
+    plt.savefig(os.path.join(dir_grid,f'mass_{round(UCI,3)}.png'),dpi = 200)
+    plt.close()
 def PlotVFPotMass(grid,gdf_polygons,PotentialDataframe,VectorField,dir_grid,UCI,label_potential = 'V_out',label_fluxes = 'Ti',plot_mass = True,verbose = False):
     '''
         NOTE:
@@ -401,7 +423,7 @@ def PlotRoutineOD(grid,Tij,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,
     PlotRotorDistribution(grid,PotentialDataFrame,dir_grid,UCI)
     PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, UCI,0.1)
     PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid,UCI)
-
+    PlotMass(grid,gdf_polygons,dir_grid,UCI)
 
 def PlotDepTime(Df, CityName, PlotDir):
     from collections import Counter

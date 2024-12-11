@@ -114,7 +114,8 @@ from PolycentrismPlot import *
 from PolygonSettings import *
 from Potential import *
 from PreprocessingObj import *
-
+sys.path.append(os.path.join(mother_path,'PreProcessing'))
+from CreateCartoSimulator import *
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +158,8 @@ class GeometricalSettingsSpatialPartition:
         self.berkeley_2018 = SERVER_TRAFFIC_DIR
         if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
             self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
+            self.mobility_planner = mobility_planner(self.city)
+
         else:
             raise ValueError('Graph City not found: ',os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml'))
         if os.path.isfile(os.path.join(self.shape_file_dir_local,self.city + '.shp')):
@@ -167,7 +170,8 @@ class GeometricalSettingsSpatialPartition:
         self.nodes = None
         self.edges = None
         if not os.path.isfile(os.path.join(self.save_dir_local,"osmid2idx.json")):
-            self.osmid2index = self.GraphFromPhml[['osmid','index']].set_index('osmid').to_dict()['index']
+            self.osmid2index = {data['osmid']: data['index'] for _, _, data in self.GraphFromPhml.edges(data=True) if 'osmid' in data and 'index' in data}
+            #            self.osmid2index = self.GraphFromPhml[['osmid','index']].set_index('osmid').to_dict()['index']
         else:
             with open(os.path.join(self.save_dir_local,"osmid2idx.json")) as f:
                 self.osmid2index = json.load(f)
@@ -200,7 +204,12 @@ class GeometricalSettingsSpatialPartition:
         self.Rmax = CityName2RminRmax[self.city][1]
         self.R = 1
         # INFO UCI
-        self.NumberUCIs = self.config["NumberUCIs"]  
+        self.NumberUCIs = self.config["NumberUCIs"]
+        self.IndicesEdge = None
+        self.IndicesInside = None  
+        self.Smaxi = None
+        self.Smaxi_Mass = None
+        self.Dmaxi = None
         # INFO NUMBer SIMULATIONS
         self.number_simulation_per_UCI = self.config["number_simulation_per_UCI"]
         self.InfoConfigurationPolicentricity = None
@@ -216,12 +225,14 @@ class GeometricalSettingsSpatialPartition:
         self.SetRmaxDivisibleByNSim()
         # Control that I have a configuration for each interval of UCI accepted
         self.UCIInterval2UCIAccepted = {UCIInterval:None for UCIInterval in np.linspace(0,1,self.NumberUCIs)}
-
-
+        logger.info("Bounding Box: {}".format(self.bounding_box))
 #### GEOMETRICAL SETTINGS ####
     def ComputeBoundingBox(self):
         """Compute the Bounding Box of the City"""
-        return self.gdf_polygons.geometry.unary_union.bounds
+        if self.city == 'LAX':
+            return (-118.951721, 33.65004, -117.646374, 34.823301)
+        else:
+            return self.gdf_polygons.geometry.unary_union.bounds
 
     def GetLattice(self):
         """
@@ -237,23 +248,17 @@ class GeometricalSettingsSpatialPartition:
             2- Compute the Boundaries and interior of the Grid.
         """
         if self.city != "":
-            if not self.StateAlgorithm["GetGrid"]:
-                logger.info(f"Get Grid {self.city}")
-                self.grid = GetGrid(self.grid_size,self.bounding_box,self.crs,self.save_dir_local)
-                self.StateAlgorithm["GetGrid"] = True
-            else:
-                pass
-            if not self.StateAlgorithm["GetBoundariesInterior"]:
-                logger.info(f"Get Boundaries and Interior {self.city}")
-                self.grid = GetBoundariesInterior(self.grid,self.gdf_polygons,self.city)
-                self.StateAlgorithm["GetBoundariesInterior"] = True
-            else:
-                pass
+            logger.info(f"Get Grid {self.city}")
+            self.grid = GetGrid(self.grid_size,self.bounding_box,self.crs,self.save_dir_local)
+            logger.info(f"Get Boundaries and Interior {self.city}")
+            self.grid = GetBoundariesInterior(self.grid,self.gdf_polygons,self.city)
             logger.info('Grid and Boundaries and Interior Computed')
             self.grid = GetGeometryPopulation(self.gdf_hexagons,self.grid,'grid',self.city)
-            self.StateAlgorithm["GetGrid"] = True
         else:
             self.grid = gpd.read_file(os.path.join(self.save_dir_grid,'grid.geojson'))
+
+
+
 
     def ObtainDirectionMatrix(self):
         if not self.StateAlgorithm["GetDirectionMatrix"]:
@@ -329,28 +334,44 @@ class GeometricalSettingsSpatialPartition:
                 - Vector Field
             NOTE: In this case we are considering just the dataset and not produced any change in the potential.    
                 potential
+            NOTE: The return value of this block is going to be the UCI of the city. In this case we chose the UCI relative to the population and 
+            not the potential.
         """
         PotentialDf, _,VectorField = GeneratePotentialFromFluxes(self.Tij,self.df_distance,self.lattice,self.grid,self.city,self.save_dir_grid)
         if not os.path.isfile(os.path.join(self.save_dir_grid,'PotentialDataframe.csv')):
             SavePotentialDataframe(PotentialDf,self.save_dir_grid)
         logger.info(f"Compute UCI {self.city}")        
         if not os.path.isfile(os.path.join(self.save_dir_grid,f'UCI_base.json')):
-            df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside = FilterDistancePotentialGrid(self.df_distance,self.grid,PotentialDf)
-            if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.csv')):
-                self.Smaxi,_ = PrepareJitCompiledComputeV(df_distance_inside,IndicesEdge,SumPot,len(IndicesEdge),PotentialDf,case = 'Vmax')                
-#                self.Smaxi = ComputeVmaxUCI(df_distance_inside)
-                self.Smaxi_Mass,_ = PrepareJitCompiledComputeV(df_distance_inside,IndicesEdge,SumPot,len(IndicesEdge),self.grid,case = 'Vmax')                
-#                self.Smaxi_Mass = ComputeVMaxUCIMass(df_distance_inside)
-                pd.DataFrame({"Smax":self.Smaxi,"SmaxM":self.Smaxi_Mass}).to_csv(os.path.join(self.save_dir_grid,f'Smax.csv'),index=False)
+            if self.IndicesInside is None:
+                self.IndicesInside = GetIndicesInsideFromGrid(self.grid)
+            if self.IndicesEdge is None:
+                self.IndicesEdge = GetIndicesEdgeFromGrid(self.grid)
+            if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.parquet')):
+                logger.info(f"RoutineVectorField: Extract Smax,Dmax: {self.city}")
+                # POTENTIAL
+                self.Smaxi,self.Dmaxi = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Potential')
+                pd.DataFrame({"Smax":self.Smaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'),engine = 'pyarrow',index=False)
+                pd.DataFrame({"Dmax":self.Dmaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'),engine = 'pyarrow',index=False)
+                # MASS
+                self.Smaxi_Mass,self.Dmax_ij_Mass = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Mass')
+                pd.DataFrame({"SmaxMass":self.Smaxi_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'),engine = 'pyarrow',index=False)
+                pd.DataFrame({"DmaxMass":self.Dmax_ij_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'),engine = 'pyarrow',index=False)
             else:
-                self.Smaxi = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["Smax"].to_numpy()
-                self.Smaxi_Mass = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["SmaxM"].to_numpy()
-            PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside,self.grid,self.df_distance,self.Smaxi,self.Smaxi_Mass)
+                logger.info(f"RoutineVectorField: Upload Smax,Dmax: {self.city}")
+                self.Smaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'))["Smax"].to_numpy(dtype=np.float64)
+                self.Dmaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'))["Dmax"].to_numpy(dtype=np.float64)            
+                self.Smaxi_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'))["SmaxMass"].to_numpy(dtype=np.float64)
+                self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
+            PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(self.df_distance,self.grid,PotentialDf,self.IndicesEdge,self.IndicesInside,self.Smaxi,self.Smaxi_Mass,self.Dmaxi,self.Dmax_ij_Mass)
             I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}      
             UCIskip = {'UCI':UCI,"UCIM":UCIM}
             UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
-            Tij_Inside = self.Tij[self.Tij['origin'].isin(IndicesInside) & self.Tij['destination'].isin(IndicesInside)]
-            VectorFieldInside = VectorField.iloc[IndicesInside]
+            # Prepare Plot UCI
+            Tij_Inside = self.Tij[self.Tij['origin'].isin(self.IndicesInside) & self.Tij['destination'].isin(self.IndicesInside)]
+            VectorFieldInside = VectorField.iloc[self.IndicesInside]
+            GridInside = self.grid.iloc[self.grid["index"].isin(self.IndicesInside)]
+            PotentialInside =  PotentialDf.loc[PotentialDf['index'].isin(self.IndicesInside)]
+            # Plot UCI
             os.makedirs(UCI_dir,exist_ok=True)     
             SaveJsonDict(I,os.path.join(UCI_dir,f'UCI_{round(UCI,3)}.json'))
             SaveJsonDict(UCIskip,os.path.join(self.save_dir_grid,f'UCI_base.json'))
@@ -367,6 +388,7 @@ class GeometricalSettingsSpatialPartition:
             PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)
             PlotHarmonicComponentDistribution(GridInside,PotentialInside,UCI_dir,UCI)
             PrintInfoFluxPop(GridInside,Tij_Inside) 
+            PlotMass(self.grid,self.gdf_polygons,UCI_dir,UCI)
         else:
             with open(os.path.join(self.save_dir_grid,f'UCI_base.json')) as f:
                 UCIskip = json.load(f)
@@ -435,23 +457,41 @@ class GeometricalSettingsSpatialPartition:
         New_Potential_Dataframe = ComputeNewPotential(New_Vector_Field,self.lattice,new_population)
         Grid_New = self.grid.copy()
         Grid_New['population'] = new_population
-        logger.info(f"Compute New UCI {self.city}")     
-        df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside = FilterDistancePotentialGrid(self.df_distance,Grid_New,New_Potential_Dataframe)
-        if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.csv')):
-            self.Smaxi = ComputeVmaxUCI(df_distance_inside)
-            self.Smaxi_Mass = ComputeVMaxUCIMass(df_distance_inside)
-            pd.DataFrame({"Smax":self.Smaxi,"SmaxM":self.Smaxi_Mass}).to_csv(os.path.join(self.save_dir_grid,f'Smax.csv'),index=False)
+        logger.info(f"Compute New UCI {self.city}")   
+        # Compute UCI
+        
+        if self.IndicesInside is None:
+            self.IndicesInside = GetIndicesInsideFromGrid(self.grid)
+        if self.IndicesEdge is None:
+            self.IndicesEdge = GetIndicesEdgeFromGrid(self.grid)
+        if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.parquet')):
+            logger.info(f"ChangeMorphology: Extract Smax,Dmax: {self.city}")
+            # POTENTIAL
+            self.Smaxi,self.Dmaxi = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Potential')
+            pd.DataFrame({"Smax":self.Smaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'),engine = 'pyarrow',index=False)
+            pd.DataFrame({"Dmax":self.Dmaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'),engine = 'pyarrow',index=False)
+            # MASS
+            self.Smaxi_Mass,self.Dmax_ij_Mass = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Mass')
+            pd.DataFrame({"SmaxMass":self.Smaxi_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'),engine = 'pyarrow',index=False)
+            pd.DataFrame({"DmaxMass":self.Dmax_ij_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'),engine = 'pyarrow',index=False)
         else:
-            self.Smaxi = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["Smax"].to_numpy()
-            self.Smaxi_Mass = pd.read_csv(os.path.join(self.save_dir_grid,f'Smax.csv'))["SmaxM"].to_numpy()
-        PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(df_distance_inside,GridInside,PotentialInside,SumPot,IndicesEdge,IndicesInside,Grid_New,self.df_distance,self.Smaxi,self.Smaxi_Mass)
-        Tij_InsideModified = Tij_Modified[Tij_Modified['origin'].isin(IndicesInside) & Tij_Modified['destination'].isin(IndicesInside)]
-        Tij_Inside = self.Tij[self.Tij['origin'].isin(IndicesInside) & self.Tij['destination'].isin(IndicesInside)]
+            logger.info(f"ChangeMorphology: Upload Smax,Dmax: {self.city}")
+            self.Smaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'))["Smax"].to_numpy(dtype = np.float64)
+            self.Dmaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'))["Dmax"].to_numpy(dtype=np.float64)            
+            self.Smaxi_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'))["SmaxMass"].to_numpy(dtype=np.float64)
+            self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
+        PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(self.df_distance,Grid_New,New_Potential_Dataframe,self.IndicesEdge,self.IndicesInside,self.Smaxi,self.Smaxi_Mass,self.Dmaxi,self.Dmax_ij_Mass)
+        Tij_InsideModified = Tij_Modified[Tij_Modified['origin'].isin(self.IndicesInside) & Tij_Modified['destination'].isin(self.IndicesInside)]
+        Tij_Inside = self.Tij[self.Tij['origin'].isin(self.IndicesInside) & self.Tij['destination'].isin(self.IndicesInside)]
         I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}           
         SaveJsonDict(I,os.path.join(self.save_dir_local,f'UCI_{round(UCI,3)}.json'))         
         UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
         os.makedirs(UCI_dir,exist_ok=True)
-        VectorFieldInside = New_Vector_Field.iloc[IndicesInside]
+        # Mask For Plot
+        VectorFieldInside = New_Vector_Field.iloc[self.IndicesInside]
+        GridInside = Grid_New.loc[Grid_New["index"].isin(self.IndicesInside)]
+        PotentialInside =  New_Potential_Dataframe.loc[New_Potential_Dataframe['index'].isin(self.IndicesInside)]
+        # Plot UCI
         PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)        
         PlotRoutineOD(GridInside,
                     Tij_InsideModified,

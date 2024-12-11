@@ -1,4 +1,5 @@
 import datetime
+from numpy import linspace
 HOURS_IN_DAY = 24
 MINUTES_IN_HOUR = 60
 SECONDS_IN_MINUTE = 60
@@ -29,3 +30,15 @@ def ConvertArray2HMS(array):
     else:
         raise ValueError("Array type not supported")
     
+def InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,delta_t):
+    SecondsInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR*SECONDS_IN_MINUTE)
+    MinutesInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR)
+    # I count people in Network at each time interval (15 mins)
+    NumIntervals = int(MinutesInDay/delta_t)
+    # Create the Int Time Array (0 -> Seconds In Day)
+    IntTimeArray = linspace(0,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals,dtype = int)       
+    # Convert it to minutes seconds and hour for the plot Labels (0 -> 24)        
+    HourTimeArray = ConvertArray2HMS(linspace(TIMESTAMP_OFFSET,TIMESTAMP_OFFSET + SecondsInDay,NumIntervals))
+    Interval2NumberPeopleInNet = {Interval:0 for Interval in HourTimeArray}
+    return IntTimeArray, HourTimeArray, Interval2NumberPeopleInNet
+
