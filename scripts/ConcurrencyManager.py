@@ -60,8 +60,10 @@ class ConcurrencyManager:
         # Initialize a flag for each GPU
         self.GPU_errors = [Value('b', False) for i in range(self.GPUHandler.deviceCount)]
         self.Docker_error = Value('b', False)
+        self.FirstTry = Value('b', True)
         self.R_errors = [Value('i', 0) for i in range(self.GPUHandler.deviceCount)]
         self.GPU_error_index = Value('i', -1) 
+
         pass
 
     #### SAVE SHARED DICTIONARY ####
@@ -263,7 +265,43 @@ class ConcurrencyManager:
                     logger.info(Message)
 
         pass
+
+    
+
+
     ##### UPDATE SHARED VARIABLES #####
+    def ModifyVariablesByNames(self,name_variable,pid,case,R,UCI1,city,gpu_id,DockerError,GPUError,FirstTry,Message = None):
+        """
+            @Modifies each shared Variable by name
+        """
+        if name_variable == "SharedDict":
+            assert pid is not None ,"SharedDict: PID is not provided"
+            assert case is not None ,"SharedDict: Case is not provided"
+            assert R is not None ,"SharedDict: R is not provided"
+            assert UCI1 is not None ,"SharedDict: UCI1 is not provided"
+            assert city is not None ,"SharedDict: City is not provided"
+            self.UpdateSharedDict(pid,case,R,UCI1,city,Message = Message)
+        elif name_variable == "GPUError":
+            assert gpu_id is not None ,"GPUError: GPU ID is not provided"
+            assert GPUError is not None ,"GPUError: GPUError is not provided"
+            self.UpdateGPUError(gpu_id, GPUError,Message = Message)
+        elif name_variable == "DockerError":
+            assert DockerError is not None ,"DockerError: DockerError is not provided"
+            self.UpdateDockerError(DockerError,Message = Message)
+        elif name_variable == "RError":
+            assert gpu_id is not None ,"RError: GPU ID is not provided"
+            assert R is not None ,"RError: R is not provided"
+            self.UpdateRError(gpu_id, R,Message = Message)
+        elif name_variable == "GPUErrorIndex":
+            assert gpu_id is not None ,"GPUErrorIndex: GPU ID is not provided"
+            self.UpdateGPUErrorIndex(gpu_id,Message = Message)
+        elif name_variable == "FirstTry":
+            assert FirstTry is not None ,"FirstTry: FirstTry is not provided"
+            self.UpdateFirstTry(FirstTry,Message = Message)
+        else:
+            raise ValueError("Variable not found")
+
+    
     def InitSharedDict(self,pid,case,R,UCI1,city,Message = None):
         self.AcquireLockByName("SharedDictLock",Message = Message)
         self.shared_dict = defaultdict(dict)
@@ -327,6 +365,16 @@ class ConcurrencyManager:
         self.GPU_error_index.value = gpu_id
         self.ReleaseLockByName("ErrorLock",gpu_id,Message = Message)
         pass 
+
+    def UpdateFirstTry(self, value,Message = None):
+        """
+            @brief: Update the first try
+        """
+        self.AcquireLockByName("SharedDictLock",Message = Message)
+        self.FirstTry.value = value
+        self.save_shared_dict()
+        self.ReleaseLockByName("SharedDictLock",Message = Message)
+        pass
 
     #### LOGGING ####
     def LogMessage(self, messages,Message = None):

@@ -48,8 +48,10 @@ def GetVectorField(Tij,df_distance):
     '''
     assert 'dir_vector' in df_distance.columns, 'The column "dir_vector" is not in the DataFrame'
     assert 'number_people' in Tij.columns, 'The column "number_people" is not in the DataFrame'    
-    Tij['vector_flux'] = df_distance['dir_vector'].apply(lambda x: parse_dir_vector(x) ) * Tij['number_people']
-
+    if isinstance(df_distance.iloc[0]['dir_vector'],str):
+        Tij['vector_flux'] = df_distance['dir_vector'].apply(lambda x: parse_dir_vector(x) ) * Tij['number_people']
+    else:
+        pass
     # Create VectorField DataFrame
     VectorField = pd.DataFrame(index=Tij['(i,j)D'].unique(), columns=['(i,j)', 'Ti', 'Tj'])
     Tj_values = Tij.groupby('(i,j)D')['vector_flux'].sum()
@@ -104,8 +106,8 @@ def GetPotentialLattice(lattice,VectorField):
     nx.set_node_attributes(lattice, 0, 'index')
     nx.set_node_attributes(lattice, 0, 'rotor_z_out')
     nx.set_node_attributes(lattice, 0, 'rotor_z_in')
-    max_i = max(ast.literal_eval(node_str)[0] for node_str in lattice.nodes)
-    max_j = max(ast.literal_eval(node_str)[1] for node_str in lattice.nodes)
+#    max_i = max(ast.literal_eval(node_str)[0] for node_str in lattice.nodes)
+#    max_j = max(ast.literal_eval(node_str)[1] for node_str in lattice.nodes)
     # Initialize Potential To 0 -> In this way the edges will be 0
     for node_str in lattice.nodes:    
         ij = ast.literal_eval(node_str)
@@ -182,18 +184,41 @@ def ComputeHarmonicComponents(lattice):
         
 
 def SmoothPotential(lattice):
+    """
+        @param lattice: Graph with the square lattice
+        @return lattice: Graph with the square lattice
+    """
+    from math import isnan
     # Smooth V_in and V_out by taking the average over all the neighbors
     for node_str in lattice.nodes:
         neighbors = list(lattice.neighbors(node_str))
-        num_neighbors = len(neighbors)
         
-        # Calculate the average of V_in and V_out for the neighbors
-        avg_Vin = sum(lattice.nodes[neighbor]['V_in'] for neighbor in neighbors) / num_neighbors
-        avg_Vout = sum(lattice.nodes[neighbor]['V_out'] for neighbor in neighbors) / num_neighbors
+        # Initialize sums and counts
+        sum_Vin = 0
+        sum_Vout = 0
+        count_Vin = 0
+        count_Vout = 0
+        
+        # Calculate the sum and count of V_in and V_out for the neighbors, ignoring NaN values
+        for neighbor in neighbors:
+            Vin = lattice.nodes[neighbor]['V_in']
+            Vout = lattice.nodes[neighbor]['V_out']
+            
+            if not isnan(Vin):
+                sum_Vin += Vin
+                count_Vin += 1
+            
+            if not isnan(Vout):
+                sum_Vout += Vout
+                count_Vout += 1
+        
+        # Calculate the average values, handling the case where count is zero
+        avg_Vin = sum_Vin / count_Vin if count_Vin > 0 else float('nan')
+        avg_Vout = sum_Vout / count_Vout if count_Vout > 0 else float('nan')
         
         # Assign the average values to the current node
         lattice.nodes[node_str]['V_in'] = avg_Vin
-        lattice.nodes[node_str]['V_out'] = avg_Vout    
+        lattice.nodes[node_str]['V_out'] = avg_Vout
     return lattice
 
 def ConvertLattice2PotentialDataframe(lattice):

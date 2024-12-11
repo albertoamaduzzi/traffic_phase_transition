@@ -215,14 +215,16 @@ if __name__ == '__main__':
             FirstTry = True
             # Run The Processes Until for All The Rs I do not Have A Docker Error
             # NOTE: GPU related Problems Act on ArrayRs
-            while(not concurrency_manager.Docker_error.value):
+            while(True):
                 # Reset The Processes
                 processes = []
-                concurrency_manager.Reset()
+#                concurrency_manager.Reset()
                 if FirstTry:
                     ArrayRs = GeoInfo.ArrayRs
+                    logger.info("FirstTry: {}".format(FirstTry))
                     FirstTry = False
                 else:
+                    logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
                     # Keep the Number Of Rs Tried in the Simulation
                     ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
                 for R in ArrayRs:
@@ -254,6 +256,9 @@ if __name__ == '__main__':
                             # This Is The Only Case I Break The Loop
                             # NOTE: No Docker Problem, No GPU Problem 
                             break
+                # If No Error Occurred Free The Processes
+                if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                    break 
 
 
 #            barrier.wait()
@@ -269,7 +274,7 @@ if __name__ == '__main__':
 
             # Generate modified Fluxes
             for cov in GeoInfo.config['covariances']:
-                for distribution in ['exponential']:
+                for distribution in ['gaussian']:
                     for num_peaks in GeoInfo.config['list_peaks']:
                         if len(GeoInfo.ArrayRs) < cpu_count():
                             N = len(GeoInfo.ArrayRs)
@@ -291,22 +296,25 @@ if __name__ == '__main__':
                         if GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] is None:
                             # Add it if it is not already in an valid interval
                             GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] = UCI1
-                            GridNew.to_csv(os.path.join(GeoInfo.save_dir_local,f'GridNew_{cov}_{distribution}_{num_peaks}_{UCI1}.csv'),index=False)                    
+                            GridNew.to_csv(os.path.join(GeoInfo.save_dir_local,f'GridNew_{cov}_{distribution}_{num_peaks}_{round(UCI1,3)}.csv'),index=False)                    
                         else:
                             pass
                         log_to_stderr()
-                        while(not concurrency_manager.Docker_error.value):
+                        FirstTry = True
+                        while(True):
                             # Reset The Processes
                             processes = []
-                            concurrency_manager.Reset()
+#                            concurrency_manager.Reset()
                             if FirstTry:
                                 ArrayRs = GeoInfo.ArrayRs
                                 FirstTry = False
+                                logger.info("FirstTry: {}".format(FirstTry))
                             else:
+                                logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
                                 # Keep the Number Of Rs Tried in the Simulation
                                 ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
                             for R in ArrayRs:
-                                p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI,concurrency_manager))
+                                p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager))
                                 # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
             #                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
                                 processes.append(p)
@@ -333,6 +341,9 @@ if __name__ == '__main__':
                                         # This Is The Only Case I Break The Loop
                                         # NOTE: No Docker Problem, No GPU Problem 
                                         break
+                            if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                                break 
+#                            barrier.wait()
 '''                        
                         while(True):
                             if FirstTry:

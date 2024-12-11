@@ -1,0 +1,8 @@
+{
+    "client_id": "YOUR",
+    "client_secret": "YOUR",
+    "redirect_uri": "http://localhost:3000/redirect",
+    "auth_url": "https://login.live.com/oauth20_author",
+    "scope": ["wl.signin", "wl.offline_access", "onedrive.readwrite"],
+    "base_dir_project_one_drive": "YOUR"
+}

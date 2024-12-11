@@ -382,9 +382,10 @@ def VespignaniBlock(df_distance,grid,Tij,potentialdir):
     # SAVE FIT
     if not os.path.isfile(os.path.join(potentialdir,'FitVespignani.json')):
         logger.info("Fitting Gravitational Model ...")
-        k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0.46,0.64,1.44,0.001] ,maxfev = 30000)
+        # NOTE: The Guess For the fitting Procedure is that the multiplicative factor is = 0, therefore the normalization is = 1, then the masses are linearly related to the fluxes, and the typical length is 100 km
+        k,error = Fitting(VespignaniVector,np.array(Fluxes),label = 'vespignani',initial_guess = [0,1,1,0.001] ,maxfev = 30000)
         with open(os.path.join(potentialdir,'FitVespignani.json'),'w') as f:
-            json.dump({'logk':k[3],'alpha': k[0],'gamma': k[1],'1/d0':k[2]},f)
+            json.dump({'logk':k[0],'alpha': k[1],'gamma': k[2],'1/d0':k[3]},f)
     else:
         logger.info("Loading Fitting Gravitational Model ...")
         with open(os.path.join(potentialdir,'FitVespignani.json'),'r') as f:
