@@ -6,7 +6,7 @@ from numba import prange
 from shapely.geometry import Point
 import os
 import logging
-
+from ModifyPotential import *
 # QuadProg
 from cvxopt import matrix, solvers
 logger = logging.getLogger(__name__)
@@ -370,6 +370,22 @@ def ComputeUCI(df_distance,grid,Potentialdf,IndicesEdge,IndicesInside,Smax_i,Sma
     PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCICase(df_distance,grid,IndicesInside,VMassmax,case = 'Mass')
 
     return PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
+
+
+def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Grid,total_population,df_distance,IndicesEdge,IndicesInside):
+    """
+        @params cov: Covariance that sets the width of population
+        @params distribution: [exponential,gaussian]
+        @params num_peaks: Number of peaks in the population
+        Generate Random Population and Compute UCI
+    """
+    for cov in Covariances:
+        for distribution in Distributions:
+            for num_peaks in ListPeaks:
+                new_population,index_centers = GenerateRandomPopulation(Grid,num_peaks,total_population)
+                Grid['population'] = new_population
+                PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(df_distance,Grid,None,IndicesEdge,IndicesInside,Smaxi,Smaxi_Mass,Dmaxi,Dmax_ij_Mass)
+
 
 
 ##----------------- UCI MASS ---------------------------------##
