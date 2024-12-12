@@ -12,6 +12,21 @@ from PolarsFunctions import *
 from PhaseTransition import *
 import ast
 
+"""
+    @ description:
+        This script contains the class OutputStats that is used to analyze the output of the simulation.
+        - Each Instantiation corresponds to the analysis of a simulation [R,UCI]
+        - Consists of:
+            - Computing the Unload Curve: DfUnload -> DataFrame
+            - Computing the Best Fit for the Power Law and Exponential: Time2ErrorFit -> dict -> {t:{"error_pl":0,"error_exp":0}}
+            - Deciding If The Network Is Jammed: IsJam -> bool (Condition: If there exists a time t for which the best fit is a power law)
+            - Computing the Gamma and Tau: Gamma -> float, Tau -> float
+            - Computing the Fluxes And Speeds in time: EdgesWithFluxesAndSpeed -> DataFrame
+
+"""
+
+
+
 def ReadRouteAndPeopleFileFromBaseDir(BaseDir):
     """
         Read the Route and People File from the BaseDir
@@ -70,6 +85,7 @@ class OutputStats:
         self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'Nodes.csv'))
         self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'Edges.csv'))
         self.AddCapacity2Edges()
+        self.ConvertSpeedRoad2kmhInEdges()
         # Group Control
         self.t_start_control_group = 7*3600
         self.t_end_control_group = 8*3600
@@ -80,20 +96,6 @@ class OutputStats:
         self.VolumeTraffic = 0
         # Is Jam (Variable To Encode The Fact That PowerLaw Is Better Then Exponential, after Some Point)
         self.IsJam = False
-
-
-    def AddCapacity2Edges(self):
-        """
-            Add the capacity to the Edges DataFrame.
-            @ NOTE: Useful For Considerations about traffic.
-        """
-        df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
-        df = df.with_columns([
-            pl.col("capacity").cast(pl.Int64),
-            pl.col("uv").cast(pl.Int64)
-        ])
-        self.Edges = self.Edges.join(df, left_on = "uniqueid",right_on = "uv", how = "inner")
-
 
     def CompleteAnalysis(self):
         """
@@ -111,9 +113,32 @@ class OutputStats:
         self.PlotUnloadCurve()
         # Compute The Gamma And Tau
         self.ComputeGammaAndTau()
+        # Compute The Fluxes And Speeds in time
+        self.ComputeFluxesAndSpeedDfRoute()
         # DEPRECATED
         self.ComputeTime2Road2Traveller()
         self.AnimateNetworkTraffic()
+
+
+
+    def AddCapacity2Edges(self):
+        """
+            Add the capacity to the Edges DataFrame.
+            @ NOTE: Useful For Considerations about traffic.
+        """
+        df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
+        df = df.with_columns([
+            pl.col("capacity").cast(pl.Int64),
+            pl.col("uv").cast(pl.Int64)
+        ])
+        self.Edges = self.Edges.join(df, left_on = "uniqueid",right_on = "uv", how = "inner")
+
+    def ConvertSpeedRoad2kmhInEdges(self):
+        """
+            Convert the speed in the road to km/h
+        """
+        self.Edges = self.Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_kmh"))
+        DropColumnsDfIfThere(self.Edges,["speed_mph"])
 
     def GetPeopleInfo(self):
         """
@@ -286,8 +311,10 @@ class OutputStats:
                 min_exponential_error = errors["Exponential"]
                 best_t_exponential = t
         if min_exponential_error < min_powerlaw_error:
+            logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
             return "Exponential", best_t_exponential
         else:
+            logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
             return "PowerLaw", best_t_powerlaw
 
     def DecideIfJam(self):
@@ -302,46 +329,53 @@ class OutputStats:
         self.CriticalNt = None
         self.CrirticalAlpha = None
         BestFunctionFit, BestTime = self.GetBestFitTimes()
+
         if BestFunctionFit == "PowerLaw":
             self.IsJam = True
             self.TCritical = BestTime
             self.CriticalNt = self.Time2nt[BestTime]["n"]
             self.CriticalAlpha = self.Time2Fit[BestTime]["alpha_pl"]
+            self.Tau = None
+            logger.info(f"Network is jammed at time {BestTime} with alpha = {self.CriticalAlpha} and Tau = None")
         else:
             self.IsJam = False
             self.TCritical = None
             self.CriticalNt = None
             self.CriticalAlpha = None
-
+            self.Tau = self.Time2Fit[BestTime]["alpha_exp"]
+            logger.info(f"Network is not jammed at time {BestTime} with alpha = None and Tau = {self.Tau}")
 ### FLUXES AND GAMMA
     def ComputeFluxesAndSpeedDfRoute(self):
         """
             @description:
-                Transform DfRoute: [p,distance,route] -> [p,distance,route,avg_v(km/h)]
+                - Computes Fluxes And Average Speeds in The Road Network in Intervals Of Time of delta_t
+                @ return self.EdgesWithFluxesAndSpeed: DataFrame with the fluxes and speeds in the road network
         """
         if os.path.exists(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet")):
             self.DfRoute = pl.read_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
         else:
-            self.DfRoute = self.DfRoute.join(self.DfPeople, on="p", how="left")
-            self.DfRoute = self.DfRoute.with_columns((pl.col("avg_v(mph)")*1.6).alias("avg_v(km/h)"))
-            self.DfRoute = self.DfRoute.drop(["distance_right","a","b","T","gas","co","path_length_cpu","path_length_gpu","avg_v(mph)","init_intersection","end_intersection"])
-            self.DfRoute = self.DfRoute.filter(pl.col("num_steps") != 0)    
-            self.DfRoute.with_columns(pl.when(not isinstance(pl.col("avg_v(km/h)"),pl.Float64)).then(pl.col("distance")/(pl.col("last_time_simulated")- pl.col("time_departure"))*3.6).alias("avg_v(km/h)"))
             for t in range(len(self.IntTimeArray)):
-                self.DfRoute = self.DfRoute.with_columns(
+                DfRoadsFluxes = self.DfRoute.with_columns(
                     pl.lit(0).alias(f"flux_{t}")
                 )
-                self.DfRoute = self.DfRoute.with_columns(
+                DfRoadsFluxes = DfRoadsFluxes.with_columns(
                     pl.lit(0).alias(f"speed_kmh_{t}")
                 )
+
             for t in range(len(self.IntTimeArray)):
-                print(t)
-                UsersPerAvgSpeedRoads = (pl.col("time_departure") <= self.IntTimeArray[t]) & (pl.col("last_time_simulated") >= self.IntTimeArray[t])
-                self.DfRoute.filter(UsersPerAvgSpeedRoads).group_by("route").agg([
+                ConditionUsersInRoad = (pl.col("time_departure") <= self.IntTimeArray[t]) & (pl.col("time_leaving_road") >= self.IntTimeArray[t])
+                Df2Join = self.DfRoute.filter(ConditionUsersInRoad).group_by("route").agg([
                     (pl.col("avg_v(km/h)")).mean().alias(f"speed_kmh_{t}"),
                     pl.col("p").count().alias(f"flux_{t}")
                 ])
-            self.DfRoute.write_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
+                if Df2Join.is_empty(): 
+                    pass
+                else:
+                    DfRoadsFluxes = DfRoadsFluxes.join(Df2Join, on="route", how="left")
+            EdgesWithFluxesAndSpeed = self.Edges.join(DfRoadsFluxes, left_on='uniqueid', right_on='route', how='left')    
+            EdgesWithFluxesAndSpeed = EdgesWithFluxesAndSpeed.unique(subset=["u","v"], keep='first')
+            self.EdgesWithFluxesAndSpeed = DropColumnsDfIfThere(EdgesWithFluxesAndSpeed,["osmid_u","osmid_v","p","distance","init_intersection","end_intersection","time_departure","last_time_simulated","distance_km","avg_v(m/s)","time_leaving_road","length_km","avg_v(km/h)","length_right","u_right","v_right","capacity_right"])            
+            self.EdgesWithFluxesAndSpeed.write_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
 
 
 
@@ -362,8 +396,9 @@ class OutputStats:
             # Choose the index for which the fraction of people in the network is less than 1/e of the maximum
             self.IndexTau = np.where(self.DfUnload["FractionPeople"].to_numpy() <= nt0*np.exp(-1))[0][0]
             self.Tau = self.DfUnload["Time_hours"].to_numpy()[self.IndexTau]
-            # TODO: Compute the Gamma -> Look post_processing_simulations
-        pass
+        else:
+            # NOTE: in this case Tau was already computed in DecideIfJam.
+            pass
 
 
 
@@ -482,7 +517,7 @@ class OutputStats:
 
         """
         LastTime = list(self.Time2ErrorFit.keys())[-1]
-        PlotNtAndFitSingleR(self.HourTimeArray,self.Time2nt[LastTime]["n"],tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
+        PlotNtAndFitSingleR(self.HourTimeArray,self.Time2nt[LastTime]["n"],self.Tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
 
 
 
