@@ -31,6 +31,7 @@ def PlotOldNewFluxes(Tij_new,Tij):
     ax0.set_title('Distribution fluxes fitted')
     ax1.hist(Tij_new['number_people'],bins = 20)
     ax1.set_title('DIstribution fluxes fitted')
+
 #    if verbose:
 #        plt.show()
 
@@ -46,10 +47,11 @@ def PlotPositionCenters(grid,gdf_polygons,index_centers,dir_grid,UCI):
 #    if verbose:
 #        plt.show()
 def PlotNewPopulation(grid,gdf_polygons,dir_grid,UCI):
+
     logger.info('Plotting New Population')
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
-    grid.plot(column = 'population', cmap='Greys', facecolor = 'none',alpha = 0.2)
+    grid.plot(column = 'population', cmap='virdis', facecolor = 'none',alpha = 0.2)
     contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                     grid['geometry'].apply(lambda geom: geom.centroid.y), 
                                     grid['population'], cmap='viridis', alpha=0.5)
@@ -128,12 +130,7 @@ def PlotFluxes(grid,Tij,gdf_polygons,dir_grid,UCI,top_fluxes = 50):
     plt.colorbar(sm, label='Flux',ax=plt.gca())         
     plt.savefig(os.path.join(dir_grid,f'Fluxes_{round(UCI,3)}.png'),dpi = 200)
     plt.close()
-    gammas = [1,5,10,20,30,50,100]
-    for gamma in gammas:
-        print("Number of people in grid with flux > ",gamma,": ",(Tij['number_people'].to_numpy()>gamma).sum())
-        print("Number of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma]))
-        print("Fraction of couples of grids with flux > ",gamma,": ",len(Tij['number_people'].to_numpy()[Tij['number_people'].to_numpy()>gamma])/len(Tij['number_people'].to_numpy()))
-        
+    pd.DataFrame(Tij["number_people"]).to_parquet(os.path.join(dir_grid,f'Fluxes_{round(UCI,3)}.parquet'))
         
 
 def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
@@ -168,6 +165,7 @@ def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
 #    plt.gca().set_aspect('image', adjustable='box')
 #    plt.axis(aspect='image')
     plt.savefig(os.path.join(dir_grid,f'CountorPlot_{round(UCI,3)}.png'),dpi = 200)
+    pd.DataFrame(grid['potential']).to_parquet(os.path.join(dir_grid,f'CountorPlot_{round(UCI,3)}.parquet'))
 #    if verbose:
         #plt.show()
 
@@ -218,6 +216,7 @@ def PlotRotorDistribution(grid,PotentialDataframe,dir_grid,UCI):
     ax.set_xlabel('Rotor')
     ax.set_ylabel('Count')
     plt.savefig(os.path.join(dir_grid,f'RotorDistr_{round(UCI,3)}.png'),dpi = 200)
+    pd.DataFrame(grid['rotor']).to_parquet(os.path.join(dir_grid,f'RotorDistr_{round(UCI,3)}.parquet'))
 #    if verbose:
 #        plt.show()
 
@@ -233,7 +232,7 @@ def PlotHarmonicComponentDistribution(grid,PotentialDataframe,dir_grid,UCI):
     ax.set_xlabel('Harmonic')
     ax.set_ylabel('Count')
     plt.savefig(os.path.join(dir_grid,f'HarmonicDistr_{round(UCI,3)}.png'),dpi = 200)
-
+    pd.DataFrame(grid['harmonic']).to_parquet(os.path.join(dir_grid,f'HarmonicDistr_{round(UCI,3)}.parquet'))
 def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,verbose = False):
     """
         @param cumulative: Cumulative Potential
@@ -268,6 +267,7 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,ver
     ax.set_ylabel('Cumulative Potential')
     plt.savefig(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}.png'),dpi = 200)
     logger.info(f"F* = {Fstar}")
+    pd.DataFrame({'cumulative':cumulative,"x":x}).to_parquet(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}.parquet'))
     return line1,line2
 
 def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,dir_grid,UCI,UCIM,shift = 0.1,verbose = False):
@@ -317,6 +317,7 @@ def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,re
     ax.set_ylabel('Cumulative Potential/Mass')
     plt.savefig(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}_{round(UCIM,3)}.png'),dpi = 200)
     logger.info(f"F* = {Fstar}, F*M = {FstarM}, UCIM: {round(UCIM,3)}, UCI: {round(UCI,3)}")
+    pd.DataFrame({'cumulative':cumulative,"x":x,"cumulative_m":cumulativeM}).to_parquet(os.path.join(dir_grid,f'LorenzCurve_{round(UCI,3)}_{round(UCIM,3)}.parquet'))
     return line1,line2
 
 
@@ -443,4 +444,22 @@ def PlotDepTime(Df, CityName, PlotDir):
     ax.set_ylabel('Number of People')
     plt.tight_layout()
     plt.savefig(os.path.join(PlotDir, f'{CityName}_DepTime.png'))
+    plt.close()
+
+
+
+def PlotUCIsAvailable(UCIInterval2UCI,PlotDir):
+    """
+        @param UCIInterval2UCI: dict -> {UCIInterval:UCI}
+        @param PlotDir: str -> Directory to save the plots
+        @description: Plot the UCIs available in the simulation
+    """
+    fig,ax = plt.subplots(1,1,figsize = (8,6))
+    UCIIntervals = list(UCIInterval2UCI.keys())
+    UCIs = list(UCIInterval2UCI.values())
+    ax.plot(UCIIntervals,UCIs)
+    ax.set_title('UCI Available')
+    ax.set_xlabel('UCI Interval')
+    ax.set_ylabel('UCI')
+    plt.savefig(os.path.join(PlotDir,'UCIsAvailable.png'),dpi = 200)
     plt.close()

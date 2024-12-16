@@ -192,12 +192,6 @@ if __name__ == '__main__':
             GeoInfo.GetGeometries()
             # Compute the Potential and Vector field for non modified fluxes
             UCI = GeoInfo.RoutineVectorFieldAndPotential()
-            # Check that UCI is in a valid interval
-            index_UCI_represents = CheckIndexUCI(GeoInfo.UCIInterval2UCIAccepted,UCI)
-            if GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] is None:
-                 GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] = UCI
-            else:
-                pass
             # Compute the Fit for the gravity model
             GeoInfo.ComputeFit()
             # Initialize the Concatenated Df for Simulation [It is common for all different R]
@@ -270,79 +264,76 @@ if __name__ == '__main__':
 #            PCTA.CompleteAnalysis()
 #            with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
 #                json.dump(City2Config,f,indent=4)    
-
-
-            # Generate modified Fluxes
-            for cov in GeoInfo.config['covariances']:
-                for distribution in ['gaussian']:
-                    for num_peaks in GeoInfo.config['list_peaks']:
-                        if len(GeoInfo.ArrayRs) < cpu_count():
-                            N = len(GeoInfo.ArrayRs)
-                        else:
-                            N = cpu_count() - 2
-                        barrier = Barrier(N)
+            # Generate New Population
+            GeoInfo.GeneratePopulationAndSetUCIs()
+            for UCIInterval,ConfigurationsAccepted in GeoInfo.UCIInterval2UCIAccepted.items():
+                for ConfigurationAccepted in ConfigurationsAccepted:
+                    cov = ConfigurationAccepted['cov']
+                    distribution = ConfigurationAccepted['distribution']
+                    num_peaks = ConfigurationAccepted['num_peaks']
+                    UCIM = ConfigurationAccepted['UCI']
+                    PIM = ConfigurationAccepted['PI']
+                    LCM = ConfigurationAccepted['LC']
+                    FstarM = ConfigurationAccepted['Fstar']
+                    # Generate modified Fluxes
+                    if len(GeoInfo.ArrayRs) < cpu_count():
+                        N = len(GeoInfo.ArrayRs)
+                    else:
+                        N = cpu_count() - 2
+                    barrier = Barrier(N)
+                    processes = []
+                    from pandas import read_parquet
+                    # New Population
+                    GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{round(UCIM,3)}.parquet'))
+                    # New Fluxes
+                    Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)
+                    # New UCI
+                    UCI1 = GeoInfo.RoutineVectorFieldAndPotentialModified(GridNew,Modified_Fluxes)
+                    # Check that UCI is in a valid interval
+                    log_to_stderr()
+                    FirstTry = True
+                    while(True):
+                        # Reset The Processes
                         processes = []
-                        # NOTE: We are going to compute 20 UCIs, fixing an interval in the UCI space.
-                        # All these if else are just to ensure that this will happen
-                        # Check That The Grid Is Not Already Computed
-                        GridNew,UCI1 = CheckAlreadyComputedGrids(GeoInfo.save_dir_local,cov,distribution,num_peaks)
-                        if GridNew is not None:
-                            Modified_Fluxes = GeoInfo.RecoverChangedMorpholgyFromGridNew(GridNew)
+    #                            concurrency_manager.Reset()
+                        if FirstTry:
+                            ArrayRs = GeoInfo.ArrayRs
+                            FirstTry = False
+                            logger.info("FirstTry: {}".format(FirstTry))
                         else:
-                            # Compute The Modified Fluxes Otherwhise keep the old Computed ones. NOTE: To save computation
-                            Modified_Fluxes,UCI1,GridNew = GeoInfo.ChangeMorpholgy(cov,distribution,num_peaks)
-                        # Check that UCI is in a valid interval
-                        index_UCI_represents = CheckIndexUCI(GeoInfo.UCIInterval2UCIAccepted,UCI1)
-                        if GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] is None:
-                            # Add it if it is not already in an valid interval
-                            GeoInfo.UCIInterval2UCIAccepted[index_UCI_represents] = UCI1
-                            GridNew.to_csv(os.path.join(GeoInfo.save_dir_local,f'GridNew_{cov}_{distribution}_{num_peaks}_{round(UCI1,3)}.csv'),index=False)                    
-                        else:
-                            pass
-                        log_to_stderr()
-                        FirstTry = True
-                        while(True):
-                            # Reset The Processes
-                            processes = []
-#                            concurrency_manager.Reset()
-                            if FirstTry:
-                                ArrayRs = GeoInfo.ArrayRs
-                                FirstTry = False
-                                logger.info("FirstTry: {}".format(FirstTry))
+                            logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
+                            # Keep the Number Of Rs Tried in the Simulation
+                            ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
+                        for R in ArrayRs:
+                            p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager))
+                            # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
+        #                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
+                            processes.append(p)
+                            p.start()
+                        # Every Time A Process Join
+                        for p in processes:
+                            p.join()
+                            # If Error From Docker or Container
+                            if concurrency_manager.Docker_error.value:
+                                for p in processes:
+                                    if p.is_alive():
+                                        p.terminate()
+                            # If No Docker Errors
                             else:
-                                logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
-                                # Keep the Number Of Rs Tried in the Simulation
-                                ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
-                            for R in ArrayRs:
-                                p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager))
-                                # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
-            #                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
-                                processes.append(p)
-                                p.start()
-                            # Every Time A Process Join
-                            for p in processes:
-                                p.join()
-                                # If Error From Docker or Container
-                                if concurrency_manager.Docker_error.value:
-                                    for p in processes:
-                                        if p.is_alive():
-                                            p.terminate()
-                                # If No Docker Errors
+                                # Error From GPU index
+                                if concurrency_manager.GPU_error_index.value >= 0: 
+                                    # Extract The 
+                                    if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                                        for p in processes:
+                                            if p.is_alive():
+                                                p.terminate()
+                                # No Error From GPU
                                 else:
-                                    # Error From GPU index
-                                    if concurrency_manager.GPU_error_index.value >= 0: 
-                                        # Extract The 
-                                        if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                                            for p in processes:
-                                                if p.is_alive():
-                                                    p.terminate()
-                                    # No Error From GPU
-                                    else:
-                                        # This Is The Only Case I Break The Loop
-                                        # NOTE: No Docker Problem, No GPU Problem 
-                                        break
-                            if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                                break 
+                                    # This Is The Only Case I Break The Loop
+                                    # NOTE: No Docker Problem, No GPU Problem 
+                                    break
+                        if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
+                            break 
 #                            barrier.wait()
 '''                        
                         while(True):
