@@ -282,6 +282,18 @@ def AddHarmonicComponents2PotentialDataframe(PotentialDataframe,lattice):
     return PotentialDataframe
 
 ## ---- Aggregeted Functions Generation Potential from Fluxes ---- ##
+def ComputeVectorFieldFromTijDistance(Tij,df_distance):
+    """
+        @param Tij: Dataframe with the number of people from i to j
+        @param df_distance: Dataframe with the distance matrix and the direction vector
+        @return VectorField: Dataframe with the vector field
+    """
+    logger.info("Computing Vector Field ...")
+    VectorField = GetVectorField(Tij,df_distance)
+    return VectorField
+
+    
+
 def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city,save_dir):
     """
         @param Tij: Dataframe with the number of people from i to j
@@ -292,8 +304,7 @@ def GeneratePotentialFromFluxes(Tij,df_distance,lattice,grid,city,save_dir):
         @return PotentialDataframe: Dataframe with the potential
     """
     if not os.path.exists(os.path.join(save_dir,'VectorField.csv')):
-        logger.info(f"Computing Vector Field {city} ...")
-        VectorField = GetVectorField(Tij,df_distance)
+        VectorField = ComputeVectorFieldFromTijDistance(Tij,df_distance)
         logger.info(f"Saving Vector Field {city} ...")
         SaveVectorField(VectorField,save_dir)
     else:

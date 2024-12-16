@@ -48,7 +48,7 @@ def CopyCartoGraphy(SourceFile,CityName):
 
     if os.path.exists(SourceFileComplete):
         logger.info(f"Copying {SourceFileComplete} to {NEW_FULL_NETWORK_DIR}")
-        shutil.copy(SourceFile,NEW_FULL_NETWORK_DIR)
+        shutil.copy(SourceFileComplete,NEW_FULL_NETWORK_DIR)
     else:
         raise Exception(f"CopyCartoGraphy: Cannot copy {SourceFileComplete} : It does not exist")
 
@@ -86,13 +86,16 @@ def Csv2Parquet(file_csv,file_parquet,case):
         @params file_parquet: File to convert
         @description: Convert the csv file in parquet
     """
-    logger.info(f"Converting {file_csv} -> {file_parquet}")
-    if case == "route":
-        df = pd.read_csv(file_csv,delimiter=':')
+    if os.path.exists(file_csv):
+        logger.info(f"Csv2Parquet: Converting {file_csv} -> {file_parquet}")
+        if case == "route":
+            df = pd.read_csv(file_csv,delimiter=':')
+        else:
+            # Read
+            df = pd.read_csv(file_csv)
+        # Convert
+        df.to_parquet(file_parquet, engine='pyarrow', compression='snappy')
+        # Delete Not Compressed File
+        DeleteFile(file_csv)
     else:
-        # Read
-        df = pd.read_csv(file_csv)
-    # Convert
-    df.to_parquet(file_parquet, engine='pyarrow', compression='snappy')
-    # Delete Not Compressed File
-    DeleteFile(file_csv)
+        logger.info(f"Csv2Parquet: File {file_csv} does not exist")

@@ -295,8 +295,8 @@ def CheckAlreadyComputedGrids(save_dir_local,cov,distribution,num_peaks):
     for File in os.listdir(save_dir_local):
         if 'GridNew' in File:
             if cov == File.split('_')[1] and distribution == File.split('_')[2] and num_peaks == File.split('_')[3]:
-                UCI1 = File.split('_')[4].split('.csv')[0]
-                return pd.read_csv(os.path.join(save_dir_local,File)),UCI1
+                UCI1 = File.split('_')[4].split('.geojson')[0]
+                return gpd.read_file(os.path.join(save_dir_local,File)),UCI1
             else:
                 pass
         else:

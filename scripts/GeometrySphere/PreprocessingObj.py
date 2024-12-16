@@ -322,9 +322,78 @@ class GeometricalSettingsSpatialPartition:
         self.gridIdx2ij = {self.grid['index'][i]: (self.grid['i'].tolist()[i],self.grid['j'].tolist()[i]) for i in range(len(self.grid))}
 
 
+### GENERATE MASS ###
+    def GeneratePopulationAndSetUCIs(self):
+        """
+            @description:
+                - Generate random population given covariance of the gaussian model and number of ceners.
+                - Compute UCI of such a configuration and insert it in the UCIInterval2UCI
+                - In this way UCIInterval2UCI contains all the UCIs that are going to be used for the simulations.
+        """
+        if os.path.exists(os.path.join(self.save_dir_local,'UCIInterval2UCI.json')):
+            with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json')) as f:
+                self.UCIInterval2UCI = json.load(f)
+        else:
+            self.UCIInterval2UCI = None
+        if os.path.exists(os.path.join(self.save_dir_local,'AcceptedConfigurations.json')):
+            with open(os.path.join(self.save_dir_local,'AcceptedConfigurations.json')) as f:
+                self.AcceptedConfigurations = json.load(f)
+        else:
+            self.AcceptedConfigurations = None
+        # Either Fill From Zero or Complete the Missing UCIs (In case the simulations stop or some problem occurs)
+        self.UCIInterval2UCI,self.AcceptedConfigurations = GenerateRandomPopulationAndComputeUCI(self.config['covariances'],
+                                                            ['gaussian'],
+                                                            self.config['list_peaks'],
+                                                            self.grid,
+                                                            np.sum(self.grid["population"]),
+                                                            self.df_distance,
+                                                            self.IndicesInside,
+                                                            self.Smaxi_Mass,
+                                                            self.Dmax_ij_Mass,
+                                                            self.UCIInterval2UCI,
+                                                            self.AcceptedConfigurations,
+                                                            self.save_dir_local)
+        with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json'),"w") as f:
+            json.dump(self.UCIInterval2UCI,f)
+        with open(os.path.join(self.save_dir_local,'AcceptedConfigurations.json'),'w') as f:
+            json.dump(self.AcceptedConfigurations,f)
+        PlotUCIsAvailable(self.UCIInterval2UCI,self.save_dir_local)
 
 
 #### Vector Fields ####
+    def ComputeSDMax(self): 
+        """
+            @description:
+                - Computes IndicesInside: Sets of indices in Grid indices that are inside the boundary of the city.
+                - Computes IndicesEdge: Sets of indices in Grid indices that are in the boundary of the city.
+                - Computes Smaxi: Configuration of SMmax for the potential
+                - Computes Dmaxi: Configuration of Dmax for the potential
+                - Computes Smaxi_Mass: Configuration of SMmax for the mass
+                - Computes Dmax_ij_Mass: Configuration of Dmax for the mass
+                
+        """       
+        if self.IndicesInside is None:
+            self.IndicesInside = GetIndicesInsideFromGrid(self.grid)
+        if self.IndicesEdge is None:
+            self.IndicesEdge = GetIndicesEdgeFromGrid(self.grid)
+        if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.parquet')):
+            logger.info(f"RoutineVectorField: Extract Smax,Dmax: {self.city}")
+            # POTENTIAL
+            self.Smaxi,self.Dmaxi = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Potential')
+            pd.DataFrame({"Smax":self.Smaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'),engine = 'pyarrow',index=False)
+            pd.DataFrame({"Dmax":self.Dmaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'),engine = 'pyarrow',index=False)
+            # MASS
+            self.Smaxi_Mass,self.Dmax_ij_Mass = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Mass')
+            pd.DataFrame({"SmaxMass":self.Smaxi_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'),engine = 'pyarrow',index=False)
+            pd.DataFrame({"DmaxMass":self.Dmax_ij_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'),engine = 'pyarrow',index=False)
+        else:
+            logger.info(f"RoutineVectorField: Upload Smax,Dmax: {self.city}")
+            self.Smaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'))["Smax"].to_numpy(dtype=np.float64)
+            self.Dmaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'))["Dmax"].to_numpy(dtype=np.float64)            
+            self.Smaxi_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'))["SmaxMass"].to_numpy(dtype=np.float64)
+            self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
+
+
     # this comment is not a bug
     def RoutineVectorFieldAndPotential(self):
         """
@@ -338,31 +407,16 @@ class GeometricalSettingsSpatialPartition:
             not the potential.
         """
         PotentialDf, _,VectorField = GeneratePotentialFromFluxes(self.Tij,self.df_distance,self.lattice,self.grid,self.city,self.save_dir_grid)
+        self.ComputeSDMax()
         if not os.path.isfile(os.path.join(self.save_dir_grid,'PotentialDataframe.csv')):
             SavePotentialDataframe(PotentialDf,self.save_dir_grid)
         logger.info(f"Compute UCI {self.city}")        
         if not os.path.isfile(os.path.join(self.save_dir_grid,f'UCI_base.json')):
-            if self.IndicesInside is None:
-                self.IndicesInside = GetIndicesInsideFromGrid(self.grid)
-            if self.IndicesEdge is None:
-                self.IndicesEdge = GetIndicesEdgeFromGrid(self.grid)
-            if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.parquet')):
-                logger.info(f"RoutineVectorField: Extract Smax,Dmax: {self.city}")
-                # POTENTIAL
-                self.Smaxi,self.Dmaxi = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Potential')
-                pd.DataFrame({"Smax":self.Smaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'),engine = 'pyarrow',index=False)
-                pd.DataFrame({"Dmax":self.Dmaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'),engine = 'pyarrow',index=False)
-                # MASS
-                self.Smaxi_Mass,self.Dmax_ij_Mass = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Mass')
-                pd.DataFrame({"SmaxMass":self.Smaxi_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'),engine = 'pyarrow',index=False)
-                pd.DataFrame({"DmaxMass":self.Dmax_ij_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'),engine = 'pyarrow',index=False)
-            else:
-                logger.info(f"RoutineVectorField: Upload Smax,Dmax: {self.city}")
-                self.Smaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'))["Smax"].to_numpy(dtype=np.float64)
-                self.Dmaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'))["Dmax"].to_numpy(dtype=np.float64)            
-                self.Smaxi_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'))["SmaxMass"].to_numpy(dtype=np.float64)
-                self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
-            PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(self.df_distance,self.grid,PotentialDf,self.IndicesEdge,self.IndicesInside,self.Smaxi,self.Smaxi_Mass,self.Dmaxi,self.Dmax_ij_Mass)
+#            self.Vmax = ComputeJitV(self.Smaxi,self.Dmaxi)/2
+            logger.info(f"Compute UCI {self.city}")
+            PI,LC,UCI,result_indices,cumulative,Fstar = ComputeUCICase(self.df_distance,self.grid,PotentialDf,self.IndicesInside,case = 'Potential')
+            logger.info(f"Compute UCI Mass {self.city}")
+            PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCICase(self.df_distance,self.grid,PotentialDf,self.IndicesInside,case = 'Mass') 
             I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}      
             UCIskip = {'UCI':UCI,"UCIM":UCIM}
             UCI_dir = os.path.join(self.save_dir_grid,f'UCI_{round(UCI,3)}')
@@ -375,20 +429,24 @@ class GeometricalSettingsSpatialPartition:
             os.makedirs(UCI_dir,exist_ok=True)     
             SaveJsonDict(I,os.path.join(UCI_dir,f'UCI_{round(UCI,3)}.json'))
             SaveJsonDict(UCIskip,os.path.join(self.save_dir_grid,f'UCI_base.json'))
+
+
             PlotInsideOutside(self.gdf_polygons,GridInside,self.save_dir_grid)
             PlotEdges(self.gdf_polygons,GridInside,self.save_dir_grid)
             PlotRoads(self.gdf_polygons,GridInside,self.save_dir_grid)
-            PlotFluxes(GridInside,Tij_Inside,self.gdf_polygons,UCI_dir,UCI,80)
-            PlotNewPopulation(GridInside, self.gdf_polygons,UCI_dir,UCI)
-            PlotVFPotMass(GridInside,self.gdf_polygons,PotentialInside,VectorFieldInside,UCI_dir,UCI,'population','Ti')
-            PotentialContour(GridInside,PotentialInside,self.gdf_polygons,UCI_dir,UCI)
-    #        PotentialSurface(GridInside,PotentialInside,UCI_dir,UCI)
-            PlotRotorDistribution(GridInside,PotentialInside,UCI_dir,UCI)
-            PlotLorenzCurve(cumulative,Fstar,result_indices,UCI_dir, UCI,0.1)
-            PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)
-            PlotHarmonicComponentDistribution(GridInside,PotentialInside,UCI_dir,UCI)
-            PrintInfoFluxPop(GridInside,Tij_Inside) 
-            PlotMass(self.grid,self.gdf_polygons,UCI_dir,UCI)
+            PlotRoutineOD(GridInside,
+                        Tij_Inside,
+                        self.gdf_polygons,
+                        PotentialInside,
+                        VectorFieldInside,
+                        UCI_dir,
+                        80,
+                        UCI,
+                        None,
+                        Tij_Inside,
+                        cumulative,
+                        Fstar,
+                        result_indices)
         else:
             with open(os.path.join(self.save_dir_grid,f'UCI_base.json')) as f:
                 UCIskip = json.load(f)
@@ -428,60 +486,36 @@ class GeometricalSettingsSpatialPartition:
         self.total_population = np.sum(self.grid['population'])
         self.total_flux = np.sum(self.Tij['number_people'])
 
-    def ChangeMorpholgy(self,cov,distribution,num_peaks):
+
+## NEW VECTOR FIELD AND POTENTIAL ## NOTE: There is redundancy and not logical perfection comparing this function to the non modified case.
+    def ComputePotentialAndVectorFieldFromGrid(self,new_population,Tij):
         """
-            @params cov: Covariance that sets the width of population
-            @params distribution: [exponential,gaussian]
-            @params num_peaks: Number of peaks in the population
-            Change the Morphology of the City
+            @params Grid: Grid: gpd.GeoDataFrame
+            @params Tij: Tij: pd.DataFrame
+            Computes:
+                - Potential
+                - Vector Field
         """
-        # Number of People and Fluxes
-        self.TotalPopAndFluxes()
-        logger.info('Modify Morphology City: {}'.format(self.city))
-        logger.info(f"cov: {cov}, num_peaks: {num_peaks}, city: {self.city}")    
-        InfoCenters = {'center_settings': {"type":distribution},
-                            'covariance_settings':{
-                                "covariances":{"cvx":cov,"cvy":cov},
-                            "Isotropic": True,
-                            "Random": False}}
-        logger.info(f'Generating Random Population {self.city}')
-        new_population,index_centers = GenerateRandomPopulation(self.grid,num_peaks,self.total_population,InfoCenters,False)
-        # From Population, using the gravitational model, generate the fluxes
-        logger.info(f'Generating Modified Fluxes {self.city}')
-        Modified_Fluxes = GenerateModifiedFluxes(new_population,self.df_distance,self.k,self.alpha,self.beta,self.d0,self.total_flux,False)
-        Tij_Modified = self.Tij.copy()
-        Tij_Modified['number_people'] = Modified_Fluxes
         logger.info(f'Computing New Vector Field {self.city}')
-        New_Vector_Field = ComputeNewVectorField(Tij_Modified,self.df_distance)
+        New_Vector_Field = ComputeNewVectorField(Tij,self.df_distance)
         logger.info(f'Computing New Potential {self.city}')
         New_Potential_Dataframe = ComputeNewPotential(New_Vector_Field,self.lattice,new_population)
-        Grid_New = self.grid.copy()
-        Grid_New['population'] = new_population
-        logger.info(f"Compute New UCI {self.city}")   
-        # Compute UCI
-        
-        if self.IndicesInside is None:
-            self.IndicesInside = GetIndicesInsideFromGrid(self.grid)
-        if self.IndicesEdge is None:
-            self.IndicesEdge = GetIndicesEdgeFromGrid(self.grid)
-        if not os.path.isfile(os.path.join(self.save_dir_grid,f'Smax.parquet')):
-            logger.info(f"ChangeMorphology: Extract Smax,Dmax: {self.city}")
-            # POTENTIAL
-            self.Smaxi,self.Dmaxi = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Potential')
-            pd.DataFrame({"Smax":self.Smaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'),engine = 'pyarrow',index=False)
-            pd.DataFrame({"Dmax":self.Dmaxi}).to_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'),engine = 'pyarrow',index=False)
-            # MASS
-            self.Smaxi_Mass,self.Dmax_ij_Mass = ComputeVmaxUCI(self.df_distance,self.IndicesEdge,method = 'Pereira',case = 'Mass')
-            pd.DataFrame({"SmaxMass":self.Smaxi_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'),engine = 'pyarrow',index=False)
-            pd.DataFrame({"DmaxMass":self.Dmax_ij_Mass}).to_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'),engine = 'pyarrow',index=False)
-        else:
-            logger.info(f"ChangeMorphology: Upload Smax,Dmax: {self.city}")
-            self.Smaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Smax.parquet'))["Smax"].to_numpy(dtype = np.float64)
-            self.Dmaxi = pd.read_parquet(os.path.join(self.save_dir_grid,f'Dmax.parquet'))["Dmax"].to_numpy(dtype=np.float64)            
-            self.Smaxi_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'SmaxMass.parquet'))["SmaxMass"].to_numpy(dtype=np.float64)
-            self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
-        PI,LC,UCI,result_indices,cumulative,Fstar,PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCI(self.df_distance,Grid_New,New_Potential_Dataframe,self.IndicesEdge,self.IndicesInside,self.Smaxi,self.Smaxi_Mass,self.Dmaxi,self.Dmax_ij_Mass)
-        Tij_InsideModified = Tij_Modified[Tij_Modified['origin'].isin(self.IndicesInside) & Tij_Modified['destination'].isin(self.IndicesInside)]
+        return New_Vector_Field,New_Potential_Dataframe
+
+    def RoutineVectorFieldAndPotentialModified(self,GridNew,Tij):
+        """
+            @params GridNew: Grid: gpd.GeoDataFrame
+            @params Tij: Tij: pd.DataFrame
+            Computes:
+                - Potential
+                - Vector Field
+                - UCI
+                
+        """
+        New_Vector_Field,New_Potential_Dataframe = self.ComputePotentialAndVectorFieldFromGrid(GridNew["population"],Tij)
+        PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCICase(self.df_distance,GridNew,New_Potential_Dataframe,self.IndicesInside,case = 'Mass')
+        PI,LC,UCI,result_indices,angle,cumulative,Fstar = ComputeUCICase(self.df_distance,GridNew,New_Potential_Dataframe,self.IndicesInside,case = 'Potential')
+        Tij_InsideModified = Tij[Tij['origin'].isin(self.IndicesInside) & Tij['destination'].isin(self.IndicesInside)]
         Tij_Inside = self.Tij[self.Tij['origin'].isin(self.IndicesInside) & self.Tij['destination'].isin(self.IndicesInside)]
         I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}           
         SaveJsonDict(I,os.path.join(self.save_dir_local,f'UCI_{round(UCI,3)}.json'))         
@@ -489,7 +523,7 @@ class GeometricalSettingsSpatialPartition:
         os.makedirs(UCI_dir,exist_ok=True)
         # Mask For Plot
         VectorFieldInside = New_Vector_Field.iloc[self.IndicesInside]
-        GridInside = Grid_New.loc[Grid_New["index"].isin(self.IndicesInside)]
+        GridInside = GridNew.loc[GridNew["index"].isin(self.IndicesInside)]
         PotentialInside =  New_Potential_Dataframe.loc[New_Potential_Dataframe['index'].isin(self.IndicesInside)]
         # Plot UCI
         PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,result_indicesM,UCI_dir,UCI,UCIM,shift = 0.1,verbose = False)        
@@ -501,14 +535,14 @@ class GeometricalSettingsSpatialPartition:
                     UCI_dir,
                     80,
                     UCI,
-                    index_centers,
+                    None,
                     Tij_Inside,
                     cumulative,
                     Fstar,
                     result_indices)
-        return Tij_Modified,UCIM,Grid_New
 
-    def RecoverChangedMorpholgyFromGridNew(self,Grid_New):
+
+    def ComputeTijFromGrid(self,Grid_New):
         """
             @params cov: Covariance that sets the width of population
             @params distribution: [exponential,gaussian]
@@ -528,7 +562,7 @@ class GeometricalSettingsSpatialPartition:
 ##### FILE SIMULATIONS
     def InitializeDf4Sim(self):
         """
-            @description: Creates DfBegin
+            @description: Creates DfBegin 
         """
         # Get File.fma each hour
         self.Hour2Files = self.OrderFilesFmaPerHour()

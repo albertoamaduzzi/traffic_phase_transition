@@ -24,6 +24,9 @@ import ast
 import statistics
 import sys
 import socket
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 if socket.gethostname()=='artemis.ist.berkeley.edu':
     TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
@@ -73,9 +76,9 @@ class mobility_planner:
          'primary', 'primary_link', 'secondary', 'secondary_link',
          'tertiary', 'tertiary_link', 'unclassified', 'road']
         self.name = name_city
-        self.data_dir,self.carto_base = set_environment()
-        self.gpd_polygon = read_file_gpd(os.path.join(self.data_dir,self.name,self.name + '.shp'))
-        self.save_dir = os.path.join(self.carto_base,self.name)
+        self.data_dir = os.path.join(TRAFFIC_DIR,'data','carto',self.name,'shape_files')
+        self.gpd_polygon = read_file_gpd(os.path.join(self.data_dir,self.name + '.shp'))
+        self.save_dir = os.path.join(TRAFFIC_DIR,'data','carto',self.name)
         self.simplify_polygon()
         self.Area = self.gpd_polygon.area
         self.radius = np.sqrt(self.Area/np.pi)
@@ -83,11 +86,11 @@ class mobility_planner:
 ##------------------------------- SIMPLIFY OX CARTO -------------------------------------##
     
     def simplify_polygon(self):
-        print('Input dir: ',self.data_dir)
-        print('Creating polygon for: ',self.name)
-        print('saving dir: ',self.save_dir)
+        """
+            @description: Simplify the polygon to create the graph
+        """
+        logger.info("SympifyPolygon: {}".format(os.path.join(self.data_dir,self.name,self.name + '.shp')))
         if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml')):
-            print('simplify graph:')
             self.simplify_graph_from_polygon_gdf()
             # create a unique ID for each edge because osmid can hold multiple values due to topology simplification
             print('save graphml')
@@ -96,27 +99,24 @@ class mobility_planner:
             ox.io.save_graph_shapefile(self.G2_simp, filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
             fig, ax = ox.plot.plot_graph(self.G2_simp, node_size=0, edge_linewidth=0.2)
             plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=300, bbox_inches='tight')
-            print('simplify node edges:')
+            logger.info('SympifyPolygon: Save nodes.csv and edges.csv')
             self.get_nodes_edges_from_graph_simplified()
-            print('save nodes')
             self.reindex_nodes_and_save()
-            print('save edges')
             self.handle_edges_and_save()
         else:
-            print('File {}_new_tertiary_simplified already exists'.format(self.name))
+            logger.info('SympifyPolygon: File {}_new_tertiary_simplified already exists'.format(self.name))
             self.G2_simp = ox.load_graphml(filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml'))
-            print('save shapefile: ',os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
             if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified','nodes.shp')):
+                logger.info('SympifyPolygon: {} Plot Graph'.format(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified')))
                 ox.io.save_graph_geopackage(self.G2_simp, filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
                 fig, ax = ox.plot.plot_graph(self.G2_simp, node_size=0, edge_linewidth=0.2)
                 plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=300, bbox_inches='tight')
             if not os.path.isfile(os.path.join(self.save_dir,'nodes.csv')) and not os.path.isfile(os.path.join(self.save_dir,'edges.csv')):
-                print('simplify node edges:')
+                logger.info('SympifyPolygon: Save nodes.csv and edges.csv')
                 self.get_nodes_edges_from_graph_simplified()
-                print('save nodes')
                 self.reindex_nodes_and_save()
-                print('save edges')
-                self.handle_edges_and_save()            
+                self.handle_edges_and_save()  
+        logger.info('SympifyPolygon: Done')          
 
 ##------------------------------- SIMPLIFY OX CARTO -------------------------------------##
 
