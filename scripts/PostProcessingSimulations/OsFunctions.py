@@ -61,17 +61,17 @@ def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
         @params UCI: Urban Centrality Index
         @description: Move the output file in the correct
     """
+    # Set Path of Destination LivingCity/berkeley_2018/CityName/Output/UCI/
     saving_dir = os.path.join(LIVING_CITY_DIR,'berkeley_2018',CityName,'Output')
+    destination_dir = os.path.join(saving_dir, str(round(UCI,3)))
+    os.makedirs(os.path.join(destination_dir), exist_ok=True)
 #    name_parquet = f"R_{0}_UCI_{1}_{2}".format(R,round(UCI,3),output_file.split('.csv')[0] + '.parquet')
     name_parquet = f"R_{R}_UCI_{round(UCI, 3)}_{output_file.replace('.csv', '.parquet')}"
     # Complete Path
     source_file = os.path.join(LPSIM_DIR, output_file)
-    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
-    destination_file_parquet = os.path.join(saving_dir, name_parquet)
+    destination_file = os.path.join(destination_dir ,f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
+    destination_file_parquet = os.path.join(destination_dir, name_parquet)
     logger.info(f"Transfer: {source_file} -> {destination_file}")
-    if not os.path.exists(saving_dir):
-        # Make Sure saving_dir exists
-        os.mkdir(saving_dir)
     if os.path.exists(source_file):
         os.rename(source_file, destination_file)
     else:

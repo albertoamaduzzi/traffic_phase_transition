@@ -25,31 +25,6 @@ def order_subset_of_keys_in_place(input_dict, keys_to_order):
 
 # Read available UCIs and Rs
 
-def SelectUCIsIfAllR(Rs,UCIs,OD_dir):
-    """
-        NOTE: Use Just for Boston
-        Since not all the UCIs have all the Rs simulated due to the fact that I stopped the simulation before it ended.
-        I choose just those that have it.
-    """
-    UCI2AvailableRs = {uci:[] for uci in UCIs}
-    for file in os.listdir(OD_dir):
-        if 'od' in file:
-            if len(file.split('_')) == 8:
-                R = file.split('_')[5]
-                UCI = file.split('_')[7].split('.csv')[0]
-                if UCI in UCI2AvailableRs.keys():
-                    UCI2AvailableRs[UCI].append(R)
-    maxR = 0
-    U = 0
-    for uci in UCI2AvailableRs.keys():
-        if len(UCI2AvailableRs[uci]) > maxR:
-            maxR = len(UCI2AvailableRs[uci])
-            U = uci
-    UCIs = [uci for uci in UCI2AvailableRs.keys() if len(UCI2AvailableRs[uci]) == maxR]
-#    UCIs = ['0.166','0.205','0.214','0.216','0.225','0.235','0.244','0.253','0.256','0.263','0.274','0.309','0.318','0.333','0.349','0.361','0.374','0.392']
-    print("Selected UCIs: ",UCIs)
-    print("Selected Rs: ",Rs)
-    return UCIs
 
 def RsUCIsFromDir(OD_dir):
     """
@@ -57,25 +32,23 @@ def RsUCIsFromDir(OD_dir):
         @description: Force a distance between different UCIs of 0.01.
         In this way we can have
     """
-    Rs = []
-    UCIs = []
-    for file in os.listdir(OD_dir):
-        if 'UCI' in file:
-            R = file.split('_')[1]
-            UCI = file.split('_')[3].split('.csv')[0]
-            if R not in Rs:
-                Rs.append(int(R))
-            if float(UCI) not in UCIs:
-                UCIs.append(float(UCI))
-    Rs = sorted(Rs)
-    UCIs = sorted(UCIs)
-    UCisJump = []
-    for i in range(len(UCIs)):
-        if i == 0:
-            UCisJump.append(str(UCIs[i]))
-        elif (UCIs[i] - float(UCisJump[-1])) > 0.009:
-            UCisJump.append(str(UCIs[i]))
-    return Rs,UCisJump
+    list_UCIs = [] 
+    list_Rs = []
+    for file_or_dir in os.listdir(OD_dir):
+        if file_or_dir != "Plots" and "parquet" not in file_or_dir and "json" not in file_or_dir and "csv" not in file_or_dir:
+            print(file_or_dir)
+            UCI = float(file_or_dir)
+            DIR_UCI = os.path.join(OD_dir,str(UCI))
+            if UCI not in list_UCIs:
+                list_UCIs.append(UCI)
+            for file in os.listdir(DIR_UCI):
+                if "route" in file:
+                    R = int(file.split("_")[1])
+                    if R not in list_Rs:
+                        list_Rs.append(R)
+    list_UCIs = sorted(list_UCIs)
+    list_Rs = sorted(list_Rs)
+    return list_UCIs, list_Rs
 
 # Configuration for the Phase Transition
 def GenerateConfig(BaseData,Config,City,Rs,UCIs):
@@ -148,6 +121,5 @@ def InitConfigPolycentrismAnalysis(CityName):
     else:
         BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",CityName,"Output")
     Rs,UCIs = RsUCIsFromDir(BaseData)
-    UCIs = SelectUCIsIfAllR(Rs,UCIs,BaseData)
     City2Config[CityName] = GenerateConfig(BaseData,City2Config[CityName],CityName,Rs,UCIs)  
     return City2Config

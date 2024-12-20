@@ -119,6 +119,33 @@ from CreateCartoSimulator import *
 
 logger = logging.getLogger(__name__)
 
+def RetrieveUCI2UCIIntervalFromSavedGrid(dir_new_grids,dir_grid):
+    """
+        @param dir_new_grids: Directory where the grids are saved
+        Extract the new Grids already computed.
+        Generate the dictionary UCI2UCIInterval {0.0:[],0.1:[],...}
+    """
+    PlotDir = os.path.join(dir_new_grids,"plots")
+    UCIS = np.linspace(0,1,11)
+    UCI2UCIInterval = {UCI:[] for UCI in UCIS}
+    for file in os.listdir(dir_new_grids):
+        if "Grid_" in file:
+            UCI = float(file.split("_")[1].split(".parquet")[0])
+            for U in UCIS:
+                if UCI >= U and UCI < U + 0.1:
+                    UCI2UCIInterval[U].append(UCI)
+            if os.path.exists(f"{PlotDir}/grid_{UCI}.png"):
+                continue
+            else:
+                g = pd.read_parquet(f"{dir_new_grids}/{file}")
+                grid = gpd.read_file(os.path.join(dir_grid,"grid.geojson"))
+                grid["population"] = g["population"]
+                fig, ax = plt.subplots(1,1, figsize=(10,10))
+                grid.plot("population",ax=ax, legend=True)    
+                ax.set_title(f"UCI: {UCI}")
+                plt.savefig(f"{PlotDir}/grid_{UCI}.png")
+    return UCI2UCIInterval
+
 if socket.gethostname()=='artemis.ist.berkeley.edu':
     TRAFFIC_DIR = '/home/alberto/LPSim/traffic_phase_transition'
 else:
@@ -323,6 +350,9 @@ class GeometricalSettingsSpatialPartition:
 
 
 ### GENERATE MASS ###
+
+
+
     def GeneratePopulationAndSetUCIs(self):
         """
             @description:
@@ -330,34 +360,32 @@ class GeometricalSettingsSpatialPartition:
                 - Compute UCI of such a configuration and insert it in the UCIInterval2UCI
                 - In this way UCIInterval2UCI contains all the UCIs that are going to be used for the simulations.
         """
-        if os.path.exists(os.path.join(self.save_dir_local,'UCIInterval2UCI.json')):
-            with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json')) as f:
-                self.UCIInterval2UCI = json.load(f)
-        else:
-            self.UCIInterval2UCI = None
-        if os.path.exists(os.path.join(self.save_dir_local,'AcceptedConfigurations.json')):
-            with open(os.path.join(self.save_dir_local,'AcceptedConfigurations.json')) as f:
-                self.AcceptedConfigurations = json.load(f)
-        else:
-            self.AcceptedConfigurations = None
+        self.UCIInterval2UCI = RetrieveUCI2UCIIntervalFromSavedGrid(self.save_dir_local,self.save_dir_grid)
         # Either Fill From Zero or Complete the Missing UCIs (In case the simulations stop or some problem occurs)
-        self.UCIInterval2UCI,self.AcceptedConfigurations = GenerateRandomPopulationAndComputeUCI(self.config['covariances'],
-                                                            ['gaussian'],
-                                                            self.config['list_peaks'],
-                                                            self.grid,
-                                                            np.sum(self.grid["population"]),
-                                                            self.df_distance,
-                                                            self.IndicesInside,
-                                                            self.Smaxi_Mass,
-                                                            self.Dmax_ij_Mass,
-                                                            self.UCIInterval2UCI,
-                                                            self.AcceptedConfigurations,
-                                                            self.save_dir_local)
+        if self.UCIInterval2UCI is None:
+            IsFull = True
+            for UCIInterval,UCIs in self.UCIInterval2UCI.items():
+                if len(UCIs) < 4:
+                    IsFull = False
+                    break
+            if not IsFull:
+                # Compute Parallely all the UCIs
+                self.UCIInterval2UCI,_ = GenerateRandomPopulationAndComputeUCI(self.config['covariances'],
+                                                                    ['gaussian'],
+                                                                    self.config['list_peaks'],
+                                                                    self.grid,
+                                                                    np.sum(self.grid["population"]),
+                                                                    self.df_distance,
+                                                                    self.IndicesInside,
+                                                                    self.Smaxi_Mass,
+                                                                    self.Dmax_ij_Mass,
+                                                                    self.UCIInterval2UCI,
+                                                                    None,#self.AcceptedConfigurations,
+                                                                    self.save_dir_local)
+
         with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json'),"w") as f:
             json.dump(self.UCIInterval2UCI,f)
-        with open(os.path.join(self.save_dir_local,'AcceptedConfigurations.json'),'w') as f:
-            json.dump(self.AcceptedConfigurations,f)
-        PlotUCIsAvailable(self.UCIInterval2UCI,self.save_dir_local)
+        self.UCIInterval2UCI = PlotUCIsAvailable(self.UCIInterval2UCI,self.save_dir_local)
 
 
 #### Vector Fields ####

@@ -51,7 +51,7 @@ def PlotNewPopulation(grid,gdf_polygons,dir_grid,UCI):
     logger.info('Plotting New Population')
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
-    grid.plot(column = 'population', cmap='virdis', facecolor = 'none',alpha = 0.2)
+    grid.plot(column = 'population', cmap='viridis', alpha = 0.2)
     contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                     grid['geometry'].apply(lambda geom: geom.centroid.y), 
                                     grid['population'], cmap='viridis', alpha=0.5)
@@ -246,8 +246,8 @@ def PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid,UCI,shift = 0.1,ver
     """
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
+    cumulative = np.array(cumulative)/max(cumulative)
     assert cumulative[-1] == 1,f"The last value of the Lorenz Curve should be 1, but it is {cumulative[-1]}"
-    cumulative = np.array(cumulative)
     idxFstar = Fstar #int(Fstar*len(cumulative))
     line1, = ax.plot(x,cumulative,c='black',label='Potential')
     # Plot the straight line to F*
@@ -284,8 +284,8 @@ def PlotLorenzCurveMassPot(cumulative,Fstar,result_indices,cumulativeM,FstarM,re
     fig,ax = plt.subplots(1,1,figsize = (8,6))
     x = np.arange(len(cumulative))/len(cumulative)
     xm = np.arange(len(cumulativeM))/len(cumulativeM)
-    cumulative = np.array(cumulative)/np.sum(cumulative)
-    cumulativeM = np.array(cumulativeM)/np.sum(cumulativeM)
+    cumulative = np.array(cumulative)/max(cumulative)
+    cumulativeM = np.array(cumulativeM)/max(cumulativeM)
     idxFstar = Fstar #int(Fstar*len(cumulative))
     idxFstarM = FstarM #int(Fstar*len(cumulative))
     line1, = ax.plot(x,cumulative,c='black',label='Potential')
@@ -455,11 +455,32 @@ def PlotUCIsAvailable(UCIInterval2UCI,PlotDir):
         @description: Plot the UCIs available in the simulation
     """
     fig,ax = plt.subplots(1,1,figsize = (8,6))
-    UCIIntervals = list(UCIInterval2UCI.keys())
-    UCIs = list(UCIInterval2UCI.values())
-    ax.plot(UCIIntervals,UCIs)
+    x = []
+    y = []
+    from collections import defaultdict
+    UCIInterval2UCINew = defaultdict(list)
+    for UCIInterval in UCIInterval2UCI.keys():
+        N = len(UCIInterval2UCI[UCIInterval])
+        if N == 0:
+            pass
+        elif N > 4:
+            UCIInterval2UCI[UCIInterval] = UCIInterval2UCI[UCIInterval][:4]
+            UCIInterval2UCINew[UCIInterval] = UCIInterval2UCI[UCIInterval]
+            for v in UCIInterval2UCI[UCIInterval]:
+                x.append(UCIInterval)
+                y.append(v)
+        else:
+            UCIInterval2UCINew[UCIInterval] = UCIInterval2UCI[UCIInterval]
+            for v in UCIInterval2UCI[UCIInterval]:
+                x.append(UCIInterval)
+                y.append(v)
+    ax.scatter(x,y)
+#    UCIIntervals = list(UCIInterval2UCI.keys())
+#    UCIs = list(UCIInterval2UCI.values())
+#    ax.boxplot(UCIIntervals,UCIs)
     ax.set_title('UCI Available')
     ax.set_xlabel('UCI Interval')
     ax.set_ylabel('UCI')
     plt.savefig(os.path.join(PlotDir,'UCIsAvailable.png'),dpi = 200)
     plt.close()
+    return UCIInterval2UCI

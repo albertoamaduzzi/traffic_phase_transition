@@ -98,6 +98,7 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         - avg_v(m/s): Average Velocity of the User (in m/s)
         - time_leaving_road: Time of Leaving the Road (in seconds)
     """
+    Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_limit_kmh"))
     # Inport Properties Of People into Routes
     DfRoute = DfRoute.join(DfPeople, on="p", how="left")
     # Extract ],[ from string and replace with empty string"" 
