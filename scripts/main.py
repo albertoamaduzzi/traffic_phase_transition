@@ -266,16 +266,19 @@ if __name__ == '__main__':
 #                json.dump(City2Config,f,indent=4)    
             # Generate New Population
             GeoInfo.GeneratePopulationAndSetUCIs()
-            for UCIInterval,ConfigurationsAccepted in GeoInfo.UCIInterval2UCIAccepted.items():
-                for ConfigurationAccepted in ConfigurationsAccepted:
-                    cov = ConfigurationAccepted['cov']
-                    distribution = ConfigurationAccepted['distribution']
-                    num_peaks = ConfigurationAccepted['num_peaks']
-                    UCIM = ConfigurationAccepted['UCI']
-                    PIM = ConfigurationAccepted['PI']
-                    LCM = ConfigurationAccepted['LC']
-                    FstarM = ConfigurationAccepted['Fstar']
+#            for UCIInterval,ConfigurationsAccepted in GeoInfo.UCIInterval2UCIAccepted.items():
+#                for ConfigurationAccepted in ConfigurationsAccepted:
+#                    cov = ConfigurationAccepted['cov']
+#                    distribution = ConfigurationAccepted['distribution']
+#                    num_peaks = ConfigurationAccepted['num_peaks']
+#                    UCIM = ConfigurationAccepted['UCI']
+#                    PIM = ConfigurationAccepted['PI']
+#                    LCM = ConfigurationAccepted['LC']
+#                    FstarM = ConfigurationAccepted['Fstar']
                     # Generate modified Fluxes
+            print(GeoInfo.UCIInterval2UCI)
+            for UCI_Interval in GeoInfo.UCIInterval2UCI.keys():
+                for UCIM in GeoInfo.UCIInterval2UCI[UCI_Interval]:
                     if len(GeoInfo.ArrayRs) < cpu_count():
                         N = len(GeoInfo.ArrayRs)
                     else:
@@ -283,16 +286,23 @@ if __name__ == '__main__':
                     barrier = Barrier(N)
                     processes = []
                     from pandas import read_parquet
+                    from geopandas import GeoDataFrame
+                    UCI1 = float(UCIM)
                     # New Population
                     GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{round(UCIM,3)}.parquet'))
+                    GridNew[["geometry","centroidx","centroidy"]] = GeoInfo.grid[["geometry","centroidx","centroidy"]]
+                    GridNew = GeoDataFrame(GridNew)
                     # New Fluxes
                     Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)
                     # New UCI
-                    UCI1 = GeoInfo.RoutineVectorFieldAndPotentialModified(GridNew,Modified_Fluxes)
+#                    UCI1 = GeoInfo.RoutineVectorFieldAndPotentialModified(GridNew,Modified_Fluxes)
                     # Check that UCI is in a valid interval
+                    concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
                     log_to_stderr()
                     FirstTry = True
-                    while(True):
+                    for R in ArrayRs:
+                        ProcessMain("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager)
+                    while(False):
                         # Reset The Processes
                         processes = []
     #                            concurrency_manager.Reset()
@@ -334,7 +344,7 @@ if __name__ == '__main__':
                                     break
                         if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
                             break 
-#                            barrier.wait()
+#                        barrier.wait()
 '''                        
                         while(True):
                             if FirstTry:

@@ -278,9 +278,9 @@ def ProcessMain(case,
         env = os.environ.copy()
         docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']
 
-        ##### FILE NAMES #####  /home/alberto/LPSim/LivingCity/berkeley_2018/boston/Output
+        ##### FILE NAMES TO CONTROL WETHER TO RUN SIMULATION OR SAVE TIME #####  /home/alberto/LPSim/LivingCity/berkeley_2018/boston/Output
         dir_new_full_network = os.path.join(GeoInfo.berkeley_2018,'new_full_network')
-        saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output')
+        saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output',str(round(UCI1,3)))
         output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
         output_file_parquet = output_file.replace('.csv','.parquet')
         check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file}"
@@ -334,7 +334,7 @@ def ProcessMain(case,
                     concurrent_manager.LogMessage([f"Error check_first_gpu_available: {e}"])
                     gpu_id = -1
                 concurrent_manager.ReleaseLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Available: {gpu_id}")
-                GpuAvailable = gpu_id>=0            
+                GpuAvailable = gpu_id==0            
                 # Block All The Processes Until The GPU is Available (When Simulation Is Returned)
                 # Tell That You Are Occupying The GPU
                 try:
@@ -384,7 +384,7 @@ def ProcessMain(case,
                         concurrent_manager.LogMessage([f"Error check_transportation_error: {e}"])
                         TransportError = True
                         break
-                    concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
+#                    concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
                     # Check if the command was successful
                     ErrorDocker = (process.returncode != 0)
                     # Check Errors in GPU
@@ -416,6 +416,7 @@ def ProcessMain(case,
     #                free_gpu_memory(gpu_id)
     #                concurrent_manager.ReleaseLockByName("GPULock",Message = f"{R}, {round(UCI1,3)} Free Memory")
                     # OutputFile Is There, we can move it
+                    
                     if not FailedSimulation:
                         output_files = [
                                         '0_indexPathInit{0}to24.csv'.format(start),
@@ -426,6 +427,8 @@ def ProcessMain(case,
                         for output_file in output_files:
                             RenameMoveOutput(output_file,GeoInfo.city,R,UCI1,True)
                             DeleteFile(InputDocker)
+                    concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
+                    
                     return not FailedSimulation
     except Exception as e:
         concurrent_manager.LogMessage([f"Error: {e}"])

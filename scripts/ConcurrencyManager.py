@@ -57,6 +57,7 @@ class ConcurrencyManager:
         self.LockSharedDict = Lock()
         self.LockLogger = Lock()
         self.LockDockerError = Lock()
+        
         # Initialize a flag for each GPU
         self.GPU_errors = [Value('b', False) for i in range(self.GPUHandler.deviceCount)]
         self.Docker_error = Value('b', False)

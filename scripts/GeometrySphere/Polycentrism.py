@@ -453,8 +453,6 @@ def ComputeUCIPidMass(Grid,df_distance,IndicesInside):
         GridInside = Grid.loc[IndicesInside]
         PlotGridUsedComputationUCI(GridInside)   
         PlotGridUsedComputationUCIEdges(GridInside)
-
-        logger.info(f"UCI Mass: LC: {LCM}, PI: {PIM}, UCI: {round(UCIM,3)}")
         return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
 
 def GenerateRandomPopulationPid(Grid,df_distance,IndicesInside,Smax_i_Mass,Dmax_ij_Mass,UCIsInterval,UCIInterval2UCI,LockUCIInterval2UCI,AcceptedConfigurations,LockAcceptedConfigurations,FlagEnd,LockFlagEnd,cov,distribution,num_peaks,total_population,SaveDir):
@@ -473,6 +471,8 @@ def GenerateRandomPopulationPid(Grid,df_distance,IndicesInside,Smax_i_Mass,Dmax_
         new_population,index_centers = GenerateRandomPopulation(Grid,num_peaks,total_population,InfoCenters)
         Grid['population'] = new_population        
         PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCIPidMass(Grid,df_distance,IndicesInside)
+        logger.info(f"UCI Mass: LC: {LCM}, PI: {PIM}, UCI: {round(UCIM,3)}, Cov: {cov}, NumPeaks: {num_peaks}")
+
         for i,UCI in enumerate(UCIsInterval):
             if UCIM > UCI and UCIM <= UCIsInterval[i+1]:
                 with LockUCIInterval2UCI:
@@ -503,8 +503,8 @@ def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Gr
     from collections import defaultdict
     from multiprocessing import Manager,Process,log_to_stderr
     # Control How Many UCIs are there
+    UCIsInterval = np.linspace(0,1,11)
     if UCIInterval2UCI is None:
-        UCIsInterval = np.linspace(0,1,11)
         UCIInterval2UCI = {round(UCIInterval,3):[] for UCIInterval in UCIsInterval}
     if AcceptedConfigurations is None:
         AcceptedConfigurations = defaultdict(list)
@@ -522,6 +522,9 @@ def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Gr
     # AcceptedConfigurations
     AcceptedConfigurations = manager.dict(AcceptedConfigurations)
     LockAcceptedConfigurations = manager.Lock()
+    for UCI in UCIsInterval:
+        UCIInterval2UCI[round(UCI, 3)] = manager.list(UCIInterval2UCI[round(UCI, 3)])
+        AcceptedConfigurations[round(UCI, 3)] = manager.list(AcceptedConfigurations[round(UCI, 3)])    
     # Flag End
     FlagEnd = manager.Value('b',False)
     LockFlagEnd = manager.Lock()
