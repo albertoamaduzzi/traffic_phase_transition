@@ -529,6 +529,8 @@ def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Gr
     FlagEnd = manager.Value('b',False)
     LockFlagEnd = manager.Lock()
     processes = []
+    NumberGrids = len(Grid)
+    ListPeaks = [1,2,3,4,5,NumberGrids,NumberGrids/2,NumberGrids/3]
     for cov in Covariances:
         for distribution in Distributions:
             for num_peaks in ListPeaks:

@@ -93,12 +93,14 @@ class mobility_planner:
         if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml')):
             self.simplify_graph_from_polygon_gdf()
             # create a unique ID for each edge because osmid can hold multiple values due to topology simplification
-            print('save graphml')
-            ox.io.save_graphml(self.G2_simp, filepath= os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml'))
-            print('save shapefile')
-            ox.io.save_graph_shapefile(self.G2_simp, filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
+            if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml')):
+                print('save graphml')
+                ox.io.save_graphml(self.G2_simp, filepath= os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml'))
+            if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.shp')):
+                print('save shapefile')
+                ox.io.save_graph_shapefile(self.G2_simp, filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
             fig, ax = ox.plot.plot_graph(self.G2_simp, node_size=0, edge_linewidth=0.2)
-            plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=300, bbox_inches='tight')
+            plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=200, bbox_inches='tight')
             logger.info('SympifyPolygon: Save nodes.csv and edges.csv')
             self.get_nodes_edges_from_graph_simplified()
             self.reindex_nodes_and_save()
@@ -106,11 +108,12 @@ class mobility_planner:
         else:
             logger.info('SympifyPolygon: File {}_new_tertiary_simplified already exists'.format(self.name))
             self.G2_simp = ox.load_graphml(filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.graphml'))
-            if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified','nodes.shp')):
+            fig, ax = ox.plot.plot_graph(self.G2_simp, node_size=0, edge_linewidth=0.2)
+            plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=200, bbox_inches='tight')
+
+            if not os.path.isfile(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified')):
                 logger.info('SympifyPolygon: {} Plot Graph'.format(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified')))
                 ox.io.save_graph_geopackage(self.G2_simp, filepath=os.path.join(self.save_dir,self.name + '_new_tertiary_simplified'))
-                fig, ax = ox.plot.plot_graph(self.G2_simp, node_size=0, edge_linewidth=0.2)
-                plt.savefig(os.path.join(self.save_dir,self.name + '_new_tertiary_simplified.png'), dpi=300, bbox_inches='tight')
             if not os.path.isfile(os.path.join(self.save_dir,'nodes.csv')) and not os.path.isfile(os.path.join(self.save_dir,'edges.csv')):
                 logger.info('SympifyPolygon: Save nodes.csv and edges.csv')
                 self.get_nodes_edges_from_graph_simplified()

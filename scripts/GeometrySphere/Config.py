@@ -32,7 +32,7 @@ def GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR,start = 7
         'distribution_population_from_center': distribution_population_from_center,
         'Rmin': CityName2RminRmax[city][0],
         'Rmax': CityName2RminRmax[city][1],
-        "number_simulation_per_UCI": 15,
+        "number_simulation_per_UCI": 20,
         "NumberUCIs": 20
     }
     return config

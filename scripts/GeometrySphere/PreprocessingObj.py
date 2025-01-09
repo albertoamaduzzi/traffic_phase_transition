@@ -442,7 +442,7 @@ class GeometricalSettingsSpatialPartition:
         if not os.path.isfile(os.path.join(self.save_dir_grid,f'UCI_base.json')):
 #            self.Vmax = ComputeJitV(self.Smaxi,self.Dmaxi)/2
             logger.info(f"Compute UCI {self.city}")
-            PI,LC,UCI,result_indices,cumulative,Fstar = ComputeUCICase(self.df_distance,self.grid,PotentialDf,self.IndicesInside,case = 'Potential')
+            PI,LC,UCI,result_indices,angle,cumulative,Fstar = ComputeUCICase(self.df_distance,self.grid,PotentialDf,self.IndicesInside,case = 'Potential')
             logger.info(f"Compute UCI Mass {self.city}")
             PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCICase(self.df_distance,self.grid,PotentialDf,self.IndicesInside,case = 'Mass') 
             I = {'PI':PI,'LC':LC,'UCI':UCI,"Fstar":Fstar,"PI_M":PIM,'LC_M':LCM,'UCI_M':UCIM,"Fstar_M":FstarM}      
@@ -451,7 +451,7 @@ class GeometricalSettingsSpatialPartition:
             # Prepare Plot UCI
             Tij_Inside = self.Tij[self.Tij['origin'].isin(self.IndicesInside) & self.Tij['destination'].isin(self.IndicesInside)]
             VectorFieldInside = VectorField.iloc[self.IndicesInside]
-            GridInside = self.grid.iloc[self.grid["index"].isin(self.IndicesInside)]
+            GridInside = self.grid.loc[self.grid["index"].isin(self.IndicesInside)]
             PotentialInside =  PotentialDf.loc[PotentialDf['index'].isin(self.IndicesInside)]
             # Plot UCI
             os.makedirs(UCI_dir,exist_ok=True)     
@@ -498,6 +498,7 @@ class GeometricalSettingsSpatialPartition:
         '''
         if not os.path.isfile(os.path.join(TRAFFIC_DIR,'data','carto',self.city,'potential','FitVespignani.json')):
             logger.info(f'Computing Fit {self.city}')
+            os.makedirs(os.path.join(TRAFFIC_DIR,'data','carto',self.city,'potential'),exist_ok=True)
             logk,alpha,gamma,d0_2min1 = VespignaniBlock(self.df_distance,self.grid,self.Tij,self.save_dir_potential)            
             self.k = np.exp(logk)
             self.alpha = alpha
@@ -754,7 +755,11 @@ class GeometricalSettingsSpatialPartition:
         self.Rmax = self.Rmin + Delta + Delta%self.number_simulation_per_UCI
         self.Step = int((self.Rmax - self.Rmin)/self.number_simulation_per_UCI)        
         self.config["Rmax"] = self.Rmax
-        self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI + 1
+        if Delta%self.number_simulation_per_UCI == 0:
+            self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI
+            pass
+        else:
+            self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI + 1
         self.ArrayRs = np.arange(self.Rmin,self.Rmax,self.Step,dtype=int)
         self.config["ArrayRs"] = list(self.ArrayRs)
         SaveJsonDict(self.config_dir_local,self.city + '_geometric_info.json')        

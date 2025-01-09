@@ -112,7 +112,10 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),maxfev = 
     print('Message: ',result_powerlaw.message)
     return fit,result_powerlaw.success
 
-def ComparePlExpo(x,y,initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-1),maxfev = 10000):
+
+
+
+def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-1),maxfev = 10000):
     '''
         Input:
             x: (np.array 1D) x-axis
@@ -136,22 +139,22 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-
     # Fit on the log-log scale POWERLAW
     logx = np.log(x0)
     logy = np.log(y0)
-    # Adjust The Initial Guess
-    log_initial_guess_pl = (np.log(initial_guess_powerlaw[0]),initial_guess_powerlaw[1])
+    # Adjust The Initial Guess # alpha*x + log(A) 
+    log_initial_guess_pl = (initial_guess_powerlaw[1],np.log(initial_guess_powerlaw[0]))
     result_powerlaw = minimize(objective_function_linear, log_initial_guess_pl, args = (logx, logy))
     optimal_params_pl = result_powerlaw.x
     fit = curve_fit(linear, xdata = logx, ydata = logy,p0 = list(optimal_params_pl),maxfev = maxfev)
     # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
-    A_pl = np.exp(fit[0][0])
+    A_pl = np.exp(fit[0][1])
     alpha_pl = fit[0][0]
-    ## EXPO
-    log_initial_guess_expo = (np.log(initial_guess_expo[0]),initial_guess_expo[1])
+    ## EXPO 
+    log_initial_guess_expo = (initial_guess_expo[1],np.log(initial_guess_expo[0]))
     # NOTE: Just y changes
     result_expo = minimize(objective_function_linear, log_initial_guess_expo, args = (x0, logy))
     optimal_params_expo = result_expo.x
-    fit = curve_fit(exponential, xdata = logx, ydata = logy,p0 = list(optimal_params_expo),maxfev = maxfev)
-    A0 = np.exp(fit[0][0])
-    alpha_exp = fit[0][1]
+    fit = curve_fit(exponential, xdata = x0, ydata = logy,p0 = list(optimal_params_expo),maxfev = maxfev)
+    A0 = np.exp(fit[0][1])
+    alpha_exp = fit[0][0]
     y_fit_exp = exponential(x0,A0,alpha_exp)
     y_fit_pl = powerlaw(x0,A_pl,alpha_pl)
     if len(y0)!=0:

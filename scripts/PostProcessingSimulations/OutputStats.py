@@ -10,7 +10,11 @@ from GeoJsonFunctions import *
 from StructuresOfInterest import *
 from PolarsFunctions import *
 from PhaseTransition import *
+from Percolation import *
 import ast
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 """
     @ description:
@@ -70,6 +74,7 @@ class OutputStats:
         self.city = config['name']
         self.delta_t = config['delta_t']
         self.PlotDir = JoinDir(config['output_simulation_dir'],'Plots')
+        self.PlotDir = JoinDir(self.PlotDir,f'{round(self.UCI,3)}')
         self.LogFile = JoinDir(self.PlotDir,"Log.txt")
         self.CountFunctions = 0
         os.makedirs(self.PlotDir,exist_ok = True)
@@ -82,8 +87,8 @@ class OutputStats:
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
         # Edges and Nodes .csv
-        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'Nodes.csv'))
-        self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'Edges.csv'))
+        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'nodes.csv'))
+        self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'edges.csv'))
         self.AddCapacity2Edges()
         self.ConvertSpeedRoad2kmhInEdges()
         # Group Control
@@ -115,10 +120,8 @@ class OutputStats:
         self.ComputeGammaAndTau()
         # Compute The Fluxes And Speeds in time
         self.ComputeFluxesAndSpeedDfRoute()
-        # DEPRECATED
-        self.ComputeTime2Road2Traveller()
-        self.AnimateNetworkTraffic()
-
+        # Percolation Analysis
+        AnalysisPercolationSpeed(self.IntTimeArray,self.GeoJsonEdges,self.EdgesWithFluxesAndSpeed,self.UCI,self.R,self.PlotDir)
 
 
     def AddCapacity2Edges(self):
@@ -126,6 +129,7 @@ class OutputStats:
             Add the capacity to the Edges DataFrame.
             @ NOTE: Useful For Considerations about traffic.
         """
+        logger.info(f"Adding Capacity to Edges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
         df = df.with_columns([
             pl.col("capacity").cast(pl.Int64),
@@ -146,6 +150,7 @@ class OutputStats:
                 Read the People File:
                 NOTE: columns: p, distance, time_departure, last_time_simulated, num_steps, avg_v(mph), a, b, T, gas, co, path_length_cpu, path_length_gpu
         """
+        logger.info(f"Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         if IsFile(self.PeopleFile):
             if ".parquet" in self.PeopleFile:
                 self.DfPeople = pl.read_parquet(self.PeopleFile)
@@ -164,6 +169,7 @@ class OutputStats:
                 Read the Route File:
             NOTE: columns: p, route, distance
         """
+        logger.info(f"Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         if IsFile(self.RouteFile):
             if ".parquet" in self.RouteFile:
                 self.DfRoute = pl.read_parquet(self.RouteFile)
@@ -178,6 +184,7 @@ class OutputStats:
 
 
     def GetGeopandas(self,GeoJsonEdges):
+        logger.info(f"Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         self.GeoJsonEdges = GeoJsonEdges
         self.GetGeopandasBool
         self.CountFunctions += 1
@@ -211,6 +218,7 @@ class OutputStats:
                 - time_leaving_road: Time of Leaving the Road (in seconds)
                 NOTE: See EmbdedTrajectoriesInRoadsAndTime
         """
+        logger.info(f"Preprocessing DfRoute Union DfPeople R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         # Prepare the DataFrame: NOTE: Compute the Fluxes and Speeds is Deprecated
         self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)
 
@@ -228,27 +236,34 @@ class OutputStats:
                 Interval2NumberPeopleInNet: Dictionary containing the number of people in the network at each time interval
             NOTE: self.DfUnload: DataFrame
         """
-        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI))):
+        logger.info(f"Computing Unload Curve R: {self.R}, UCI: {self.UCI}")
+        self.IntTimeArray, self.HourTimeArray, self.Interval2NumberPeopleInNet = InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,self.delta_t)
+        self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfRoute,"time_departure","last_time_simulated")
+        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI))):
             # Initialize Time Variables IntTimeArray = [0,delta_t,2*delta_t,...,SecondsInDay], HourTimeArray = [0,1,2,...,24], Interval2NumberPeopleInNet = {0:0,1:0,...,24:0}
-            self.IntTimeArray, self.HourTimeArray, self.Interval2NumberPeopleInNet = InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,self.delta_t)
             # NOTE: Filter the People in the Control Group  
-            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfRoute,"time_departure","last_time_simulated")
             for t in range(len(self.Interval2NumberPeopleInNet.keys())-1):
                 # DataFrame Filtered With People in the Network at time t in the time interval t,t+1
                 DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
                 # Number Of People in the Network at time t
                 self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
-            self.VolumeTraffic = np.sum(DfUnload["NumberPeople"].to_numpy())
-            DfUnload["FractionPeople"] = DfUnload["NumberPeople"].to_numpy()/self.VolumeTraffic
-            DfUnload = pl.DataFrame(self.Interval2NumberPeopleInNet.items(),columns = ["Time","NumberPeople","FractionPeople"])
-            DfUnload["Time_seconds"] = self.IntTimeArray
-            DfUnload["Time_hours"] = self.IntTimeArray/3600
-            DfUnload.to_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)),index = False)
-            self.DfUnload = DfUnload
+            data = {
+                "Time": list(self.IntTimeArray[:-1]),
+                "Time_Str": list(self.Interval2NumberPeopleInNet.keys()),
+                "NumberPeople": list(self.Interval2NumberPeopleInNet.values())
+            }
+            self.DfUnload = pl.DataFrame(data)
+            self.VolumeTraffic = np.sum(self.DfUnload["NumberPeople"].to_numpy())
+            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople"))            
+            # Add Time_hours column
+            self.DfUnload = self.DfUnload.with_columns(
+                (pl.col("Time") / 3600).alias("Time_hours")
+            )
+            self.DfUnload.write_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
         else:
-            self.DfUnload = pl.read_csv(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.csv".format(self.R,self.UCI)))
-            self.HourTimeArray = self.Interval2NumberPeopleInNet["Time"]
-            self.Interval2NumberPeopleInNet = self.Interval2NumberPeopleInNet["NumberPeople"]
+            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+            self.HourTimeArray = self.DfUnload["Time_Str"]
+            self.Interval2NumberPeopleInNet = self.DfUnload["NumberPeople"]
 
     def ComputeBestFitPlExpo(self):
         """
@@ -263,34 +278,96 @@ class OutputStats:
             NOTE: 
                 The nt is cut in the time window. The cut is done in hours
         """
-        t_vect = self.DfUnload["Time_hours"].to_numpy()
-        nt = self.DfUnload["FractionPeople"].to_numpy()
-        # Check The t For Which The Power Law Fit the Best and Is Better Than The Exponential
-        self.Time2ErrorFit = {t:{"PowerLaw":0,"Exponential":0} for t in t_vect[10:-1]}
-        self.Time2BestFit = {t:"" for t in t_vect[10:-1]}
-        self.Time2nt = {t:{"n":nt[:t],"n_fit":[]} for t in t_vect[10:-1]}
-        self.Time2Fit = {t:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in t_vect[10:-1]}
-        for t in t_vect[10:-10]:
-            ErrorExp,A0,alpha_exp,y_fit_exp,ErrorPL,A_pl,alpha_pl,y_fit_pl = ComparePlExpo(t_vect[:t],nt[:t],initial_guess_powerlaw = (0,-1), initial_guess_expo = (1,-1),maxfev = 10000)
-            # Standardize for a DataFrame the y_fit
-            if len(y_fit_exp) != 0:
-                y_fit_exp = np.append(y_fit_exp,np.zeros(len(nt)-len(y_fit_exp)))
-            if len(y_fit_pl) != 0:
-                y_fit_pl = np.append(y_fit_pl,np.zeros(len(nt)-len(y_fit_pl)))
-            if ErrorExp<ErrorPL:
-                self.Time2BestFit[t] = "Exponential"
-                self.Time2nt[t]["n_fit"] = y_fit_exp
+        import json
+        if not os.path.isfile(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json")):
+            t_vect = self.DfUnload["Time_hours"].to_numpy()
+            nt = self.DfUnload["NumberPeople"].to_numpy()
+            Z_n = np.sum(nt)
+            mask = nt>0
+            nt = nt[mask]
+            t_vect = t_vect[mask]
+            # We require 1 hour after loosing people
+            if len(t_vect[4:])>= 4:
+                self.RangePlFit = range(4,len(t_vect))   
+                # Check The t For Which The Power Law Fit the Best and Is Better Than The Exponential
+                self.Time2ErrorFit = {t_vect[t]:{"PowerLaw":0,"Exponential":0} for t in self.RangePlFit if t - 4 >= 6}
+                self.Time2BestFit = {t_vect[t]:"" for t in self.RangePlFit if t - 4 >= 6}
+                self.Time2nt = {t_vect[t]:{"n":list(nt[:t]/Z_n),"n_fit":[]} for t in self.RangePlFit if t - 4 >= 6}
+                self.Time2Fit = {t_vect[t]:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in self.RangePlFit if t - 4 >= 6}
+                for t0 in self.RangePlFit:
+                    # Constraint to have a minimum of 1 hour of observation
+                    if t0 - 4 >= 6:
+                        t = t_vect[t0]
+                        # Consider 1 hour before fitting, NOTE: Scale the time to close to 0
+                        ErrorExp,A0,alpha_exp,y_fit_exp,ErrorPL,A_pl,alpha_pl,y_fit_pl = ComparePlExpo(np.array(t_vect[4:t0])-np.array(t_vect[3]),nt[3:t0],initial_guess_powerlaw = (max(nt),-1), initial_guess_expo = (max(nt),-1),maxfev = 10000)
+                        # Standardize for a DataFrame the y_fit
+                        if len(y_fit_exp) != 0:
+                            y_fit_exp = np.append(y_fit_exp,np.zeros(len(nt)-len(y_fit_exp)))
+                            MultiplicativeFactor = nt[4]/y_fit_exp[0]
+                            y_fit_exp = y_fit_exp*MultiplicativeFactor
+                            y_fit_exp = np.concatenate((nt[:4],y_fit_exp))
+                            self.t0 = 28
+
+                        if len(y_fit_pl) != 0:
+                            y_fit_pl = np.append(y_fit_pl,np.zeros(len(nt)-len(y_fit_pl)))
+                            MultiplicativeFactor = nt[4]/y_fit_pl[0]
+                            y_fit_pl = y_fit_pl*MultiplicativeFactor
+                            y_fit_pl = np.concatenate((nt[:4],y_fit_pl))
+                            self.t0 = 28
+                        if ErrorExp<ErrorPL:
+                            self.Time2BestFit[t] = "Exponential"
+                            self.Time2nt[t]["n_fit"] = list(y_fit_exp/Z_n)
+                        else:
+                            self.Time2BestFit[t] = "PowerLaw"
+                            self.Time2nt[t]["n_fit"] = list(y_fit_pl/Z_n)
+                        # Save the Error
+                        self.Time2ErrorFit[t]["Exponential"] = ErrorExp
+                        self.Time2ErrorFit[t]["PowerLaw"] = ErrorPL
+                        # Save the Fitted Parameters
+                        self.Time2Fit[t]["A_exp"] = A0
+                        self.Time2Fit[t]["A_pl"] = A_pl
+                        self.Time2Fit[t]["alpha_exp"] = alpha_exp
+                        self.Time2Fit[t]["alpha_pl"] = alpha_pl
+                
             else:
-                self.Time2BestFit[t] = "PowerLaw"
-                self.Time2nt[t]["n_fit"] = y_fit_pl
-            # Save the Error
-            self.Time2ErrorFit[t]["Exponential"] = ErrorExp
-            self.Time2ErrorFit[t]["PowerLaw"] = ErrorPL
-            # Save the Fitted Parameters
-            self.Time2Fit[t]["A_exp"] = A0
-            self.Time2Fit[t]["A_pl"] = A_pl
-            self.Time2Fit[t]["alpha_exp"] = alpha_exp
-            self.Time2Fit[t]["alpha_pl"] = alpha_pl
+                logger.info(f"Time Vector is too short to compute the best fit for the Power Law and Exponential")
+                self.Time2ErrorFit = None
+                self.Time2BestFit = None
+                self.Time2nt = None
+                self.Time2Fit = None
+            if self.Time2ErrorFit is not None:
+                with open(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
+                    json.dump(self.Time2ErrorFit,f,indent = 4)
+            if self.Time2BestFit is not None:
+                with open(os.path.join(self.PlotDir,f"Time2BestFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
+                    json.dump(self.Time2BestFit,f,indent = 4)
+            if self.Time2nt is not None:
+                with open(os.path.join(self.PlotDir,f"Time2nt_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
+                    json.dump(self.Time2nt,f,indent = 4)
+                for t in self.Time2nt.keys():
+                    self.Time2nt[t]["n"] = np.array(self.Time2nt[t]["n"])
+                    self.Time2nt[t]["n_fit"] = np.array(self.Time2nt[t]["n_fit"])
+            if self.Time2Fit is not None:
+                with open(os.path.join(self.PlotDir,f"Time2Fit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
+                    json.dump(self.Time2Fit,f,indent = 4)
+                with open(os.path.join(self.PlotDir,f"RangePlFit_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
+                    json.dump({"RangePl":list(self.RangePlFit)},f,indent = 4)
+            
+        else:
+            if os.path.isfile(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json")):
+                with open(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
+                    self.Time2ErrorFit = json.load(f)
+                with open(os.path.join(self.PlotDir,f"Time2BestFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
+                    self.Time2BestFit = json.load(f)
+                with open(os.path.join(self.PlotDir,f"Time2nt_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
+                    self.Time2nt = json.load(f)
+                for t in self.Time2nt.keys():
+                    self.Time2nt[t]["n"] = np.array(self.Time2nt[t]["n"])
+                    self.Time2nt[t]["n_fit"] = np.array(self.Time2nt[t]["n_fit"])
+                with open(os.path.join(self.PlotDir,f"Time2Fit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
+                    self.Time2Fit = json.load(f)
+                with open(os.path.join(self.PlotDir,f"RangePlFit_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
+                    self.RangePlFit = json.load(f)["RangePl"]
 
     def GetBestFitTimes(self):
         """
@@ -336,13 +413,15 @@ class OutputStats:
             self.CriticalNt = self.Time2nt[BestTime]["n"]
             self.CriticalAlpha = self.Time2Fit[BestTime]["alpha_pl"]
             self.Tau = None
+            self.BestTime = BestTime
             logger.info(f"Network is jammed at time {BestTime} with alpha = {self.CriticalAlpha} and Tau = None")
         else:
             self.IsJam = False
             self.TCritical = None
             self.CriticalNt = None
             self.CriticalAlpha = None
-            self.Tau = self.Time2Fit[BestTime]["alpha_exp"]
+            self.BestTime = BestTime
+            self.Tau = - 1/self.Time2Fit[BestTime]["alpha_exp"]       # In hours
             logger.info(f"Network is not jammed at time {BestTime} with alpha = None and Tau = {self.Tau}")
 ### FLUXES AND GAMMA
     def ComputeFluxesAndSpeedDfRoute(self):
@@ -352,7 +431,7 @@ class OutputStats:
                 @ return self.EdgesWithFluxesAndSpeed: DataFrame with the fluxes and speeds in the road network
         """
         if os.path.exists(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet")):
-            self.DfRoute = pl.read_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
+            self.EdgesWithFluxesAndSpeed = pl.read_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
         else:
             for t in range(len(self.IntTimeArray)):
                 DfRoadsFluxes = self.DfRoute.with_columns(
@@ -390,6 +469,7 @@ class OutputStats:
                     the integrated fluxes of maximum capacity
                 Tau: float
         """
+        logger.info(f"Computing Gamma And Tau R: {self.R}, UCI: {self.UCI}")
         self.Gamma = ComputeGamma(self.DfControlGroup)
         if self.IsJam:
             nt0 = max(self.DfUnload["FractionPeople"].to_numpy())
@@ -405,91 +485,6 @@ class OutputStats:
 
 ### NETWORK FEATURES ###
     
-# Road Network Info # DEPRECATED!
-    def ComputeTime2Road2Traveller(self):
-        """
-            Description:
-            Time2Road2MFDNotProcessed: 
-                 {TimeHour0:{Road0:{"p":[],"avg_v(mph)":[],"NumberPeople":0},
-                                    Road1:{"p":[],"avg_v(mph)":[],"NumberPeople":0},
-                                    ...}
-                        TimeHour1:{Road0:{"p":[],"avg_v(mph)":[],"NumberPeople":0},
-                                    ....
-                                    }
-                        ...
-                        }
-        """
-        if self.ReadRouteInfoBool and self.ReadPeopleInfoBool:
-            # Generate {TimeHour0:{Road0:}}
-            StrSpeed = "avg_v(mph)"
-            StrUsersId = "p"
-            StrNumberPeople = "NumberPeople"
-            # vec(Time): vec(Road): vec(StrSpeed),vec(StrUsersId),StrNumberPeople
-            IntRoads = [int(value) for value in self.GeoJsonEdges["uv"].to_list()]
-            self.Time2Road2MFDNotProcessed = Init_Time2Road2MFDNotProcessed(self.HourTimeArray,IntRoads,StrSpeed,StrUsersId,StrNumberPeople)
-            self.Time2Road2MFD = Init_Time2Road2MFD(self.Time2Road2MFDNotProcessed,StrSpeed,StrNumberPeople)
-            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfPeople,"time_departure","last_time_simulated")
-            for t  in range(len(self.IntTimeArray)-1):    
-                # People in Array at time t
-                DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
-                # People in the network at time t NOTE: route df
-            self.Time2Road2MFD = ComputeAvgTime2Road2MFD(self.Time2Road2MFDNotProcessed,self.Time2Road2MFD,StrSpeed,StrNumberPeople)
-            self.Road2MFD2Plot = Init_Road2MFD2Plot(self.Time2Road2MFD,StrSpeed,StrNumberPeople,self.GeoJsonEdges)
-            self.MFD2Plot = Init_MFD2Plot(self.Road2MFD2Plot,StrSpeed,StrNumberPeople)
-            self.AddGeoJsonTimeColumns(StrNumberPeople,StrSpeed)
-            self.CountFunctions += 1
-            ReturnMessageTime2Road(self.CountFunctions,self.LogFile,self.Time2Road2MFDNotProcessed,self.Time2Road2MFD,self.Road2MFD2Plot)
-    
-
-
-
-
-
-    def AddGeoJsonTimeColumns(self,StrNumberPeople,StrSpeed):
-        """
-            Add the columns to the GeoJsonEdges that contains the number of people and the speed in the
-        """
-        if self.verbose:
-            print("AddGeoJsonTimeColumns")
-        for t in self.Time2Road2MFD.keys():
-            self.GeoJsonEdges[StrNumberPeople + "_" + t] = self.GeoJsonEdges["uv"].apply(lambda x: self.Time2Road2MFD[t][x][StrNumberPeople])
-            self.GeoJsonEdges[StrSpeed + "_" + t] = self.GeoJsonEdges["uv"].apply(lambda x: self.Time2Road2MFD[t][x][StrSpeed])
-            self.GeoJsonEdges["timepercorrence_" + t] = self.GeoJsonEdges.apply(lambda x: self.Time2Road2MFD[t][x["uv"]][StrSpeed]/x["maxspeed_int"],axis = 1)
-            self.GeoJsonEdges["q_"+t] = self.GeoJsonEdges.apply(lambda x: self.Time2Road2MFD[t][x["uv"]][StrSpeed]/x["length"],axis = 1)
-        self.InitColumn2InfoSavePlot(StrNumberPeople,StrSpeed)
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: AddGeoJsonTimeColumns: Add the columns to the GeoJsonEdges that contains the number of people and the speed in the"
-        AddMessageToLog(Message,self.LogFile)
-
-    def InitColumn2InfoSavePlot(self,StrNumberPeople,StrSpeed):
-        """
-            Description:
-                Create dictionary that contains the right information to plot the data in the animation.
-            StrNumberPeople: str -> Number of People (Column of Output)
-        """
-        self.Column2InfoSavePlot = defaultdict()
-        for t in self.HourTimeArray:
-            self.Column2InfoSavePlot[StrNumberPeople + "_" + t] = {"title":f"Number of People Road at {t}",
-                                                                   "savefile":StrNumberPeople + "_" + t +".png",
-                                                                   "colorbar":"Number People",
-                                                                   "animationfile":"NumberPeople.gif"}
-            self.Column2InfoSavePlot[StrSpeed + "_" + t] = {"title": f"Speed at {t} (mph)",
-                                                            "savefile":StrSpeed + "_" + t +".png",
-                                                            "colorbar":"Speed (mph)",
-                                                            "animationfile":"Speed.gif"}
-            self.Column2InfoSavePlot["timepercorrence_" + t] = {"title": f"time percorrence roads at {t}",
-                                                                "savefile":"timepercorrence_" + t +".png",
-                                                                "colorbar":"Time Percorrence (s)",
-                                                                "animationfile":"timepercorrence.gif"}
-            self.Column2InfoSavePlot["q_" + t] = {"title": f"fraction max speed at {t}",
-                                                  "savefile":"q_" + t +".png",
-                                                  "colorbar":"Fraction Maximum Speed",
-                                                  "animationfile":"q.gif"}
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: InitColumn2InfoSavePlot: Create dictionary that contains the right information to plot the data in the animation."
-        AddMessageToLog(Message,self.LogFile)
-
-
 
 
 
@@ -500,10 +495,20 @@ class OutputStats:
         """
             @Decsription:
                 For each time window checks wether exponential is better than powerlaw. If powerlaw is better than exponential, then we have a jam.
+            NOTE: The time is shifted to be close to 0 when it starts to decrease since the fit otherwhise would work.
         """
-        for t in self.Time2ErrorFit.keys():
+        count = 0
+        n = self.DfUnload["NumberPeople"].to_numpy()
+        mask = n > 0
+        t_vect = self.DfUnload["Time_hours"].to_numpy()[mask]
+        for t0 in self.RangePlFit:
+            # Consider just the end times that allow for more then 6 points to fit
+            if t0 - 4 >= 6:
+                t = list(self.Time2ErrorFit.keys())[count]
+                SmallerVect = min([len(t_vect),len(self.Time2nt[t]["n"]),len(self.Time2nt[t]["n_fit"])])
             # Plots The Fraction Of People That are Stuck In The Network at Time T
-            PlotPeopleInNetwork(self.Time2nt[t]["n"],self.Time2nt[t]["n_fit"],self.HourTimeArray[:t],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+                PlotPeopleInNetwork(self.Time2nt[t]["n"][:SmallerVect],self.Time2nt[t]["n_fit"][:SmallerVect],t_vect[:SmallerVect],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+                count += 1
         self.CountFunctions += 1
         Message = f"Function {self.CountFunctions}: PlotUnloadCurve: Plot the number of people in the network at each time interval"
         AddMessageToLog(Message,self.LogFile)
@@ -517,20 +522,13 @@ class OutputStats:
 
         """
         LastTime = list(self.Time2ErrorFit.keys())[-1]
-        PlotNtAndFitSingleR(self.HourTimeArray,self.Time2nt[LastTime]["n"],self.Tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
+        PlotNtAndFitSingleR(self.DfUnload["Time_hours"].to_numpy(),self.Time2nt[LastTime]["n"],self.Tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
 
 
 
 
 
 
-    def AnimateNetworkTraffic(self):
-        # TODO: Create a function that quantifies for each hour the velocity in the road and compute the traffic.
-        # NOTE: The dependence of TrafficLevel to the FilePlots, does not allow the nesting I thought for this function.
-        AnimateNetworkTraffic(self.PlotDir,self.GeoJsonEdges,self.Column2InfoSavePlot,dpi = 300,IsLognorm = False)
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: AnimateNetworkTraffic: Create the animation of the traffic in the network"
-        AddMessageToLog(Message,self.LogFile)
-
+    
 
 

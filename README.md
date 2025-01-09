@@ -77,3 +77,6 @@ Columns:
 - "with_roads": bool, Value that tells wether the map has roads in that grid
 - "geometry":Polygon   
 
+## Useful Commands
+#### Check memory occupied on disk from home
+du -sh /home/* 2>/dev/null

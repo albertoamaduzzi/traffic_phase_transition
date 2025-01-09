@@ -97,6 +97,7 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         - distance_km: Distance Travelled By User (in km)
         - avg_v(m/s): Average Velocity of the User (in m/s)
         - time_leaving_road: Time of Leaving the Road (in seconds)
+        - time_entering_road: Time of Entering the Road (in seconds)
     """
     Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_limit_kmh"))
     # Inport Properties Of People into Routes
@@ -130,9 +131,11 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         (pl.cum_sum("time_interval_in_road").over("p")).alias("cumulative_time_spent_in_road")
     )
     DfRoute = DfRoute.with_columns((pl.col("time_departure") + pl.col("cumulative_time_spent_in_road")).alias("time_leaving_road"))
+    DfRoute = DfRoute.with_columns(
+        (pl.col("time_leaving_road") - pl.col("time_interval_in_road")).alias("time_entering_road")
+    )    
     DfRoute = DfRoute.drop(["time_interval_in_road","cumulative_time_spent_in_road"])
     if "speed_mph" in DfRoute.columns:
         DfRoute = DfRoute.drop("speed_mph")
     return DfRoute
-
 

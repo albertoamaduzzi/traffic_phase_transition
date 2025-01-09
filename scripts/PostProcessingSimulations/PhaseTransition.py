@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 from DateTimeHandler import *
+import polars as pl
 sys.path.append(os.path.join(os.environ["TRAFFIC_DIR"],"scripts"))
 from FittingProcedures import *
 
@@ -32,10 +33,6 @@ def ComputeAlpha(TimeInterval2NumberPeopleInNet):
     Hours = list(TimeInterval2NumberPeopleInNet.keys())[StartingBin:]
     IntTimeArray = np.linspace(0,HOURS_IN_DAY,NumIntervals,dtype = float)[StartingBin:]       
     NPeople = np.array(list(TimeInterval2NumberPeopleInNet.values()))[StartingBin:]
-    print("Number Intervals: ",NumIntervals)
-    print("Hours: ",Hours)
-    print("IntTimeArray: ",IntTimeArray)
-    print("NPeople: ",NPeople)
     # NOTE: Important to Normalize to to Compare Power Law and Expo with the right Initial Guess
     PPeople = NPeople/np.sum(NPeople)
     # Time Windows for which the 
