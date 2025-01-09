@@ -9,9 +9,12 @@ from matplotlib.gridspec import GridSpec
 from DateTime_ import *
 #import imageio
 import os
+import logging
+logger = logging.getLogger(__name__)
+
 
 # Unloading Curve
-def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
+def PlotPeopleInNetwork(n,n_fit,interval15,FileName):
     '''
         Input:
             df_people: DataFrame containing the people information (stay time in the network, time of departure, travel time, etc.)
@@ -22,19 +25,20 @@ def PlotPeopleInNetwork(Interval2NumberPeopleInNet,interval15,FileName):
             seconds_in_minute: Number of seconds in a minute
             interval_in_minutes: Number of minutes in each interval
     '''
-    fig,ax = plt.subplots(1,1,figsize = (15,15))
-    Interval2Plot = [t for t in interval15 if Interval2NumberPeopleInNet[t] > 0]
-    NPeople2Count = [Interval2NumberPeopleInNet[t] for t in interval15 if Interval2NumberPeopleInNet[t] > 0]
-    ax.plot(Interval2Plot[1:-1],NPeople2Count[1:-1])
-#    ax.set_xticks(second2hour(interval15))
-#    ax.set_xticklabels([str(t) for t in interval15])
-    ax.set_xlabel('time')
-    ax.set_ylabel('Number people in graph')
-    ax.set_xticks(ticks = interval15[1:-1],labels = interval15[1:-1],rotation=90)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    plt.savefig(FileName,dpi = 200)
-    plt.show()
+    logger.info(f"Plotting People in Network")
+    if not os.path.isfile(os.path.dirname(FileName)):
+        fig,ax = plt.subplots(1,1,figsize = (15,15))
+        ax.plot(interval15,n)
+        ax.plot(interval15,n_fit,linestyle = "--")
+    #    ax.set_xticks(second2hour(interval15))
+    #    ax.set_xticklabels([str(t) for t in interval15])
+        ax.set_xlabel('t(h)')
+        ax.set_ylabel('n(t)')
+    #    ax.set_xticks(ticks = interval15,labels = interval15,rotation=90)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        plt.savefig(FileName,dpi = 200)
+        plt.close()
 
 # Hopefully traffic in the road network
 '''def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFile,Title,dpi = 300,IsLognorm = False):
@@ -100,7 +104,7 @@ def PlotAvailableUCIs(UCIs,PlotDir):
     ax.set_xlabel('UCI',fontsize=15)
     ax.set_title('Available UCIs',fontsize=15)
     plt.savefig(os.path.join(PlotDir,'AvailableUCIs.png'))
-
+    plt.close()
 
 def PlotAlphaBeta(Alphas,Betas,PlotDir):
     """
@@ -126,6 +130,7 @@ def PlotAlphaBeta(Alphas,Betas,PlotDir):
     ax.text(0.22,0.62,'polycentric', ha='right', va='bottom', color='black',fontsize=15)
     ax.text(0.9,0.62,'2DP', ha='right', va='bottom', color='black',fontsize=15)
     plt.savefig(os.path.join(PlotDir,'AlphaBeta.png'))
+    plt.close()
 
 def PlotNR(Rs,Rc,NR,PlotDir):
     """
@@ -143,6 +148,7 @@ def PlotNR(Rs,Rc,NR,PlotDir):
     ax.set_ylabel('N(R)',fontsize=15)
     ax.set_title('NR',fontsize=15)
     plt.savefig(os.path.join(PlotDir,'NR.png'))
+    plt.close()
 
 def PlotNtAndFitSingleR(t,Nt,tau,NtFitted,R,UCI,PlotDir):
     """
@@ -160,6 +166,7 @@ def PlotNtAndFitSingleR(t,Nt,tau,NtFitted,R,UCI,PlotDir):
     ax.set_ylabel('N(t)',fontsize=15)
     ax.set_title('Number of People in network',fontsize=15)
     plt.savefig(os.path.join(PlotDir,f'{R}_{round(UCI,3)}_Nt.png'))
+    plt.close()
 
 def PlotNtAndFit(Rs,Nt,tau,NtFitted,PlotDir):
     """
@@ -178,6 +185,7 @@ def PlotNtAndFit(Rs,Nt,tau,NtFitted,PlotDir):
     ax.set_ylabel('N(t)',fontsize=15)
     ax.set_title('Number of People in network',fontsize=15)
     plt.savefig(os.path.join(PlotDir,'Nt.png'))
+    plt.close()
 
 def PlotErrorFitAlphaWindow(Time2ErrorFit,R,UCI,PlotDir):
     """
@@ -192,7 +200,7 @@ def PlotErrorFitAlphaWindow(Time2ErrorFit,R,UCI,PlotDir):
     ax.set_ylabel('Error',fontsize=15)
     ax.set_title('Error Fit',fontsize=15)
     plt.savefig(os.path.join(PlotDir,f'{R}_{round(UCI,3)}_ErrorFitAlphaWindow.png'))
-
+    plt.close()
 
 
 
@@ -206,9 +214,11 @@ def PlotR2Tau(R2Tau,PlotDir):
         Args:
             - R2Tau: dict -> {R:tau}
     """
-    fig,ax = plt.subplots(1,1,figsize = (10,10))
-    ax.scatter(list(R2Tau.keys()),list(R2Tau.values()))
-    ax.set_xlabel('R',fontsize=15)
-    ax.set_ylabel(r'$\\tau(R)$',fontsize=15)
-    ax.set_title('Tau',fontsize=15)
-    plt.savefig(os.path.join(PlotDir,'R2Tau.png'))
+    if not os.path.isfile(os.path.join(PlotDir,'R2Tau.png')):        
+        fig,ax = plt.subplots(1,1,figsize = (10,10))
+        ax.scatter(list(R2Tau.keys()),list(R2Tau.values()))
+        ax.set_xlabel('R',fontsize=15)
+        ax.set_ylabel(r'$\\tau(R)$',fontsize=15)
+        ax.set_title('Tau',fontsize=15)
+        plt.savefig(os.path.join(PlotDir,'R2Tau.png'))  
+        plt.close()

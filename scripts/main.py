@@ -207,9 +207,11 @@ if __name__ == '__main__':
 #            lock = Lock()
             # Do not Compute RArray if not necessary, stick with the given by CityRminRmax
             FirstTry = True
-            # Run The Processes Until for All The Rs I do not Have A Docker Error
-            # NOTE: GPU related Problems Act on ArrayRs
-            while(True):
+            # NOTE: Eliminate Concurrency since the Place we save stuff is the same and not conditioned
+            # So there is race condition that cannot be handled
+            for R in GeoInfo.ArrayRs:
+                ProcessMain("NonModified",GeoInfo,None,R,UCI,None)
+            while(False):
                 # Reset The Processes
                 processes = []
 #                concurrency_manager.Reset()
@@ -257,24 +259,8 @@ if __name__ == '__main__':
 
 #            barrier.wait()
             logger.info(f"Finished the simulations not changed for {CityName}")
-
-            # Synchronize in the main process
-#            City2Config = InitConfigPolycentrismAnalysis(CityName)                        
-#            PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName])  
-#            PCTA.CompleteAnalysis()
-#            with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
-#                json.dump(City2Config,f,indent=4)    
             # Generate New Population
             GeoInfo.GeneratePopulationAndSetUCIs()
-#            for UCIInterval,ConfigurationsAccepted in GeoInfo.UCIInterval2UCIAccepted.items():
-#                for ConfigurationAccepted in ConfigurationsAccepted:
-#                    cov = ConfigurationAccepted['cov']
-#                    distribution = ConfigurationAccepted['distribution']
-#                    num_peaks = ConfigurationAccepted['num_peaks']
-#                    UCIM = ConfigurationAccepted['UCI']
-#                    PIM = ConfigurationAccepted['PI']
-#                    LCM = ConfigurationAccepted['LC']
-#                    FstarM = ConfigurationAccepted['Fstar']
                     # Generate modified Fluxes
             print(GeoInfo.UCIInterval2UCI)
             for UCI_Interval in GeoInfo.UCIInterval2UCI.keys():
@@ -300,8 +286,8 @@ if __name__ == '__main__':
                     concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
                     log_to_stderr()
                     FirstTry = True
-                    for R in ArrayRs:
-                        ProcessMain("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager)
+                    for R in GeoInfo.ArrayRs:
+                        ProcessMain("Modified",GeoInfo,Modified_Fluxes,R,UCI1,None)
                     while(False):
                         # Reset The Processes
                         processes = []
@@ -381,8 +367,8 @@ if __name__ == '__main__':
                                 json.dump(GeoInfo.UCIInterval2UCIAccepted,f,indent=4)
                             break
 '''
-#                        City2Config = InitConfigPolycentrismAnalysis(CityName)                        
-#                        PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName])  
+#                        City2Config,Rs,UCIs = InitConfigPolycentrismAnalysis(CityName)                        
+#                        PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName],Rs,UCIs)  
 #                        PCTA.CompleteAnalysis()
 #                        with open(os.path.join(BaseConfig,'post_processing_' + CityName +'.json'),'w') as f:
 #                            json.dump(City2Config,f,indent=4)    
