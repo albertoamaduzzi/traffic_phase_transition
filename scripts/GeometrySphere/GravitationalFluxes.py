@@ -6,11 +6,11 @@ import logging
 import json
 import os
 from collections import defaultdict
-from FittingProcedures import multilinear4variables
+from FittingProcedures import *
+import polars as pl
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 sys.path.append('~/berkeley/traffic_phase_transition/scripts')
-from FittingProcedures import Fitting
 
 ###################################################################################################################
 ###############################         FITTING PROCEDURE           ###############################################
@@ -312,7 +312,7 @@ def PrepareVespignani(Vnpeople, Vorigins, Vdestinations, VgridIdx, VgridPopulati
     return VespignaniVector,Fluxes,OriginDestination
 
 ##-------------- VESPIGNANI FEATURES -----------------##
-def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij):
+def _ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij):
     '''
         @param df_distance: (pd.DataFrame) [i,j,distance]
         @param grid: (pd.DataFrame) [index,population]
@@ -354,22 +354,168 @@ def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij):
     assert 0 not in  Massi and 0 not in  Massj and 0 not in  Fluxes, 'ComputeVespignaniVectorFluxesOD: You forgot to filter the Masses'
     return Massi,Massj,DistanceVector,Fluxes,OriginDestination
 
+def ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij):
+    '''
+        @param df_distance: (pl.DataFrame) [i,j,distance]
+        @param grid: (pd.DataFrame) [index,population]
+        @param Tij: (pd.DataFrame) [number_people,origin,destination]
+        @return: Tij_dist: pl.DataFrame:
+        ['origin': index of the origin from grid index set.
+         'destination': index of the destination from grid index set.
+         'number_people': number of people exchanged between origin and destination.
+         'dir_vector': unit direction vector between OD
+         'distance': distance between OD
+         'population_origin': population of the origin
+         'population_destination': population of the destination]
+        NOTE: Contains all the informations about the fluxes and the population and the distance
+        and therefore about the fit.
+             '''
 
-
-def PlotVespignaniFit(EstimateFluxesScaled,Fluxes,DistanceVector,Massi,Massj):
-    fig,ax = plt.subplots(1,1,figsize = (10,10))
-    n,bins = np.histogram(DistanceVector,bins = 50)
-    AvgFluxGivenR =[Fluxes[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]/(Massi[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]*Massj[np.where(DistanceVector>bins[i]) and DistanceVector < bins[i+1]]) for i in range(len(bins)-1)]
-    ax.boxplot(bins[:-1],AvgFluxGivenR)
-    ax.set_xlabel('R(km)')
-    ax.set_ylabel('W/(mi*mj)')
-    ax.legend(['Fluxes','Gravity'])
-    plt.show()
-
+    import polars as pl
+    df_distance = pl.DataFrame(df_distance)
+    Tij = pl.DataFrame(Tij)
+    g_renamed = grid.rename(columns={"index":"index","population":"population_origin"})
+    df_distance = df_distance.join(pl.DataFrame(g_renamed[["index","population_origin"]]), left_on="i", right_on = "index", how="inner")
+    g_renamed = grid.rename(columns={"index":"index","population":"population_destination"})
+    df_distance = df_distance.join(pl.DataFrame(g_renamed[["index","population_destination"]]), left_on="j", right_on = "index", how="inner")
+    Tij_dist = Tij.join(df_distance, left_on=["origin","destination"],right_on = ["i","j"], how="inner")
+    Tij_dist = Tij_dist.drop(["(i,j)D","(i,j)O"])
+    return Tij_dist
 
 ##----------------------------- VESPIGNANI FITTING -----------------------------##
+def GravityModel(Mi,Mj,Dij,k,alpha,gamma,d0minus1):
+    """
+        @param Mi: (int) -> Mass of the origin
+        @param Mj: (int) -> Mass of the destination
+        @param Dij: (float) -> Distance between origin and destination
+        @param k: (float) -> Multiplicative factor
+        @param alpha: (float) -> Exponent of the origin
+        @param gamma: (float) -> Exponent of the destination
+        @param d0minus1: (float) -> Exponential factor
+        @return: (float) -> Gravity Fluxes
+    """
+    return k*Mi**alpha*Mj**gamma* np.exp(Dij*d0minus1)
+def FluxesOverProductMasses(GravityFluxes,Mi,Mj,Alpha,Beta):
+    return GravityFluxes/(Mi**Alpha*Mj**Beta)
+
+def FilterGridWithPeopleAndFluxes(Tij_dist):
+    """
+        @param Tij_dist: (pl.DataFrame) [origin,destination,number_people,population_origin,population_destination,distance]
+        NOTE: Filter the grid with the fluxes and the population
+    """
+    FilterPerGravityFit = (pl.col("number_people")>0,pl.col("population_origin")>0,pl.col("population_destination")>0)
+    Tij_dist_fit_gravity = Tij_dist.filter(FilterPerGravityFit)
+    print("Fraction Cells not Considered: ",len(Tij_dist_fit_gravity)/len(Tij_dist))
+    return Tij_dist_fit_gravity
+def AddGravityColumnTij(Tij_dist_fit_gravity,K,Alpha,Gamma,D0minus1):
+    Tij_dist_fit_gravity = Tij_dist_fit_gravity.with_columns(
+        pl.struct(["distance","population_origin","population_destination"])
+        .map_batches(lambda x: GravityModel(
+            x.struct.field("population_origin"),
+            x.struct.field("population_destination"),
+            x.struct.field('distance'),
+            K,Alpha,Gamma,D0minus1)).alias("gravity_fluxes"))
+    K1 = K*np.sum(Tij_dist_fit_gravity["number_people"].to_numpy())/np.sum(Tij_dist_fit_gravity["gravity_fluxes"].to_numpy())
+    Tij_dist_fit_gravity = Tij_dist_fit_gravity.with_columns(
+        pl.struct(["distance","population_origin","population_destination"])
+        .map_batches(lambda x: GravityModel(
+            x.struct.field("population_origin"),
+            x.struct.field("population_destination"),
+            x.struct.field('distance'),
+            K1,Alpha,Gamma,D0minus1)).alias("gravity_fluxes"))
+    return Tij_dist_fit_gravity,K1
 
 def VespignaniBlock(df_distance,grid,Tij,potentialdir):
+    """
+        @df_distance: (pd.DataFrame) [i,j,distance]
+        @grid: (pd.DataFrame) [index,population]
+        @Tij: (pd.DataFrame) [number_people,origin,destination]
+        NOTE: New Procedure to Fit.
+    """
+    
+    Tij_dist = ComputeVespignaniVectorFluxesOD(df_distance,grid,Tij)
+    Tij_dist_fit_gravity = FilterGridWithPeopleAndFluxes(Tij_dist)
+    mimjdij = np.array([Tij_dist_fit_gravity['population_origin'].to_numpy(),Tij_dist_fit_gravity['population_destination'].to_numpy(),Tij_dist_fit_gravity['distance'].to_numpy()])
+    Fluxes = Tij_dist_fit_gravity['number_people'].to_numpy()
+    if not os.path.isfile(os.path.join(potentialdir,'FitVespignani.json')):
+        logger.info("Fitting Gravitational Model ...")
+        # NOTE: The Guess For the fitting Procedure is that the multiplicative factor is = 0, therefore the normalization is = 1, then the masses are linearly related to the fluxes, and the typical length is 100 km
+        k,error = FittingGravity(mimjdij,np.log(np.array(Fluxes)),initial_guess = [EstimateLogk(Tij_dist_fit_gravity),0.01,0.01,-EstimateD0minus1(Tij_dist_fit_gravity)] ,bounds = (np.array([-50,0,0,-2]),np.array([50,2,2,0])) ,maxfev = 300000)
+        K = np.exp(k[0][0])
+        Alpha = k[0][1]
+        Gamma = k[0][2]
+        D0minus1 = k[0][3]
+        Tij_dist_fit_gravity,K1 = AddGravityColumnTij(Tij_dist_fit_gravity,K,Alpha,Gamma,D0minus1)
+        with open(os.path.join(potentialdir,'FitVespignani.json'),'w') as f:
+            json.dump({'logk':np.log(K1),'alpha': k[0][1],'gamma': k[0][2],'1/d0':k[0][3]},f)
+    else:
+        logger.info("Loading Fitting Gravitational Model ...")
+        with open(os.path.join(potentialdir,'FitVespignani.json'),'r') as f:
+            d = json.load(f)
+        k = [d['logk'],d['alpha'],d['gamma'],d['1/d0']]
+        K = np.exp(k[0][0])
+        Alpha = k[0][1]
+        Gamma = k[0][2]
+        D0minus1 = k[0][3]
+    
+    n,bins = np.histogram(Tij_dist["distance"].to_numpy(),bins = 50)
+    # PLOT '$W_{ij}/(m_i^{{\\alpha}} m_j^{{\\gamma}})$'
+    print("Maximum Fluxes: ",max(Tij_dist_fit_gravity["number_people"].to_numpy()))
+    print("Maximum Gravity Fluxes: ",max(Tij_dist_fit_gravity["gravity_fluxes"].to_numpy()))
+    print("Maximum Error In Fraction: ",max(np.sqrt((Tij_dist_fit_gravity["gravity_fluxes"].to_numpy() - Tij_dist_fit_gravity["number_people"].to_numpy())**2).mean()/Tij_dist_fit_gravity["number_people"].to_numpy()))
+    print("Minimum Error in Fraction: ",min(np.sqrt((Tij_dist_fit_gravity["gravity_fluxes"].to_numpy() - Tij_dist_fit_gravity["number_people"].to_numpy())**2).mean()/Tij_dist_fit_gravity["number_people"].to_numpy()))
+    print("Total Fluxes: ",sum(Tij_dist_fit_gravity["number_people"].to_numpy()))
+    print("Total Gravity Fluxes: ",sum(Tij_dist_fit_gravity["gravity_fluxes"].to_numpy()))
+
+    Distance = []
+    WOverMM = []
+    ErrorWOverMM = []
+    WOverWD = []
+    ErrorWOverWD = []
+    for i in range(len(bins)-1):
+        Tij_dist_bin_i = Tij_dist_fit_gravity.filter(pl.col('distance') > bins[i], 
+                                pl.col('distance') < bins[i+1])
+        Tij_dist_bin_i = Tij_dist_bin_i.with_columns(pl.struct(["gravity_fluxes","population_origin","population_destination"]).map_batches(lambda x: FluxesOverProductMasses(x.struct.field('gravity_fluxes'),x.struct.field("population_origin"),x.struct.field("population_destination"),k[0][1],k[0][2])).alias("W/(Mi^(a)Mj^(b))"))
+        ErrorW0 = Tij_dist_bin_i.select((pl.col("W/(Mi^(a)Mj^(b))").std()).alias("error_W/(Mi^(a)Mj^(b))"))
+        Tij_dist_bin_i = Tij_dist_bin_i.with_columns((pl.col("gravity_fluxes")/pl.col("number_people")).alias("We/Wd"))
+        ErrorW1 = Tij_dist_bin_i.select((pl.col("We/Wd").std()).alias("error_We/Wd"))
+        Distance.append(bins[i])
+        WOverMM.append(np.mean(Tij_dist_bin_i['W/(Mi^(a)Mj^(b))'].to_numpy()))
+        WOverWD.append(np.mean(Tij_dist_bin_i['We/Wd'].to_numpy()))
+        if ErrorW0["error_W/(Mi^(a)Mj^(b))"][0] is None:
+            ErrorWOverMM.append(0)
+        else:
+            ErrorWOverMM.append(ErrorW0["error_W/(Mi^(a)Mj^(b))"][0]*2)
+        if ErrorW1["error_We/Wd"][0] is None:
+            ErrorWOverWD.append(0)
+        else:
+            ErrorWOverWD.append(ErrorW1['error_We/Wd'][0]*2)
+
+    MaxWOverWD = WOverWD[0]
+    WOverWD = np.array(WOverWD)/MaxWOverWD
+    ErrorWOverWD = np.array(ErrorWOverWD)/MaxWOverWD
+    WOverMM = np.array(WOverMM)
+    ErrorWOverMM = np.array(ErrorWOverMM)
+    # PLOTTING
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+
+    ax.errorbar(bins[:-1],WOverMM,yerr = ErrorWOverMM, fmt='o', capsize=5, color='red')
+    ax.plot(bins[:-1],WOverMM[0]*np.exp(bins[:-1]*D0minus1), color='black',linestyle='--')
+    ax.text(10,0.1,r'$\frac{{1}}{{d_0}} = $' + str(round(D0minus1,3)),fontsize = 15)
+    ax.set_yscale('log')
+    ax.set_xlim(0,90)
+    ax.set_xlabel('R(km)')
+    ax.set_ylabel(r'$W_{ij}/(m_i^{\alpha} m_j^{\gamma})$')
+    plt.savefig(os.path.join(potentialdir,'PlotFitVespignaniNew.png'),dpi = 200)
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.errorbar(bins[:-1],WOverWD[:],yerr = ErrorWOverWD[:], fmt='o', capsize=5, color='red')
+    ax.hlines(1,0,90,linestyle='--',color='black')
+    ax.set_yscale('log')
+    ax.set_xlabel('R(km)')
+    ax.set_xlim(0,90)
+    ax.set_ylabel('$W_{ij} (M)/W_{ij} (D)$')
+    plt.savefig(os.path.join(potentialdir,'PlotFitVespignaniNewDataModel.png'),dpi = 200)
+def _VespignaniBlock(df_distance,grid,Tij,potentialdir):
     """
         @df_distance: (pd.DataFrame) [i,j,distance]
         @grid: (pd.DataFrame) [index,population]

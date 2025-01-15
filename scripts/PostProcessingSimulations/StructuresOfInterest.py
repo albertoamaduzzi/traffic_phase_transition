@@ -132,3 +132,11 @@ def ReturnMessageTime2Road(CountFunctions,LogFile,Time2Road2MFDNotProcessed,Time
         else:
             break
     AddMessageToLog(Message,LogFile)
+
+
+def InitializeDictionariesFit(t_vect,nt,Z_n,RangePlFit):
+    Time2ErrorFit = {t_vect[t]:{"PowerLaw":0,"Exponential":0} for t in RangePlFit if t - 4 >= 6}
+    Time2BestFit = {t_vect[t]:"" for t in RangePlFit if t - 4 >= 6}
+    Time2nt = {t_vect[t]:{"n":list(nt[:t]/Z_n),"n_fit":[]} for t in RangePlFit if t - 4 >= 6}
+    Time2Fit = {t_vect[t]:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in RangePlFit if t - 4 >= 6}
+    return Time2ErrorFit,Time2BestFit,Time2nt,Time2Fit

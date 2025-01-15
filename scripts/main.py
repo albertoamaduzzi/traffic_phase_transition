@@ -151,7 +151,7 @@ def RedefineRsWhenError(Rmax,Step,NumberRs):
 if __name__ == '__main__':
     #NameCities = os.listdir(os.path.join(TRAFFIC_DIR,'data','carto'))
 #    NameCities = ["BOS","LAX","SFO","LIS","RIO"]
-    NameCities = ["BOS"]
+    NameCities = ["LAX"]
     container_name = "xuanjiang1998/lpsim:v1"    
     OD_dir = os.path.join(TRAFFIC_DIR,'berkeley_2018',"new_full_network")
     # Post Processing
