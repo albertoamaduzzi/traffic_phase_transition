@@ -8,6 +8,7 @@ from DateTime_ import *
 import logging 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+from EfficiencyAnalysis import *
 
 # UNIVERSALITY EXPONENTS DIRECTED PERCOLATION
 # Equal time correlation function for directed percolation : Beljakov Hinrichsen
@@ -27,6 +28,7 @@ DELTA2 = BETA2/NUPAR2
 #NOTE: The measures we are going too look at are n-points functions \Phi(r_1,r_2) = C|r_1 - r_2|^(-2CHI)  
 
 ## PERCOLATION WITH SPEED 
+@timing_decorator
 def ComputePercolationColumns(EdgesWithFluxesAndSpeed,IntTimeArray,q0,q1,q2):
     """
         @param EdgesWithFluxesAndSpeed: DataFrame with the edges of the network and the fluxes and speeds of the edges.
@@ -42,7 +44,20 @@ def ComputePercolationColumns(EdgesWithFluxesAndSpeed,IntTimeArray,q0,q1,q2):
             EdgesWithFluxesAndSpeed = EdgesWithFluxesAndSpeed.with_columns((pl.col(f"speed_kmh_{t}")/pl.col("maxspeed_kmh") < q1).alias(f"moderate_traffic_{t}"))
             EdgesWithFluxesAndSpeed = EdgesWithFluxesAndSpeed.with_columns((pl.col(f"speed_kmh_{t}")/pl.col("maxspeed_kmh") < q2).alias(f"free_flow_{t}"))
     return EdgesWithFluxesAndSpeed
+@timing_decorator
+def ComputePercolationPeakHour(EdgesWithFluxesAndSpeed,IntTimePeak,q):
+    """
+        @param EdgesWithFluxesAndSpeed: DataFrame with the edges of the network and the fluxes and speeds of the edges.
+            [uniqueid','u','v','length','speed_mph','lanes','capacity','flux_t','speed_kmh_t']
+        @param IntTimePeak: Peak Hour
+        @param q: Quantile to compute the percolation
+    """
+    if f"speed_kmh_{IntTimePeak}" in EdgesWithFluxesAndSpeed.columns:
+        EdgesWithFluxesAndSpeed = EdgesWithFluxesAndSpeed.with_columns((pl.col("speed_mph")*1.6).alias(f"maxspeed_kmh")) 
+        EdgesWithFluxesAndSpeed = EdgesWithFluxesAndSpeed.with_columns((pl.col(f"speed_kmh_{IntTimePeak}")/pl.col("maxspeed_kmh") < q).alias(f"traffic_{round(q,2)}"))
+    return EdgesWithFluxesAndSpeed   
 
+@timing_decorator
 def ConvertGeoJsonEdges2NetworkX(EdgesWithFluxesAndSpeed, IntTimeArray):
     """
     Convert GeoJsonEdges to a NetworkX graph.
@@ -74,6 +89,28 @@ def ConvertGeoJsonEdges2NetworkX(EdgesWithFluxesAndSpeed, IntTimeArray):
 
     return G
 
+@timing_decorator
+def GeoJsonEdges2NxqTransition(EdgesWithFluxesAndSpeed,qs):
+    """
+    Convert GeoJsonEdges to a NetworkX graph.
+    For each q in qs we add the edges with the attribute f"traffic_{round(q,2)}"
+    So we know if the edge is trafficked or not. 
+    NOTE: We use this to compute the number of links in the connected component.
+    """
+    G = nx.Graph()
+    for q in qs:
+        for row in EdgesWithFluxesAndSpeed.iter_rows(named=True):
+            u = row['u']
+            v = row['v']
+            uniqueid = row['uniqueid']
+            traffic_q = row[f"traffic_{round(q,2)}"]
+            # Add nodes
+            G.add_node(u)
+            G.add_node(v)    
+            # Add edge with attributes
+            G.add_edge(u, v, uniqueid=uniqueid, **{f"traffic_{round(q,2)}": traffic_q})
+
+@timing_decorator
 def ComputeConnectedComponentsGonT(G, IntTimeArray):
     """
     Compute the number of connected components of the graph G at each time interval.
@@ -101,6 +138,30 @@ def ComputeConnectedComponentsGonT(G, IntTimeArray):
             Components.append([0,0])
     return Components
 
+@timing_decorator
+def ComputeConnectedComponentsGivenqs(G,qs):
+    """
+    """
+    Components = []    
+    for q in range(len(qs)):
+        # Filter edges based on the feature f"q_{t}"
+        edges_to_keep = [(u, v) for u, v, d in G.edges(data=True) if d.get(f"traffic_{round(q,2)}", False)]
+        subgraph = G.edge_subgraph(edges_to_keep).copy()
+        # Compute the number of connected components
+        Components_t = list(nx.connected_components(subgraph))
+        # Sort components by size in descending order
+        Components_t = sorted(Components_t, key=len, reverse=True)
+
+#        Components_t = nx.number_connected_components(subgraph)
+        if len(Components_t) == 1:
+            Components.append([list(Components_t[0]),0])
+        elif len(Components_t) > 1:
+            Components.append([list(Components_t[0]),list(Components_t[1])])
+        else:
+            Components.append([0,0])
+    return Components
+
+@timing_decorator
 def PlotNumberLinksTwoBiggestConnectedComponents(connected_components, t_hours,UCI,R,PlotDir):
     """
     Plot the number of links in the two biggest connected components at each time interval.
@@ -155,8 +216,54 @@ def PlotNumberLinksTwoBiggestConnectedComponents(connected_components, t_hours,U
             ax.legend(legend)
             plt.savefig(os.path.join(SaveDir, f'number_links_two_biggest_connected_components.png'))
             plt.close()
+def PlotNumberLinksBiggestConnectedComponent(connected_components, qs,UCI,R,PlotDir):
+    """
+    Plot the number of links in the two biggest connected components at each time interval.
+    """
+    logger.info(f"Plotting the number of links in the two biggest connected components at each time interval.")
+    SaveDir  = os.path.join(PlotDir,f"ConnectedComponents_{UCI}_{R}")
+    os.makedirs(SaveDir,exist_ok=True)
+    num_links_component1 = []
+    num_links_component2 = []
+    legend = ["component 1", "component 2"]
+    if not os.path.isfile(os.path.join(SaveDir, f'ComponentsPercolationq.png')):
+        for q in range(len(qs)):
+            if isinstance(connected_components[q], int):
+                num_links_component1.append(connected_components[q])
+                num_links_component2.append(0)
 
-
+            elif isinstance(connected_components[q], list):
+                if len(connected_components[q]) == 1:
+                    if len(connected_components[q][0]) == 1:
+                        num_links_component1.append(connected_components[q][0])
+                    else:
+                        num_links_component1.append(len(connected_components[q][0]))
+                    num_links_component2.append(0)
+                elif len(connected_components[q]) == 2:
+                    if isinstance(connected_components[q][0],int):
+                        num_links_component1.append(connected_components[q][0])
+                    else:
+                        num_links_component1.append(len(connected_components[q][0]))
+                    if isinstance(connected_components[q][1], int):
+                        num_links_component2.append(connected_components[q][1])
+                    elif isinstance(connected_components[q][1], list):
+                        if len(connected_components[q][1]) == 1:
+                            num_links_component2.append(connected_components[q][1])
+                        else:
+                            num_links_component2.append(len(connected_components[q][1]))
+        _,ax = plt.subplots(1,1,figsize=(10,10)) 
+        if len(qs[:-1]) == len(num_links_component1[:-1]) and len(qs[:-1]) == len(num_links_component2[:-1]):
+            ax.plot(qs[:-1], num_links_component1[:-1], marker='o')
+            ax.plot(qs[:-1], num_links_component2[:-1], marker='o')
+            ax.set_xticks(qs[::8])
+            ax.set_xticklabels(qs[::8], rotation=90)
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Number of Links')
+            ax.set_title('Number of Links in the Two Biggest Connected Components')
+            ax.legend(legend)
+            plt.savefig(os.path.join(SaveDir, f'ComponentsPercolationq.png'))
+            plt.close()
+#@timing_decorator
 def SinglePlotPercolation(GeoJsonEdges,EdgesWithFluxesAndSpeed,t,list_hours,UCI,R,q0,q1,q2,PlotDir):
     """
         @param GeoJsonEdges: GeoJson with the edges of the network 
@@ -220,8 +327,10 @@ def SinglePlotPercolation(GeoJsonEdges,EdgesWithFluxesAndSpeed,t,list_hours,UCI,
                 ax.legend(['Free Flow: q > 0.9', 'Moderate Traffic : 0.5 < q < 0.9', 'Severe Traffic : q < 0.25'])
                 plt.savefig(os.path.join(PercolationDir,f'percolation_{str_t}.png'), dpi=200)
                 plt.close()
-    return GeoJsonEdges
-
+        NoNeedComputePercolation = False
+    else:
+        NoNeedComputePercolation = True
+    return GeoJsonEdges,NoNeedComputePercolation
 def AnalysisPercolationSpeed(IntTimeArray,GeoJsonEdges,EdgesWithFluxesAndSpeed,UCI,R,PlotDir):
     """
         @param IntTimeArray: Array of time intervals 
@@ -233,17 +342,50 @@ def AnalysisPercolationSpeed(IntTimeArray,GeoJsonEdges,EdgesWithFluxesAndSpeed,U
     q1 = 0.5
     q2 = 0.9
     for t in range(len(MinutesTimeArray)):
-        SinglePlotPercolation(GeoJsonEdges,EdgesWithFluxesAndSpeed,t,t_hours,UCI,R,q0,q1,q2,PlotDir)
+        _,NoNeedComputePercolation = SinglePlotPercolation(GeoJsonEdges,EdgesWithFluxesAndSpeed,t,t_hours,UCI,R,q0,q1,q2,PlotDir)
     #CreateVideoFromImages(os.path.join(PlotDir,"PercolationPlots"),f"percolation")
     #DeleteImages(os.path.join(PlotDir,"PercolationPlots"))
     #CreateVideoFromImages(os.path.join(PlotDir,"SpeedPlots"),"Speed")
     #DeleteImages(os.path.join(PlotDir,"SpeedPlots"))
-    EdgesWithFluxesAndSpeed = ComputePercolationColumns(EdgesWithFluxesAndSpeed,IntTimeArray,q0,q1,q2)
-    G = ConvertGeoJsonEdges2NetworkX(EdgesWithFluxesAndSpeed, IntTimeArray) 
-    Components = ComputeConnectedComponentsGonT(G, IntTimeArray)
-    PlotNumberLinksTwoBiggestConnectedComponents(Components, t_hours,UCI,R,PlotDir)       
+    if NoNeedComputePercolation:
+        pass
+    else:
+        EdgesWithFluxesAndSpeed = ComputePercolationColumns(EdgesWithFluxesAndSpeed,IntTimeArray,q0,q1,q2)
+        G = ConvertGeoJsonEdges2NetworkX(EdgesWithFluxesAndSpeed, IntTimeArray) 
+        Components = ComputeConnectedComponentsGonT(G, IntTimeArray)
+        PlotNumberLinksTwoBiggestConnectedComponents(Components, t_hours,UCI,R,PlotDir)    
 
+def AnalysisPercolationTransition(IntTimeArray,GeoJsonEdges,EdgesWithFluxesAndSpeed,UCI,R,PlotDir):
+    """
+        @param IntTimeArray: Array of time intervals
+        @GeoJsonEdges: GeoJson with the edges of the network 
+            [key,lanes,length,geometry,uv,maxspeed_int,maxspeed_kmh,capacity]
+        @EdgesWithFluxesAndSpeed: DataFrame with the edges of the network and the fluxes and speeds of the edges.
+            [uniqueid','u','v','length','speed_mph','lanes','capacity','flux_t','speed_kmh_t']
+        NOTE: Computed over all people and not just those trapped in the network
+        @param UCI: UCI
+        @param R: R
+        @param PlotDir: Directory to save the plots
+    """   
+    MinutesTimeArray = np.array([int(t/60) for t in IntTimeArray])
+    t_datetime = ConvertVectorMinutesToDatetime(MinutesTimeArray,0,"2024-08-15")
+    t_hours = CastVectorDateTime2Hours(t_datetime)
+    qs = np.linspace(0,1,20)
+    for q in qs:
+        # 34 is 8:35
+        EdgesWithFluxesAndSpeed = ComputePercolationPeakHour(EdgesWithFluxesAndSpeed,34,q)
+    G = GeoJsonEdges2NxqTransition(EdgesWithFluxesAndSpeed,qs) 
+    Components = ComputeConnectedComponentsGivenqs(G,qs)
+    PlotNumberLinksBiggestConnectedComponent(Components, qs,UCI,R,PlotDir)    
 
+'''
+Function 'ComputePercolationColumns' executed in 0.0811 seconds
+Function 'ConvertGeoJsonEdges2NetworkX' executed in 212.7222 seconds
+Function 'ComputeConnectedComponentsGonT' executed in 9.2332 seconds
+Function 'PlotNumberLinksTwoBiggestConnectedComponents' executed in 0.0021 seconds
+Function 'AnalysisPercolationSpeed' executed in 222.0483 seconds
+Function 'CompleteAnalysis' executed in 270.6147 seconds
+'''
 # DIRECTED PERCOLATION
 
 

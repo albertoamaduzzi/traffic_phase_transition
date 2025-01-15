@@ -257,6 +257,7 @@ def ComputePIPotential(grid,distance_matrix,PotentialDf,column_PI = "V_out"):
         @params distance_matrix: pd.DataFrame -> Distance matrix between the grids
         @params PotentialDf: pd.DataFrame -> Potential values
     """
+    import geopandas as gpd
     g = grid[["index","relation_to_line","position"]]
     if isinstance(grid,pd.DataFrame):
         g = pl.DataFrame(g)

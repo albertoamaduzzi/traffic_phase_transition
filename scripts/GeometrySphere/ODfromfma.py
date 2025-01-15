@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 PRINTING_INTERVAL = 10000000
 NUMBER_SIMULATIONS = 20
 offset = 6
-CityName2RminRmax = {'SFO':[140,240], 'LAX':[100,200],'LIS':[60,160],'RIO':[70,170],'BOS':[180,280]}
+CityName2RminRmax = {'SFO':[140,240], 'LAX':[100,200],'LIS':[60,160],'RIO':[70,170],'BOS':[220,420]}
 #CityName2RminRmax = {'SFO':[145,180], 'LAX':[100,200],'LIS':[60,80],'RIO':[75,100],'BOS':[150,200]}
 
 

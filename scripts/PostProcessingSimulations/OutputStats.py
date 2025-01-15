@@ -15,7 +15,7 @@ import ast
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
+from EfficiencyAnalysis import *
 """
     @ description:
         This script contains the class OutputStats that is used to analyze the output of the simulation.
@@ -101,7 +101,7 @@ class OutputStats:
         self.VolumeTraffic = 0
         # Is Jam (Variable To Encode The Fact That PowerLaw Is Better Then Exponential, after Some Point)
         self.IsJam = False
-
+    @timing_decorator
     def CompleteAnalysis(self):
         """
             This is the Function one wants to Call to get the Analysis of the Simulation
@@ -114,15 +114,14 @@ class OutputStats:
         self.ComputeBestFitPlExpo() 
         # Decide If The Network Is Jammed NOTE: (sel.TCritical, self.CriticalNt, self.CriticalAlpha)
         self.DecideIfJam()
-        # Show The Unload Curve
-        self.PlotUnloadCurve()
         # Compute The Gamma And Tau
         self.ComputeGammaAndTau()
+        # Show The Unload Curve
+        self.PlotUnloadCurve()
         # Compute The Fluxes And Speeds in time
         self.ComputeFluxesAndSpeedDfRoute()
         # Percolation Analysis
         AnalysisPercolationSpeed(self.IntTimeArray,self.GeoJsonEdges,self.EdgesWithFluxesAndSpeed,self.UCI,self.R,self.PlotDir)
-
 
     def AddCapacity2Edges(self):
         """
@@ -224,6 +223,7 @@ class OutputStats:
 
 
 # Trajectories Info
+    @timing_decorator
     def ComputeUnloadCurve(self):
         """
             @description:
@@ -264,7 +264,7 @@ class OutputStats:
             self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
             self.HourTimeArray = self.DfUnload["Time_Str"]
             self.Interval2NumberPeopleInNet = self.DfUnload["NumberPeople"]
-
+    @timing_decorator
     def ComputeBestFitPlExpo(self):
         """
             Compute the best fit for the Power Law and Exponential
@@ -286,14 +286,11 @@ class OutputStats:
             mask = nt>0
             nt = nt[mask]
             t_vect = t_vect[mask]
-            # We require 1 hour after loosing people
+            # # Look at just the last two, if one of the two is a powerlaw, then I have a powerlaw
             if len(t_vect[4:])>= 4:
-                self.RangePlFit = range(4,len(t_vect))   
+                self.RangePlFit = range(9,len(t_vect))   
                 # Check The t For Which The Power Law Fit the Best and Is Better Than The Exponential
-                self.Time2ErrorFit = {t_vect[t]:{"PowerLaw":0,"Exponential":0} for t in self.RangePlFit if t - 4 >= 6}
-                self.Time2BestFit = {t_vect[t]:"" for t in self.RangePlFit if t - 4 >= 6}
-                self.Time2nt = {t_vect[t]:{"n":list(nt[:t]/Z_n),"n_fit":[]} for t in self.RangePlFit if t - 4 >= 6}
-                self.Time2Fit = {t_vect[t]:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in self.RangePlFit if t - 4 >= 6}
+                self.Time2ErrorFit,self.Time2BestFit,self.Time2BestFit,self.Time2nt,self.Time2Fit = InitializeDictionariesFit(t_vect,nt,Z_n,self.RangePlFit)
                 for t0 in self.RangePlFit:
                     # Constraint to have a minimum of 1 hour of observation
                     if t0 - 4 >= 6:
@@ -328,7 +325,7 @@ class OutputStats:
                         self.Time2Fit[t]["A_pl"] = A_pl
                         self.Time2Fit[t]["alpha_exp"] = alpha_exp
                         self.Time2Fit[t]["alpha_pl"] = alpha_pl
-                
+                    
             else:
                 logger.info(f"Time Vector is too short to compute the best fit for the Power Law and Exponential")
                 self.Time2ErrorFit = None
@@ -368,32 +365,54 @@ class OutputStats:
                     self.Time2Fit = json.load(f)
                 with open(os.path.join(self.PlotDir,f"RangePlFit_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                     self.RangePlFit = json.load(f)["RangePl"]
-
+    @timing_decorator
     def GetBestFitTimes(self):
         """
         Extract the t values such that self.Time2ErrorFit[t]["PowerLaw"] or self.Time2ErrorFit[t]["Exponential"] are minimum.
         
         :return: Tuple containing the t values for minimum PowerLaw and Exponential errors.
-        """
+        NOTE: I accept traffic if there is at least one time in which the powerlaw wins
+                """
         min_powerlaw_error = float('inf')
         min_exponential_error = float('inf')
         best_t_powerlaw = None
         best_t_exponential = None
-
-        for t, errors in self.Time2ErrorFit.items():
-            if errors["PowerLaw"] < min_powerlaw_error:
-                min_powerlaw_error = errors["PowerLaw"]
-                best_t_powerlaw = t
-            if errors["Exponential"] < min_exponential_error:
-                min_exponential_error = errors["Exponential"]
-                best_t_exponential = t
-        if min_exponential_error < min_powerlaw_error:
-            logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
-            return "Exponential", best_t_exponential
+        old = False
+        if old:
+            for t, errors in self.Time2ErrorFit.items():
+                if errors["PowerLaw"] < min_powerlaw_error:
+                    min_powerlaw_error = errors["PowerLaw"]
+                    best_t_powerlaw = t
+                if errors["Exponential"] < min_exponential_error:
+                    min_exponential_error = errors["Exponential"]
+                    best_t_exponential = t
+            if min_exponential_error < min_powerlaw_error:
+                logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
+                self.BestFunctionFit = "Exponential"
+                return "Exponential", best_t_exponential
+            else:
+                logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
+                self.BestFunctionFit = "PowerLaw"
+                return "PowerLaw", best_t_powerlaw
         else:
-            logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
-            return "PowerLaw", best_t_powerlaw
-
+            for t, fit in self.Time2ErrorFit.items():
+                if fit == "PowerLaw":
+                    if self.Time2ErrorFit[t]["PowerLaw"] < min_powerlaw_error:
+                        min_powerlaw_error = self.Time2ErrorFit[t]["PowerLaw"]
+                        best_t_powerlaw = t
+                if fit == "Exponential":
+                    if self.Time2ErrorFit[t]["Exponential"] < min_exponential_error:
+                        min_exponential_error = self.Time2ErrorFit[t]["Exponential"]
+                        best_t_exponential = t
+            if min_powerlaw_error == float('inf'):
+                self.BestFunctionFit = "Exponential"
+                logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
+                return "Exponential", best_t_exponential
+            else:
+                self.BestFunctionFit = "PowerLaw"
+                logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
+                return "PowerLaw", best_t_powerlaw
+    @timing_decorator
     def DecideIfJam(self):
         """
             @description:
@@ -424,6 +443,7 @@ class OutputStats:
             self.Tau = - 1/self.Time2Fit[BestTime]["alpha_exp"]       # In hours
             logger.info(f"Network is not jammed at time {BestTime} with alpha = None and Tau = {self.Tau}")
 ### FLUXES AND GAMMA
+    @timing_decorator
     def ComputeFluxesAndSpeedDfRoute(self):
         """
             @description:
@@ -431,8 +451,10 @@ class OutputStats:
                 @ return self.EdgesWithFluxesAndSpeed: DataFrame with the fluxes and speeds in the road network
         """
         if os.path.exists(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet")):
+            logger.info(f"Reading Traffic File R: {self.R}, UCI: {self.UCI}")
             self.EdgesWithFluxesAndSpeed = pl.read_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
         else:
+            logger.info(f"Computing Traffic File R: {self.R}, UCI: {self.UCI}")
             for t in range(len(self.IntTimeArray)):
                 DfRoadsFluxes = self.DfRoute.with_columns(
                     pl.lit(0).alias(f"flux_{t}")
@@ -460,7 +482,7 @@ class OutputStats:
 
 
 ### TRAFFIC MEASURES ###
-
+    @timing_decorator
     def ComputeGammaAndTau(self):
         """
             Compute the Gamma and Tau for the Route and People Files
@@ -490,7 +512,7 @@ class OutputStats:
 
 ### PLOTS ####
 
-
+    @timing_decorator
     def PlotUnloadCurve(self):
         """
             @Decsription:
@@ -501,19 +523,13 @@ class OutputStats:
         n = self.DfUnload["NumberPeople"].to_numpy()
         mask = n > 0
         t_vect = self.DfUnload["Time_hours"].to_numpy()[mask]
-        for t0 in self.RangePlFit:
-            # Consider just the end times that allow for more then 6 points to fit
-            if t0 - 4 >= 6:
-                t = list(self.Time2ErrorFit.keys())[count]
-                SmallerVect = min([len(t_vect),len(self.Time2nt[t]["n"]),len(self.Time2nt[t]["n_fit"])])
-            # Plots The Fraction Of People That are Stuck In The Network at Time T
-                PlotPeopleInNetwork(self.Time2nt[t]["n"][:SmallerVect],self.Time2nt[t]["n_fit"][:SmallerVect],t_vect[:SmallerVect],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
-                count += 1
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: PlotUnloadCurve: Plot the number of people in the network at each time interval"
+        SmallerVect = min([len(t_vect),len(self.Time2nt[self.BestTime]["n"]),len(self.Time2nt[self.BestTime]["n_fit"])])
+        PlotPeopleInNetwork(self.Time2nt[self.BestTime]["n"][:SmallerVect],self.Time2nt[self.BestTime]["n_fit"][:SmallerVect],t_vect[:SmallerVect],self.BestFunctionFit,self.BestTime,JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+        count += 1
+        Message = f"PlotUnloadCurve: Plot the number of people in the network at each time interval"
         AddMessageToLog(Message,self.LogFile)
 
-    
+    @timing_decorator
     def PlotNtAndFitSingleR(self):
         """
             Plots One of the curves in Fig 4 Paper Marta.
@@ -525,6 +541,7 @@ class OutputStats:
         PlotNtAndFitSingleR(self.DfUnload["Time_hours"].to_numpy(),self.Time2nt[LastTime]["n"],self.Tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
 
 
+    ## HERE WOULD START PROPERTIES OF THE CONTROL GROUP
 
 
 

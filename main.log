@@ -29334,3 +29334,817 @@ Use the layer creation option OVERWRITE=YES to replace it.
 2025-01-08 14:59:00,873 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 245, UCI: 0.264...
 2025-01-08 14:59:00,873 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
 2025-01-08 14:59:06,624 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 10:10:28,494 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 10:10:28,499 - Config - INFO - Generating config for city: BOS
+
+2025-01-10 10:10:34,467 - CreateCartoSimulator - INFO - SympifyPolygon: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/shape_files/BOS/BOS.shp
+2025-01-10 10:10:34,468 - CreateCartoSimulator - INFO - SympifyPolygon: File BOS_new_tertiary_simplified already exists
+2025-01-10 10:10:45,029 - CreateCartoSimulator - INFO - SympifyPolygon: Done
+2025-01-10 10:10:46,718 - PreprocessingObj - INFO - Geometrical Settings Spatial Partition Inititalized: BOS
+2025-01-10 10:10:46,718 - PreprocessingObj - INFO - New Rmax 320, New number of simulations 20
+2025-01-10 10:10:46,719 - PreprocessingObj - INFO - Bounding Box: (-71.728385, 41.762821, -70.525567, 42.88679)
+2025-01-10 10:10:46,719 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon/polygon2origindest.json ALREADY COMPUTED
+2025-01-10 10:10:46,734 - Hexagon - INFO - Reading hexagon for BOS
+2025-01-10 10:10:48,923 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/hexagon/8/hexagon2origindest.json ALREADY COMPUTED
+2025-01-10 10:11:28,259 - Polygon - INFO - Population Hex -> Pol: BOS
+2025-01-10 10:11:28,288 - Polygon - INFO - COMPUTING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon.geojson 
+2025-01-10 10:11:32,404 - PreprocessingObj - INFO - Get Grid BOS
+2025-01-10 10:11:32,405 - Grid - INFO - Uploading grid from file /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson ...
+2025-01-10 10:11:33,334 - PreprocessingObj - INFO - Get Boundaries and Interior BOS
+2025-01-10 10:11:52,217 - Grid - INFO - Boundaries and Interior MultiPolygon Case for BOS ...
+2025-01-10 10:12:37,840 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 10:12:38,276 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 10:12:38,360 - Grid - INFO - BOS Grid.columns
+ Index(['i', 'j', 'centroidx', 'centroidy', 'area', 'index', 'relation_to_line',
+       'position', 'population', 'with_roads', 'geometry'],
+      dtype='object')
+2025-01-10 10:12:38,360 - PreprocessingObj - INFO - Grid and Boundaries and Interior Computed
+2025-01-10 10:12:38,360 - PolygonSettings - INFO - Initialize Population Grid BOS
+2025-01-10 10:12:50,773 - Grid - INFO - Uploading lattice from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/centroid_lattice.graphml...
+2025-01-10 10:12:50,977 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid2origindest.json ALREADY COMPUTED
+2025-01-10 10:12:51,059 - Grid - INFO - SAVING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson 
+2025-01-10 10:12:51,644 - Grid - INFO - Uploading direction matrix from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/direction_distance_matrix.csv ...
+2025-01-10 10:12:56,788 - ODfromfma - INFO - Upload OD Grid from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/ODgrid.csv...
+2025-01-10 10:13:00,086 - PreprocessingObj - INFO - Compute grid Idx 2 Origin Destination BOS
+2025-01-10 10:13:00,086 - Grid - INFO - Init GridIdx2OD: {(Ogrid, Dgrid): Flux = 0} ...
+2025-01-10 10:13:05,325 - Potential - INFO - Loading Vector Field BOS ...
+2025-01-10 10:13:05,334 - Potential - INFO - Loading Potential Dataframe BOS ...
+2025-01-10 10:13:05,706 - PreprocessingObj - INFO - RoutineVectorField: Upload Smax,Dmax: BOS
+2025-01-10 10:13:05,830 - PreprocessingObj - INFO - Compute UCI BOS
+2025-01-10 10:13:05,831 - PreprocessingObj - INFO - Loading Fit BOS
+2025-01-10 10:13:05,831 - PreprocessingObj - INFO - Files Ordered in Hour2Files
+2025-01-10 10:13:06,159 - PreprocessingObj - INFO - Loading DfEnd BOS
+2025-01-10 10:13:11,449 - multiple_launches - INFO - Simulation R_220_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,449 - multiple_launches - INFO - Simulation R_225_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,450 - multiple_launches - INFO - Simulation R_230_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,450 - multiple_launches - INFO - Simulation R_235_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,450 - multiple_launches - INFO - Simulation R_240_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,451 - multiple_launches - INFO - Simulation R_245_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,451 - multiple_launches - INFO - Simulation R_250_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,451 - multiple_launches - INFO - Simulation R_255_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,451 - multiple_launches - INFO - Simulation R_260_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,451 - multiple_launches - INFO - Simulation R_265_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,452 - multiple_launches - INFO - Simulation R_270_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,452 - multiple_launches - INFO - Simulation R_275_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 10:13:11,452 - multiple_launches - INFO - ID-Non-Mod R: 280, BOS, UCI: 0.216
+2025-01-10 10:13:11,452 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 280, UCI: 0.216...
+2025-01-10 10:13:11,452 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 10:13:22,891 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 10:15:27,020 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 280, UCI: 0.21576736830752002...
+2025-01-10 10:15:49,175 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 10:15:49,180 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 10:15:49,181 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_280_UCI_0.216.csv
+2025-01-10 10:15:49,182 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 10:15:49,182 - multiple_launches - INFO - 280, 0.216
+2025-01-10 10:15:49,182 - multiple_launches - INFO - Launch Simulation 280, 0.216
+2025-01-10 10:20:28,497 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 10:20:30,677 - multiple_launches - INFO - 280, 0.216, BOS Error GPU: False
+2025-01-10 10:20:30,677 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 10:20:30,678 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 10:20:33,248 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_people7to24.csv
+2025-01-10 10:20:33,249 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_people7to24.parquet
+2025-01-10 10:20:49,908 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_route7to24.csv
+2025-01-10 10:20:49,909 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_route7to24.parquet
+2025-01-10 10:21:12,617 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 10:21:12,617 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 10:21:12,617 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_280_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 10:21:12,618 - multiple_launches - INFO - InputDocker /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network/BOS_oddemand_7_8_R_285_UCI_0.216.csv already exists.
+2025-01-10 10:21:12,618 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 10:21:12,623 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 10:21:12,625 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_285_UCI_0.216.csv
+2025-01-10 10:21:12,625 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 10:21:12,625 - multiple_launches - INFO - 285, 0.216
+2025-01-10 10:21:12,625 - multiple_launches - INFO - Launch Simulation 285, 0.216
+2025-01-10 10:30:28,498 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 10:40:28,499 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 10:50:28,500 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:00:28,500 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:10:28,501 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:20:28,501 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:30:28,502 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:40:28,502 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 11:50:28,503 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:00:28,504 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:10:28,504 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:20:28,505 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:30:28,505 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:34:06,336 - multiple_launches - INFO - 285, 0.216, BOS Error GPU: False
+2025-01-10 12:34:06,337 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 12:34:06,337 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 12:34:08,805 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_people7to24.csv
+2025-01-10 12:34:08,805 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_people7to24.parquet
+2025-01-10 12:34:25,218 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_route7to24.csv
+2025-01-10 12:34:25,219 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_route7to24.parquet
+2025-01-10 12:34:42,872 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 12:34:42,872 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:34:42,872 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_285_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:34:42,873 - multiple_launches - INFO - ID-Non-Mod R: 290, BOS, UCI: 0.216
+2025-01-10 12:34:42,873 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 290, UCI: 0.216...
+2025-01-10 12:34:42,873 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 12:34:56,200 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 12:38:17,352 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 290, UCI: 0.21576736830752002...
+2025-01-10 12:38:53,998 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:38:54,003 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:38:54,004 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_290_UCI_0.216.csv
+2025-01-10 12:38:54,005 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 12:38:54,005 - multiple_launches - INFO - 290, 0.216
+2025-01-10 12:38:54,005 - multiple_launches - INFO - Launch Simulation 290, 0.216
+2025-01-10 12:40:28,506 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:43:36,384 - multiple_launches - INFO - 290, 0.216, BOS Error GPU: False
+2025-01-10 12:43:36,385 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 12:43:36,386 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 12:43:38,896 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_people7to24.csv
+2025-01-10 12:43:38,896 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_people7to24.parquet
+2025-01-10 12:43:55,035 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_route7to24.csv
+2025-01-10 12:43:55,036 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_route7to24.parquet
+2025-01-10 12:44:17,877 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 12:44:17,877 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:44:17,878 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_290_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:44:17,879 - multiple_launches - INFO - ID-Non-Mod R: 295, BOS, UCI: 0.216
+2025-01-10 12:44:17,879 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 295, UCI: 0.216...
+2025-01-10 12:44:17,879 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 12:44:24,407 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 12:48:07,526 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 295, UCI: 0.21576736830752002...
+2025-01-10 12:48:37,320 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:48:37,324 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:48:37,325 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_295_UCI_0.216.csv
+2025-01-10 12:48:37,326 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 12:48:37,326 - multiple_launches - INFO - 295, 0.216
+2025-01-10 12:48:37,326 - multiple_launches - INFO - Launch Simulation 295, 0.216
+2025-01-10 12:50:28,507 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 12:53:13,365 - multiple_launches - INFO - 295, 0.216, BOS Error GPU: False
+2025-01-10 12:53:13,365 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 12:53:13,366 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 12:53:16,025 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_people7to24.csv
+2025-01-10 12:53:16,025 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_people7to24.parquet
+2025-01-10 12:53:32,743 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_route7to24.csv
+2025-01-10 12:53:32,744 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_route7to24.parquet
+2025-01-10 12:53:54,887 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 12:53:54,887 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:53:54,888 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_295_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 12:53:54,889 - multiple_launches - INFO - ID-Non-Mod R: 300, BOS, UCI: 0.216
+2025-01-10 12:53:54,889 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 300, UCI: 0.216...
+2025-01-10 12:53:54,889 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 12:54:08,381 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 12:56:52,604 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 300, UCI: 0.21576736830752002...
+2025-01-10 12:57:12,568 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:57:12,573 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 12:57:12,574 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_300_UCI_0.216.csv
+2025-01-10 12:57:12,575 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 12:57:12,575 - multiple_launches - INFO - 300, 0.216
+2025-01-10 12:57:12,575 - multiple_launches - INFO - Launch Simulation 300, 0.216
+2025-01-10 13:00:28,508 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 13:01:26,903 - multiple_launches - INFO - 300, 0.216, BOS Error GPU: False
+2025-01-10 13:01:26,903 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 13:01:26,904 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 13:01:29,420 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_people7to24.csv
+2025-01-10 13:01:29,420 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_people7to24.parquet
+2025-01-10 13:01:45,663 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_route7to24.csv
+2025-01-10 13:01:45,664 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_route7to24.parquet
+2025-01-10 13:02:07,113 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 13:02:07,114 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:02:07,114 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_300_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:02:07,115 - multiple_launches - INFO - ID-Non-Mod R: 305, BOS, UCI: 0.216
+2025-01-10 13:02:07,115 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 305, UCI: 0.216...
+2025-01-10 13:02:07,115 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 13:02:20,404 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 13:06:02,016 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 305, UCI: 0.21576736830752002...
+2025-01-10 13:06:21,995 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:06:21,998 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:06:22,000 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_305_UCI_0.216.csv
+2025-01-10 13:06:22,000 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 13:06:22,000 - multiple_launches - INFO - 305, 0.216
+2025-01-10 13:06:22,000 - multiple_launches - INFO - Launch Simulation 305, 0.216
+2025-01-10 13:10:28,508 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 13:10:46,935 - multiple_launches - INFO - 305, 0.216, BOS Error GPU: False
+2025-01-10 13:10:46,935 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 13:10:46,936 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 13:10:49,527 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_people7to24.csv
+2025-01-10 13:10:49,527 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_people7to24.parquet
+2025-01-10 13:11:06,180 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_route7to24.csv
+2025-01-10 13:11:06,180 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_route7to24.parquet
+2025-01-10 13:11:28,417 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 13:11:28,418 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:11:28,418 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_305_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:11:28,419 - multiple_launches - INFO - ID-Non-Mod R: 310, BOS, UCI: 0.216
+2025-01-10 13:11:28,419 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 310, UCI: 0.216...
+2025-01-10 13:11:28,419 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 13:11:41,829 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 13:14:25,021 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 310, UCI: 0.21576736830752002...
+2025-01-10 13:14:45,132 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:14:45,135 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:14:45,136 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_310_UCI_0.216.csv
+2025-01-10 13:14:45,136 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 13:14:45,137 - multiple_launches - INFO - 310, 0.216
+2025-01-10 13:14:45,137 - multiple_launches - INFO - Launch Simulation 310, 0.216
+2025-01-10 13:18:56,554 - multiple_launches - INFO - 310, 0.216, BOS Error GPU: False
+2025-01-10 13:18:56,554 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 13:18:56,555 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 13:18:59,219 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_people7to24.csv
+2025-01-10 13:18:59,219 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_people7to24.parquet
+2025-01-10 13:19:16,504 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_route7to24.csv
+2025-01-10 13:19:16,504 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_route7to24.parquet
+2025-01-10 13:19:38,536 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 13:19:38,537 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:19:38,537 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_310_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:19:38,537 - multiple_launches - INFO - ID-Non-Mod R: 315, BOS, UCI: 0.216
+2025-01-10 13:19:38,538 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 315, UCI: 0.216...
+2025-01-10 13:19:38,538 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 13:19:50,625 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 13:20:28,514 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 13:22:08,688 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 315, UCI: 0.21576736830752002...
+2025-01-10 13:22:29,218 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:22:29,221 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:22:29,223 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_315_UCI_0.216.csv
+2025-01-10 13:22:29,223 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 13:22:29,223 - multiple_launches - INFO - 315, 0.216
+2025-01-10 13:22:29,223 - multiple_launches - INFO - Launch Simulation 315, 0.216
+2025-01-10 13:27:03,480 - multiple_launches - INFO - 315, 0.216, BOS Error GPU: False
+2025-01-10 13:27:03,480 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 13:27:03,481 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 13:27:06,087 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_people7to24.csv
+2025-01-10 13:27:06,087 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_people7to24.parquet
+2025-01-10 13:27:22,886 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_route7to24.csv
+2025-01-10 13:27:22,886 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_route7to24.parquet
+2025-01-10 13:27:44,846 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 13:27:44,846 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:27:44,847 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_315_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:27:44,847 - root - INFO - Finished the simulations not changed for BOS
+2025-01-10 13:27:45,142 - PreprocessingObj - INFO - Computing Total Population and Total Fluxes
+2025-01-10 13:27:45,154 - PreprocessingObj - INFO - Recovering Modified Fluxes BOS
+2025-01-10 13:27:46,108 - multiple_launches - INFO - Simulation R_220_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 13:27:46,108 - multiple_launches - INFO - Simulation R_225_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 13:27:46,109 - multiple_launches - INFO - Simulation R_230_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 13:27:46,109 - multiple_launches - INFO - Simulation R_235_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 13:27:46,109 - multiple_launches - INFO - Simulation R_240_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 13:27:46,109 - multiple_launches - INFO - ID-Mod R: 245, BOS, UCI: 0.264
+2025-01-10 13:27:46,110 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 245, UCI: 0.264...
+2025-01-10 13:27:46,110 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 13:27:58,437 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 13:29:03,640 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 245, UCI: 0.264...
+2025-01-10 13:29:22,493 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:29:22,497 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 13:29:22,498 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_245_UCI_0.264.csv
+2025-01-10 13:29:22,499 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 13:29:22,499 - multiple_launches - INFO - 245, 0.264
+2025-01-10 13:29:22,499 - multiple_launches - INFO - Launch Simulation 245, 0.264
+2025-01-10 13:30:28,531 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 13:33:38,235 - multiple_launches - INFO - 245, 0.264, BOS Error GPU: False
+2025-01-10 13:33:38,235 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_indexPathInit7to24.csv
+2025-01-10 13:33:38,238 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_indexPathInit7to24.parquet
+2025-01-10 13:33:40,636 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_people7to24.csv
+2025-01-10 13:33:40,636 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_people7to24.parquet
+2025-01-10 13:33:52,117 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_route7to24.csv
+2025-01-10 13:33:52,118 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_route7to24.parquet
+2025-01-10 13:34:07,312 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 13:34:07,312 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:34:07,312 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_245_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 13:34:07,314 - multiple_launches - INFO - ID-Mod R: 250, BOS, UCI: 0.264
+2025-01-10 13:34:07,315 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 250, UCI: 0.264...
+2025-01-10 13:34:07,315 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:17:51,905 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 16:17:51,909 - Config - INFO - Generating config for city: BOS
+
+2025-01-10 16:17:56,218 - CreateCartoSimulator - INFO - SympifyPolygon: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/shape_files/BOS/BOS.shp
+2025-01-10 16:17:56,218 - CreateCartoSimulator - INFO - SympifyPolygon: File BOS_new_tertiary_simplified already exists
+2025-01-10 16:18:03,407 - CreateCartoSimulator - INFO - SympifyPolygon: Done
+2025-01-10 16:18:04,407 - PreprocessingObj - INFO - Geometrical Settings Spatial Partition Inititalized: BOS
+2025-01-10 16:18:04,407 - PreprocessingObj - INFO - New Rmax 420, New number of simulations 20
+2025-01-10 16:18:04,407 - PreprocessingObj - INFO - Bounding Box: (-71.728385, 41.762821, -70.525567, 42.88679)
+2025-01-10 16:18:04,408 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon/polygon2origindest.json ALREADY COMPUTED
+2025-01-10 16:18:04,422 - Hexagon - INFO - Reading hexagon for BOS
+2025-01-10 16:18:05,714 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/hexagon/8/hexagon2origindest.json ALREADY COMPUTED
+2025-01-10 16:18:17,094 - Polygon - INFO - Population Hex -> Pol: BOS
+2025-01-10 16:18:17,096 - Polygon - INFO - COMPUTING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon.geojson 
+2025-01-10 16:18:18,049 - PreprocessingObj - INFO - Get Grid BOS
+2025-01-10 16:18:18,050 - Grid - INFO - Uploading grid from file /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson ...
+2025-01-10 16:18:18,541 - PreprocessingObj - INFO - Get Boundaries and Interior BOS
+2025-01-10 16:18:31,738 - Grid - INFO - Boundaries and Interior MultiPolygon Case for BOS ...
+2025-01-10 16:19:14,613 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 16:19:15,039 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 16:19:15,126 - Grid - INFO - BOS Grid.columns
+ Index(['i', 'j', 'centroidx', 'centroidy', 'area', 'index', 'relation_to_line',
+       'position', 'population', 'with_roads', 'geometry'],
+      dtype='object')
+2025-01-10 16:19:15,126 - PreprocessingObj - INFO - Grid and Boundaries and Interior Computed
+2025-01-10 16:19:15,126 - PolygonSettings - INFO - Initialize Population Grid BOS
+2025-01-10 16:19:27,216 - Grid - INFO - Uploading lattice from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/centroid_lattice.graphml...
+2025-01-10 16:19:27,417 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid2origindest.json ALREADY COMPUTED
+2025-01-10 16:19:27,496 - Grid - INFO - SAVING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson 
+2025-01-10 16:19:28,078 - Grid - INFO - Uploading direction matrix from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/direction_distance_matrix.csv ...
+2025-01-10 16:19:33,057 - ODfromfma - INFO - Upload OD Grid from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/ODgrid.csv...
+2025-01-10 16:19:36,249 - PreprocessingObj - INFO - Compute grid Idx 2 Origin Destination BOS
+2025-01-10 16:19:36,249 - Grid - INFO - Init GridIdx2OD: {(Ogrid, Dgrid): Flux = 0} ...
+2025-01-10 16:19:41,198 - Potential - INFO - Loading Vector Field BOS ...
+2025-01-10 16:19:41,208 - Potential - INFO - Loading Potential Dataframe BOS ...
+2025-01-10 16:19:41,570 - PreprocessingObj - INFO - RoutineVectorField: Upload Smax,Dmax: BOS
+2025-01-10 16:19:41,730 - PreprocessingObj - INFO - Compute UCI BOS
+2025-01-10 16:19:41,732 - PreprocessingObj - INFO - Loading Fit BOS
+2025-01-10 16:19:41,732 - PreprocessingObj - INFO - Files Ordered in Hour2Files
+2025-01-10 16:19:42,100 - PreprocessingObj - INFO - Loading DfEnd BOS
+2025-01-10 16:19:45,366 - multiple_launches - INFO - Simulation R_220_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,367 - multiple_launches - INFO - Simulation R_230_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,367 - multiple_launches - INFO - Simulation R_240_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,368 - multiple_launches - INFO - Simulation R_250_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,368 - multiple_launches - INFO - Simulation R_260_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,368 - multiple_launches - INFO - Simulation R_270_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,368 - multiple_launches - INFO - Simulation R_280_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,369 - multiple_launches - INFO - Simulation R_290_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,369 - multiple_launches - INFO - Simulation R_300_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,369 - multiple_launches - INFO - Simulation R_310_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 16:19:45,369 - multiple_launches - INFO - ID-Non-Mod R: 320, BOS, UCI: 0.216
+2025-01-10 16:19:45,369 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 320, UCI: 0.216...
+2025-01-10 16:19:45,370 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:19:59,127 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:22:57,913 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 320, UCI: 0.21576736830752002...
+2025-01-10 16:23:28,536 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:23:28,539 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:23:28,541 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_320_UCI_0.216.csv
+2025-01-10 16:23:28,541 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:23:28,541 - multiple_launches - INFO - 320, 0.216
+2025-01-10 16:23:28,541 - multiple_launches - INFO - Launch Simulation 320, 0.216
+2025-01-10 16:27:43,940 - multiple_launches - INFO - 320, 0.216, BOS Error GPU: False
+2025-01-10 16:27:43,952 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 16:27:43,953 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 16:27:46,531 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_people7to24.csv
+2025-01-10 16:27:46,531 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_people7to24.parquet
+2025-01-10 16:27:51,908 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 16:28:03,267 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_route7to24.csv
+2025-01-10 16:28:03,268 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_route7to24.parquet
+2025-01-10 16:28:25,600 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 16:28:25,600 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:28:25,600 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_320_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:28:25,601 - multiple_launches - INFO - ID-Non-Mod R: 330, BOS, UCI: 0.216
+2025-01-10 16:28:25,601 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 330, UCI: 0.216...
+2025-01-10 16:28:25,601 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:28:31,403 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:31:18,420 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 330, UCI: 0.21576736830752002...
+2025-01-10 16:31:46,528 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:31:46,531 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:31:46,532 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_330_UCI_0.216.csv
+2025-01-10 16:31:46,533 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:31:46,533 - multiple_launches - INFO - 330, 0.216
+2025-01-10 16:31:46,533 - multiple_launches - INFO - Launch Simulation 330, 0.216
+2025-01-10 16:31:48,324 - multiple_launches - INFO - 330, 0.216, BOS Error GPU: False
+2025-01-10 16:31:48,324 - multiple_launches - INFO - ID-Non-Mod R: 340, BOS, UCI: 0.216
+2025-01-10 16:31:48,324 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 340, UCI: 0.216...
+2025-01-10 16:31:48,324 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:32:01,995 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:34:20,296 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 340, UCI: 0.21576736830752002...
+2025-01-10 16:34:43,192 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:34:43,195 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:34:43,196 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_340_UCI_0.216.csv
+2025-01-10 16:34:43,196 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:34:43,196 - multiple_launches - INFO - 340, 0.216
+2025-01-10 16:34:43,196 - multiple_launches - INFO - Launch Simulation 340, 0.216
+2025-01-10 16:37:51,909 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 16:38:59,524 - multiple_launches - INFO - 340, 0.216, BOS Error GPU: False
+2025-01-10 16:38:59,536 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 16:38:59,536 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 16:39:02,181 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_people7to24.csv
+2025-01-10 16:39:02,182 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_people7to24.parquet
+2025-01-10 16:39:18,804 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_route7to24.csv
+2025-01-10 16:39:18,805 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_route7to24.parquet
+2025-01-10 16:39:40,377 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 16:39:40,378 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:39:40,378 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_340_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:39:40,378 - multiple_launches - INFO - ID-Non-Mod R: 350, BOS, UCI: 0.216
+2025-01-10 16:39:40,379 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 350, UCI: 0.216...
+2025-01-10 16:39:40,379 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:39:52,445 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:41:56,989 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 350, UCI: 0.21576736830752002...
+2025-01-10 16:42:18,067 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:42:18,072 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:42:18,075 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_350_UCI_0.216.csv
+2025-01-10 16:42:18,075 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:42:18,075 - multiple_launches - INFO - 350, 0.216
+2025-01-10 16:42:18,075 - multiple_launches - INFO - Launch Simulation 350, 0.216
+2025-01-10 16:46:41,503 - multiple_launches - INFO - 350, 0.216, BOS Error GPU: False
+2025-01-10 16:46:41,508 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 16:46:41,509 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 16:46:43,914 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_people7to24.csv
+2025-01-10 16:46:43,914 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_people7to24.parquet
+2025-01-10 16:47:00,360 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_route7to24.csv
+2025-01-10 16:47:00,360 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_route7to24.parquet
+2025-01-10 16:47:16,606 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 16:47:16,606 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:47:16,606 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_350_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:47:16,607 - multiple_launches - INFO - ID-Non-Mod R: 360, BOS, UCI: 0.216
+2025-01-10 16:47:16,607 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 360, UCI: 0.216...
+2025-01-10 16:47:16,607 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:47:23,079 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:47:51,915 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 16:49:21,402 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 360, UCI: 0.21576736830752002...
+2025-01-10 16:49:41,163 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:49:41,166 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:49:41,168 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_360_UCI_0.216.csv
+2025-01-10 16:49:41,169 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:49:41,169 - multiple_launches - INFO - 360, 0.216
+2025-01-10 16:49:41,169 - multiple_launches - INFO - Launch Simulation 360, 0.216
+2025-01-10 16:54:04,859 - multiple_launches - INFO - 360, 0.216, BOS Error GPU: False
+2025-01-10 16:54:04,860 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 16:54:04,871 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 16:54:07,347 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_people7to24.csv
+2025-01-10 16:54:07,347 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_people7to24.parquet
+2025-01-10 16:54:22,746 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_route7to24.csv
+2025-01-10 16:54:22,747 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_route7to24.parquet
+2025-01-10 16:54:43,095 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 16:54:43,095 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:54:43,096 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_360_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 16:54:43,096 - multiple_launches - INFO - ID-Non-Mod R: 370, BOS, UCI: 0.216
+2025-01-10 16:54:43,096 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 370, UCI: 0.216...
+2025-01-10 16:54:43,096 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 16:54:48,889 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 16:56:57,980 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 370, UCI: 0.21576736830752002...
+2025-01-10 16:57:25,301 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:57:25,305 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 16:57:25,306 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_370_UCI_0.216.csv
+2025-01-10 16:57:25,306 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 16:57:25,306 - multiple_launches - INFO - 370, 0.216
+2025-01-10 16:57:25,306 - multiple_launches - INFO - Launch Simulation 370, 0.216
+2025-01-10 16:57:51,937 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:01:56,652 - multiple_launches - INFO - 370, 0.216, BOS Error GPU: False
+2025-01-10 17:01:56,653 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:01:56,653 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:01:59,315 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_people7to24.csv
+2025-01-10 17:01:59,315 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:02:14,251 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_route7to24.csv
+2025-01-10 17:02:14,252 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:02:34,382 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:02:34,382 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:02:34,383 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_370_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:02:34,383 - multiple_launches - INFO - ID-Non-Mod R: 380, BOS, UCI: 0.216
+2025-01-10 17:02:34,384 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 380, UCI: 0.216...
+2025-01-10 17:02:34,384 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:02:44,393 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:04:43,970 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 380, UCI: 0.21576736830752002...
+2025-01-10 17:05:03,628 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:05:03,631 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:05:03,632 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_380_UCI_0.216.csv
+2025-01-10 17:05:03,632 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:05:03,632 - multiple_launches - INFO - 380, 0.216
+2025-01-10 17:05:03,632 - multiple_launches - INFO - Launch Simulation 380, 0.216
+2025-01-10 17:07:51,938 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:09:18,786 - multiple_launches - INFO - 380, 0.216, BOS Error GPU: False
+2025-01-10 17:09:18,786 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:09:18,787 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:09:21,430 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_people7to24.csv
+2025-01-10 17:09:21,430 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:09:34,798 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_route7to24.csv
+2025-01-10 17:09:34,799 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:09:52,285 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:09:52,285 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:09:52,285 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_380_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:09:52,286 - multiple_launches - INFO - ID-Non-Mod R: 390, BOS, UCI: 0.216
+2025-01-10 17:09:52,286 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 390, UCI: 0.216...
+2025-01-10 17:09:52,286 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:10:04,547 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:12:31,915 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:12:31,918 - Config - INFO - Generating config for city: BOS
+
+2025-01-10 17:12:37,181 - CreateCartoSimulator - INFO - SympifyPolygon: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/shape_files/BOS/BOS.shp
+2025-01-10 17:12:37,182 - CreateCartoSimulator - INFO - SympifyPolygon: File BOS_new_tertiary_simplified already exists
+2025-01-10 17:12:43,835 - CreateCartoSimulator - INFO - SympifyPolygon: Done
+2025-01-10 17:12:44,861 - PreprocessingObj - INFO - Geometrical Settings Spatial Partition Inititalized: BOS
+2025-01-10 17:12:44,862 - PreprocessingObj - INFO - New Rmax 420, New number of simulations 20
+2025-01-10 17:12:44,862 - PreprocessingObj - INFO - Bounding Box: (-71.728385, 41.762821, -70.525567, 42.88679)
+2025-01-10 17:12:44,862 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon/polygon2origindest.json ALREADY COMPUTED
+2025-01-10 17:12:44,871 - Hexagon - INFO - Reading hexagon for BOS
+2025-01-10 17:12:46,102 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/hexagon/8/hexagon2origindest.json ALREADY COMPUTED
+2025-01-10 17:12:58,172 - Polygon - INFO - Population Hex -> Pol: BOS
+2025-01-10 17:12:58,174 - Polygon - INFO - COMPUTING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/polygon.geojson 
+2025-01-10 17:12:59,268 - PreprocessingObj - INFO - Get Grid BOS
+2025-01-10 17:12:59,268 - Grid - INFO - Uploading grid from file /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson ...
+2025-01-10 17:12:59,753 - PreprocessingObj - INFO - Get Boundaries and Interior BOS
+2025-01-10 17:13:17,998 - Grid - INFO - Boundaries and Interior MultiPolygon Case for BOS ...
+2025-01-10 17:14:04,834 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 17:14:05,268 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-10 17:14:05,353 - Grid - INFO - BOS Grid.columns
+ Index(['i', 'j', 'centroidx', 'centroidy', 'area', 'index', 'relation_to_line',
+       'position', 'population', 'with_roads', 'geometry'],
+      dtype='object')
+2025-01-10 17:14:05,353 - PreprocessingObj - INFO - Grid and Boundaries and Interior Computed
+2025-01-10 17:14:05,353 - PolygonSettings - INFO - Initialize Population Grid BOS
+2025-01-10 17:14:17,632 - Grid - INFO - Uploading lattice from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/centroid_lattice.graphml...
+2025-01-10 17:14:17,848 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid2origindest.json ALREADY COMPUTED
+2025-01-10 17:14:17,924 - Grid - INFO - SAVING: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/grid.geojson 
+2025-01-10 17:14:18,488 - Grid - INFO - Uploading direction matrix from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/direction_distance_matrix.csv ...
+2025-01-10 17:14:23,471 - ODfromfma - INFO - Upload OD Grid from: /home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/grid/0.02/ODgrid.csv...
+2025-01-10 17:14:26,533 - PreprocessingObj - INFO - Compute grid Idx 2 Origin Destination BOS
+2025-01-10 17:14:26,533 - Grid - INFO - Init GridIdx2OD: {(Ogrid, Dgrid): Flux = 0} ...
+2025-01-10 17:14:31,729 - Potential - INFO - Loading Vector Field BOS ...
+2025-01-10 17:14:31,735 - Potential - INFO - Loading Potential Dataframe BOS ...
+2025-01-10 17:14:32,099 - PreprocessingObj - INFO - RoutineVectorField: Upload Smax,Dmax: BOS
+2025-01-10 17:14:32,225 - PreprocessingObj - INFO - Compute UCI BOS
+2025-01-10 17:14:32,226 - PreprocessingObj - INFO - Loading Fit BOS
+2025-01-10 17:14:32,226 - PreprocessingObj - INFO - Files Ordered in Hour2Files
+2025-01-10 17:14:32,528 - PreprocessingObj - INFO - Loading DfEnd BOS
+2025-01-10 17:14:35,529 - multiple_launches - INFO - Simulation R_220_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,530 - multiple_launches - INFO - Simulation R_230_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,530 - multiple_launches - INFO - Simulation R_240_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,531 - multiple_launches - INFO - Simulation R_250_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,531 - multiple_launches - INFO - Simulation R_260_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,531 - multiple_launches - INFO - Simulation R_270_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,531 - multiple_launches - INFO - Simulation R_280_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,531 - multiple_launches - INFO - Simulation R_290_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,532 - multiple_launches - INFO - Simulation R_300_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,532 - multiple_launches - INFO - Simulation R_310_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,532 - multiple_launches - INFO - Simulation R_320_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:14:35,532 - multiple_launches - INFO - InputDocker /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network/BOS_oddemand_7_8_R_330_UCI_0.216.csv already exists.
+2025-01-10 17:14:35,532 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:14:35,535 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:14:35,537 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_330_UCI_0.216.csv
+2025-01-10 17:14:35,537 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:14:35,537 - multiple_launches - INFO - 330, 0.216
+2025-01-10 17:14:35,537 - multiple_launches - INFO - Launch Simulation 330, 0.216
+2025-01-10 17:18:46,049 - multiple_launches - INFO - 330, 0.216, BOS Error GPU: False
+2025-01-10 17:18:46,050 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:18:46,050 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:18:48,757 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_people7to24.csv
+2025-01-10 17:18:48,757 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:19:01,792 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_route7to24.csv
+2025-01-10 17:19:01,792 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:19:25,151 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:19:25,151 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:19:25,152 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_330_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:19:25,153 - multiple_launches - INFO - Simulation R_340_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:19:25,153 - multiple_launches - INFO - Simulation R_350_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:19:25,153 - multiple_launches - INFO - Simulation R_360_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:19:25,153 - multiple_launches - INFO - Simulation R_370_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:19:25,153 - multiple_launches - INFO - Simulation R_380_UCI_0.216_0_people7to24.csv already exists.
+2025-01-10 17:19:25,154 - multiple_launches - INFO - ID-Non-Mod R: 390, BOS, UCI: 0.216
+2025-01-10 17:19:25,154 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 390, UCI: 0.216...
+2025-01-10 17:19:25,154 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:19:31,570 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:21:35,523 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 390, UCI: 0.21576736830752002...
+2025-01-10 17:21:55,181 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:21:55,184 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:21:55,185 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_390_UCI_0.216.csv
+2025-01-10 17:21:55,185 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:21:55,185 - multiple_launches - INFO - 390, 0.216
+2025-01-10 17:21:55,185 - multiple_launches - INFO - Launch Simulation 390, 0.216
+2025-01-10 17:22:31,919 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:26:24,596 - multiple_launches - INFO - 390, 0.216, BOS Error GPU: False
+2025-01-10 17:26:24,601 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:26:24,601 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:26:27,032 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_people7to24.csv
+2025-01-10 17:26:27,033 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:26:37,904 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_route7to24.csv
+2025-01-10 17:26:37,904 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:26:54,243 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:26:54,243 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:26:54,243 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_390_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:26:54,244 - multiple_launches - INFO - ID-Non-Mod R: 400, BOS, UCI: 0.216
+2025-01-10 17:26:54,245 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 400, UCI: 0.216...
+2025-01-10 17:26:54,245 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:27:05,168 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:29:31,414 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 400, UCI: 0.21576736830752002...
+2025-01-10 17:29:57,808 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:29:57,812 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:29:57,814 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_400_UCI_0.216.csv
+2025-01-10 17:29:57,814 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:29:57,814 - multiple_launches - INFO - 400, 0.216
+2025-01-10 17:29:57,814 - multiple_launches - INFO - Launch Simulation 400, 0.216
+2025-01-10 17:32:31,920 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:34:08,261 - multiple_launches - INFO - 400, 0.216, BOS Error GPU: False
+2025-01-10 17:34:08,262 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:34:08,262 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:34:10,899 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_people7to24.csv
+2025-01-10 17:34:10,900 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:34:23,964 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_route7to24.csv
+2025-01-10 17:34:23,965 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:34:42,908 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:34:42,909 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:34:42,909 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_400_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:34:42,910 - multiple_launches - INFO - ID-Non-Mod R: 410, BOS, UCI: 0.216
+2025-01-10 17:34:42,910 - PreprocessingObj - INFO - Append Sim-File ControlGroup NOT Generated BOS, R: 410, UCI: 0.216...
+2025-01-10 17:34:42,910 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:34:50,795 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:37:15,041 - PreprocessingObj - INFO - Save Sim-File ControlGroup NOT Generated BOS, R: 410, UCI: 0.21576736830752002...
+2025-01-10 17:37:36,971 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:37:36,974 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:37:36,976 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_410_UCI_0.216.csv
+2025-01-10 17:37:36,976 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:37:36,976 - multiple_launches - INFO - 410, 0.216
+2025-01-10 17:37:36,976 - multiple_launches - INFO - Launch Simulation 410, 0.216
+2025-01-10 17:42:13,524 - multiple_launches - INFO - 410, 0.216, BOS Error GPU: False
+2025-01-10 17:42:13,525 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_indexPathInit7to24.csv
+2025-01-10 17:42:13,525 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_indexPathInit7to24.parquet
+2025-01-10 17:42:16,373 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_people7to24.csv
+2025-01-10 17:42:16,374 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_people7to24.parquet
+2025-01-10 17:42:31,920 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:42:34,670 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_route7to24.csv
+2025-01-10 17:42:34,670 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_route7to24.parquet
+2025-01-10 17:42:53,242 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:42:53,242 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:42:53,243 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.216/R_410_UCI_0.216_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:42:53,243 - root - INFO - Finished the simulations not changed for BOS
+2025-01-10 17:42:53,419 - PreprocessingObj - INFO - Computing Total Population and Total Fluxes
+2025-01-10 17:42:53,428 - PreprocessingObj - INFO - Recovering Modified Fluxes BOS
+2025-01-10 17:42:54,203 - multiple_launches - INFO - Simulation R_220_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 17:42:54,204 - multiple_launches - INFO - Simulation R_230_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 17:42:54,204 - multiple_launches - INFO - Simulation R_240_UCI_0.264_0_people7to24.csv already exists.
+2025-01-10 17:42:54,204 - multiple_launches - INFO - ID-Mod R: 250, BOS, UCI: 0.264
+2025-01-10 17:42:54,205 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 250, UCI: 0.264...
+2025-01-10 17:42:54,205 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:43:08,343 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:44:31,368 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 250, UCI: 0.264...
+2025-01-10 17:45:07,735 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:45:07,740 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:45:07,743 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_250_UCI_0.264.csv
+2025-01-10 17:45:07,744 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:45:07,744 - multiple_launches - INFO - 250, 0.264
+2025-01-10 17:45:07,744 - multiple_launches - INFO - Launch Simulation 250, 0.264
+2025-01-10 17:49:20,231 - multiple_launches - INFO - 250, 0.264, BOS Error GPU: False
+2025-01-10 17:49:20,232 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_indexPathInit7to24.csv
+2025-01-10 17:49:20,234 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_indexPathInit7to24.parquet
+2025-01-10 17:49:22,625 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_people7to24.csv
+2025-01-10 17:49:22,625 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_people7to24.parquet
+2025-01-10 17:49:33,355 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_route7to24.csv
+2025-01-10 17:49:33,355 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_route7to24.parquet
+2025-01-10 17:49:47,162 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:49:47,163 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:49:47,163 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_250_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:49:47,164 - multiple_launches - INFO - ID-Mod R: 260, BOS, UCI: 0.264
+2025-01-10 17:49:47,164 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 260, UCI: 0.264...
+2025-01-10 17:49:47,164 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:49:52,856 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:50:52,915 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 260, UCI: 0.264...
+2025-01-10 17:51:11,655 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:51:11,658 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:51:11,660 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_260_UCI_0.264.csv
+2025-01-10 17:51:11,660 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:51:11,660 - multiple_launches - INFO - 260, 0.264
+2025-01-10 17:51:11,660 - multiple_launches - INFO - Launch Simulation 260, 0.264
+2025-01-10 17:52:31,921 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 17:54:57,220 - multiple_launches - INFO - 260, 0.264, BOS Error GPU: False
+2025-01-10 17:54:57,221 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_indexPathInit7to24.csv
+2025-01-10 17:54:57,221 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_indexPathInit7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_indexPathInit7to24.parquet
+2025-01-10 17:54:59,901 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_people7to24.csv
+2025-01-10 17:54:59,901 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_people7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_people7to24.parquet
+2025-01-10 17:55:14,013 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_route7to24.csv
+2025-01-10 17:55:14,013 - OsFunctions - INFO - Csv2Parquet: Converting /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_route7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_route7to24.parquet
+2025-01-10 17:55:32,345 - OsFunctions - INFO - Transfer: /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv -> /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv
+2025-01-10 17:55:32,346 - OsFunctions - INFO - File /home/alberto/LPSim/0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:55:32,346 - OsFunctions - INFO - Csv2Parquet: File /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output/0.264/R_260_UCI_0.264_0_allPathsinEdgesCUDAFormat7to24.csv does not exist
+2025-01-10 17:55:32,347 - multiple_launches - INFO - ID-Mod R: 270, BOS, UCI: 0.264
+2025-01-10 17:55:32,347 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 270, UCI: 0.264...
+2025-01-10 17:55:32,347 - GenerateModifiedFluxesSimulation - INFO - Convert Tij to OD_vector...
+2025-01-10 17:55:38,468 - GenerateModifiedFluxesSimulation - INFO - Number of Origin-Destination: 12089529
+2025-01-10 17:56:44,589 - PreprocessingObj - INFO - Append Sim-File ControlGroup GENERATED BOS, R: 270, UCI: 0.264...
+2025-01-10 17:57:04,726 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/edges.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:57:04,730 - OsFunctions - INFO - Copying /home/alberto/LPSim/LivingCity/berkeley_2018/BOS/nodes.csv to /home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network
+2025-01-10 17:57:04,731 - multiple_launches - INFO - Input File: BOS_oddemand_7_8_R_270_UCI_0.264.csv
+2025-01-10 17:57:04,731 - multiple_launches - INFO - Error ModifyConfigIni: 'NoneType' object has no attribute 'LogMessage'
+2025-01-10 17:57:04,731 - multiple_launches - INFO - 270, 0.264
+2025-01-10 17:57:04,731 - multiple_launches - INFO - Launch Simulation 270, 0.264
+2025-01-10 18:02:31,922 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 18:12:31,923 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 18:22:31,923 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 18:32:31,924 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 18:42:31,924 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 18:52:31,925 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:02:31,925 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:12:31,926 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:22:31,926 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:32:31,927 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:42:31,928 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 19:52:31,928 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:02:31,929 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:12:31,929 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:22:31,930 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:32:31,930 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:42:31,931 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 20:52:31,931 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:02:31,932 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:12:31,932 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:22:31,933 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:32:31,933 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:42:31,934 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 21:52:31,935 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:02:31,935 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:12:31,936 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:22:31,936 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:32:31,937 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:42:31,937 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 22:52:31,938 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:02:31,938 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:12:31,939 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:22:31,939 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:32:31,940 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:42:31,940 - multiple_launches - INFO - Monitoring active processes...
+2025-01-10 23:52:31,941 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:02:31,941 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:12:31,942 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:22:31,942 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:32:31,943 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:42:31,944 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 00:52:31,944 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:02:31,945 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:12:31,945 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:22:31,946 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:32:31,946 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:42:31,947 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 01:52:31,948 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:02:31,948 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:12:31,949 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:22:31,949 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:32:31,950 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:42:31,951 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 02:52:31,952 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:02:31,952 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:12:31,953 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:22:31,953 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:32:31,954 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:42:31,954 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 03:52:31,955 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:02:31,956 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:12:31,956 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:22:31,957 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:32:31,958 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:42:31,958 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 04:52:31,959 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:02:31,960 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:12:31,960 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:22:31,961 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:32:31,961 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:42:31,962 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 05:52:31,963 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:02:31,963 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:12:31,964 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:22:31,965 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:32:31,966 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:42:31,967 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 06:52:31,967 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:02:31,968 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:12:31,969 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:22:31,970 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:32:31,970 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:42:31,971 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 07:52:31,972 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:02:31,973 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:12:31,974 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:22:31,974 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:32:31,975 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:42:31,976 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 08:52:31,977 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 09:02:31,978 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 09:12:31,978 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 09:22:31,979 - multiple_launches - INFO - Monitoring active processes...
+2025-01-11 09:32:31,980 - multiple_launches - INFO - Monitoring active processes...
+2025-01-14 14:15:10,512 - multiple_launches - INFO - Monitoring active processes...
+2025-01-14 14:15:10,516 - Config - INFO - Generating config for city: LAX
+
+2025-01-14 14:15:24,894 - CreateCartoSimulator - INFO - SympifyPolygon: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/shape_files/LAX/LAX.shp
+2025-01-14 14:15:24,912 - CreateCartoSimulator - INFO - SympifyPolygon: File LAX_new_tertiary_simplified already exists
+2025-01-14 14:15:49,336 - CreateCartoSimulator - INFO - SympifyPolygon: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/LAX_new_tertiary_simplified Plot Graph
+2025-01-14 14:16:06,440 - fiona._env - WARNING - Normalized/laundered field name: 'street_count' to 'street_cou'
+2025-01-14 14:16:16,121 - fiona._env - WARNING - Value '[384957444, 398196370, 398196374, 398196379, 400041503, 384853664, 400041504, 996902054, 384295997, 384296002, 244373187, 384296132, 384296137, 1097273428, 1097273429, 400039895, 400039896, 524065504, 398210786, 398210787, 398210788, 398210789, 398210790, 398210791, 398210792, 398210793, 398210794, 398210795, 398210796, 398210798]' of field osmid has been truncated to 254 characters.  This warning will not be emitted any more for that layer.
+2025-01-14 14:16:46,251 - CreateCartoSimulator - INFO - SympifyPolygon: Done
+2025-01-14 14:16:47,681 - PreprocessingObj - INFO - Geometrical Settings Spatial Partition Inititalized: LAX
+2025-01-14 14:16:47,682 - PreprocessingObj - INFO - New Rmax 200, New number of simulations 20
+2025-01-14 14:16:47,683 - PreprocessingObj - INFO - Bounding Box: (-118.951721, 33.65004, -117.646374, 34.823301)
+2025-01-14 14:16:47,686 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/polygon/polygon2origindest.json ALREADY COMPUTED
+2025-01-14 14:16:47,736 - Hexagon - INFO - Reading hexagon for LAX
+2025-01-14 14:16:49,950 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/hexagon/8/hexagon2origindest.json ALREADY COMPUTED
+2025-01-14 14:17:13,327 - Polygon - INFO - Population Hex -> Pol: LAX
+2025-01-14 14:17:13,333 - Polygon - INFO - COMPUTING: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/polygon.geojson 
+2025-01-14 14:17:15,559 - PreprocessingObj - INFO - Get Grid LAX
+2025-01-14 14:17:15,578 - Grid - INFO - Uploading grid from file /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/grid.geojson ...
+2025-01-14 14:17:17,981 - PreprocessingObj - INFO - Get Boundaries and Interior LAX
+2025-01-14 14:17:39,772 - Grid - INFO - Boundaries and Interior Case <class 'shapely.geometry.collection.GeometryCollection'> for LAX ...
+2025-01-14 14:25:10,551 - multiple_launches - INFO - Monitoring active processes...
+2025-01-14 14:35:10,553 - multiple_launches - INFO - Monitoring active processes...
+2025-01-14 14:41:57,499 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-14 14:42:00,218 - matplotlib.legend - WARNING - No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+2025-01-14 14:42:00,488 - Grid - INFO - LAX Grid.columns
+ Index(['i', 'j', 'centroidx', 'centroidy', 'area', 'index', 'population',
+       'with_roads', 'relation_to_line', 'position', 'geometry'],
+      dtype='object')
+2025-01-14 14:42:00,497 - PreprocessingObj - INFO - Grid and Boundaries and Interior Computed
+2025-01-14 14:42:00,498 - PolygonSettings - INFO - Initialize Population Grid LAX
+2025-01-14 14:42:22,589 - Grid - INFO - Uploading lattice from: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/centroid_lattice.graphml...
+2025-01-14 14:42:23,707 - PolygonSettings - INFO - /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/grid2origindest.json ALREADY COMPUTED
+2025-01-14 14:42:24,176 - Grid - INFO - SAVING: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/grid.geojson 
+2025-01-14 14:42:26,575 - Grid - INFO - Uploading direction matrix from: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/direction_distance_matrix.csv ...
+2025-01-14 14:43:30,349 - ODfromfma - INFO - Upload OD Grid from: /home/alberto/LPSim/traffic_phase_transition/data/carto/LAX/grid/0.02/ODgrid.csv...
+2025-01-14 14:44:12,473 - PreprocessingObj - INFO - Compute grid Idx 2 Origin Destination LAX
+2025-01-14 14:44:12,479 - Grid - INFO - Init GridIdx2OD: {(Ogrid, Dgrid): Flux = 0} ...
+2025-01-14 14:45:08,356 - Potential - INFO - Loading Vector Field LAX ...
+2025-01-14 14:45:08,371 - Potential - INFO - Loading Potential Dataframe LAX ...
+2025-01-14 14:45:10,181 - PreprocessingObj - INFO - RoutineVectorField: Upload Smax,Dmax: LAX
+2025-01-14 14:45:10,554 - multiple_launches - INFO - Monitoring active processes...
+2025-01-14 14:45:10,591 - PreprocessingObj - INFO - Compute UCI LAX
+2025-01-14 14:45:10,602 - PreprocessingObj - INFO - Compute UCI LAX
+2025-01-14 14:45:10,603 - Polycentrism - INFO - Compute UCI for Potential...
+2025-01-14 14:45:34,824 - Polycentrism - INFO - Fstar: 3714
+2025-01-14 14:45:34,824 - Polycentrism - INFO - UCI Pot: LC: 0.541083916083916, PI: -30.597258629905607, UCI: -16.556
+2025-01-14 14:45:34,824 - PreprocessingObj - INFO - Compute UCI Mass LAX
+2025-01-14 14:45:34,824 - Polycentrism - INFO - Compute UCI for Mass...
+2025-01-14 14:46:01,034 - Polycentrism - INFO - Fstar: 6720
+2025-01-14 14:46:02,076 - Polycentrism - INFO - UCI Mass: LC: 0.9790209790209791, PI: 0.9996428247262996, UCI: 0.979
+2025-01-14 14:46:10,319 - PolycentrismPlot - INFO - Plotting Fluxes
+2025-01-14 14:46:13,345 - PolycentrismPlot - INFO - Plotting New Population
+2025-01-14 14:46:14,900 - PolycentrismPlot - INFO - Plotting Old and New Fluxes
+2025-01-14 14:46:21,569 - PolycentrismPlot - INFO - F* = 3714
+2025-01-14 14:46:25,541 - PreprocessingObj - INFO - Computing Fit LAX

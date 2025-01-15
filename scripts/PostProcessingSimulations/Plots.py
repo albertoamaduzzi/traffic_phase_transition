@@ -11,10 +11,11 @@ from DateTime_ import *
 import os
 import logging
 logger = logging.getLogger(__name__)
-
+from EfficiencyAnalysis import *
 
 # Unloading Curve
-def PlotPeopleInNetwork(n,n_fit,interval15,FileName):
+@timing_decorator
+def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,BestTime,FileName):
     '''
         Input:
             df_people: DataFrame containing the people information (stay time in the network, time of departure, travel time, etc.)
@@ -30,6 +31,7 @@ def PlotPeopleInNetwork(n,n_fit,interval15,FileName):
         fig,ax = plt.subplots(1,1,figsize = (15,15))
         ax.plot(interval15,n)
         ax.plot(interval15,n_fit,linestyle = "--")
+        ax.vlines(BestTime,0,max(n),color = 'black',linestyle = '--')
     #    ax.set_xticks(second2hour(interval15))
     #    ax.set_xticklabels([str(t) for t in interval15])
         ax.set_xlabel('t(h)')
@@ -37,6 +39,7 @@ def PlotPeopleInNetwork(n,n_fit,interval15,FileName):
     #    ax.set_xticks(ticks = interval15,labels = interval15,rotation=90)
         ax.set_xscale('log')
         ax.set_yscale('log')
+        ax.set_title('Best Fit: ' + BestFunctionFit)
         plt.savefig(FileName,dpi = 200)
         plt.close()
 

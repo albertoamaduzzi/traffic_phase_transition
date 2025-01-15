@@ -1,6 +1,6 @@
 import polars as pl
 import numpy as np
-
+from EfficiencyAnalysis import *
 ### GENERIC PREPROCESSING FUNCTIONS
 
 def DropColumnsDfIfThere(Df,columns):
@@ -73,7 +73,7 @@ def FilterDfPeopleStilInNet(t_start_interval,t_end_interval,StrLastTimeSimulated
 def ApplyPeople2Time(personId,People2Time,i):
     return People2Time[personId][i]
 
-
+@timing_decorator
 def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
     """
         @param DfRoute: DataFrame with the routes of the people in the network

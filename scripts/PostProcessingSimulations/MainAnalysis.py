@@ -24,6 +24,7 @@ from GenerateConfiguraiton import *
 if __name__=='__main__':
     BaseConfig = os.path.join(os.environ["TRAFFIC_DIR"],"config")
     list_cities = os.listdir(os.path.join(os.environ["TRAFFIC_DIR"],'data','carto'))
+    list_cities = ["BOS"]
     ListPeopleFile = []
     ListRoutesFile = []
     for City in list_cities:
