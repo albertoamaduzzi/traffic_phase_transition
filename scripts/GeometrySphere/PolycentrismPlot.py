@@ -142,7 +142,13 @@ def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
     grid['potential'] = PotentialDataframe['V_out']
     # Create a contour plot
     fig, ax = plt.subplots(figsize=(10, 10))
-    gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+    if "LIS" not in dir_grid:
+        import contextily as ctx
+        gdf_polygons.plot(ax=ax, color='white', edgecolor='black',alpha = 0.2)
+        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron)
+    else:
+        import contextily as ctx
+        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron)
     grid.plot(ax=ax, edgecolor='black', facecolor='none',alpha = 0.2)
 #    contour_filled = ax.tricontourf(grid['geometry'].apply(lambda geom: geom.centroid.x), 
 #                                    grid['geometry'].apply(lambda geom: geom.centroid.y), 
@@ -151,11 +157,11 @@ def PotentialContour(grid,PotentialDataframe,gdf_polygons,dir_grid,UCI):
     # Create contour lines
     contour_lines = ax.tricontour(grid['geometry'].apply(lambda geom: geom.centroid.x), 
                                 grid['geometry'].apply(lambda geom: geom.centroid.y), 
-                                grid['potential'], cmap='RdGy')#,colors='black'
+                                grid['potential'], cmap='gnuplot')#,colors='black'
 
-    #contour = ax.tricontour(grid['geometry'].apply(lambda geom: geom.centroid.x), 
-    #                         grid['geometry'].apply(lambda geom: geom.centroid.y), 
-    #                         grid['potential'], alpha=1, cmap='inferno')
+    contour = ax.tricontour(grid['geometry'].apply(lambda geom: geom.centroid.x), 
+                             grid['geometry'].apply(lambda geom: geom.centroid.y), 
+                             grid['potential'], alpha=0.8, cmap='gnuplot')
 #    cbar = plt.colorbar(contour_filled)
     cbar = plt.colorbar(contour_lines)
     cbar.set_label('Potential')

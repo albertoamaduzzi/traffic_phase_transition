@@ -10,9 +10,12 @@ def StrMph2IntMph(StrMph):
         StrMph = StrMph[0]
         if type(StrMph) == str:
             if len(StrMph.split(' '))==1:
-                Mph = int(StrMph)
-                if np.isnan(Mph):
-                    Mph = 50
+                if 'mph' in StrMph:
+                    Mph = int(StrMph.split('mph')[0])
+                else:
+                    Mph = int(StrMph)
+                    if np.isnan(Mph):
+                        Mph = 50
 
             elif len(StrMph.split(' '))==2:
                 Mph = int(StrMph.split(' ')[0])
@@ -22,10 +25,15 @@ def StrMph2IntMph(StrMph):
             Mph = StrMph
     elif type(StrMph) == str:
         if len(StrMph.split(' '))==1:
-            Mph = int(StrMph)
-            if np.isnan(Mph):
-                Mph = 50
-
+            if 'mph' in StrMph:
+                Mph = int(StrMph.split('mph')[0])
+            else:
+                try:
+                    Mph = int(StrMph)
+                    if np.isnan(Mph):
+                        Mph = 50
+                except:
+                    Mph = 50
         elif len(StrMph.split(' '))==2:
             Mph = int(StrMph.split(' ')[0])
         else:

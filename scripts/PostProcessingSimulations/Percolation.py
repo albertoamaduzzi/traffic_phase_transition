@@ -355,7 +355,7 @@ def AnalysisPercolationSpeed(IntTimeArray,GeoJsonEdges,EdgesWithFluxesAndSpeed,U
         Components = ComputeConnectedComponentsGonT(G, IntTimeArray)
         PlotNumberLinksTwoBiggestConnectedComponents(Components, t_hours,UCI,R,PlotDir)    
 
-def AnalysisPercolationTransition(IntTimeArray,GeoJsonEdges,EdgesWithFluxesAndSpeed,UCI,R,PlotDir):
+def AnalysisPercolationTransition(IntTimeArray,EdgesWithFluxesAndSpeed,UCI,R,PlotDir):
     """
         @param IntTimeArray: Array of time intervals
         @GeoJsonEdges: GeoJson with the edges of the network 

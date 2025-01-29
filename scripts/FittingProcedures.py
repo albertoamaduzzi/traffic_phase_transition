@@ -218,6 +218,25 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-
     else:
         raise ValueError(f'ComparePlExpo: x {x} and y {y} are empty')
 
+def FittingPowerlaw(x,y,initial_guess = (1,0.5),maxfev = 10000):
+    Z = np.sum(y)
+    y = y/Z
+    x0 = np.array([x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
+    y0 = np.array([y[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
+    # Fit on the log-log scale POWERLAW
+    logx = np.log(x0)
+    logy = np.log(y0)
+    # Adjust The Initial Guess # alpha*x + log(A) 
+#    result_powerlaw = minimize(objective_function_linear, log_initial_guess_pl, args = (logx, logy))
+#    optimal_params_pl = result_powerlaw.x
+    fit = curve_fit(linear, xdata = logx, ydata = logy,maxfev = maxfev)
+    # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
+    A_pl = np.exp(fit[0][1])
+    alpha_pl = fit[0][0]
+    y_fit_pl = powerlaw(x0,A_pl,alpha_pl)
+    ErrorPL = np.sqrt(np.sum((np.log(powerlaw(x0,A_pl,alpha_pl))-np.log(y0))**2)/len(y0))
+    return y_fit_pl,ErrorPL,A_pl,alpha_pl
+
 class Fitter:
     def __init__(self, x, y_measured, label = 'powerlaw', initial_guess = (6000,0.3), maxfev = 10000):
         self.x = x

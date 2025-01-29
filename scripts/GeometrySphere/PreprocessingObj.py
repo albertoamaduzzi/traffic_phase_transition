@@ -127,11 +127,12 @@ def RetrieveUCI2UCIIntervalFromSavedGrid(dir_new_grids,dir_grid):
     """
     PlotDir = os.path.join(dir_new_grids,"plots")
     UCIS = np.linspace(0,1,11)
-    UCI2UCIInterval = {UCI:[] for UCI in UCIS}
+    UCI2UCIInterval = {round(UCI,3):[] for UCI in UCIS}
     for file in os.listdir(dir_new_grids):
         if "Grid_" in file:
             UCI = float(file.split("_")[1].split(".parquet")[0])
-            for U in UCIS:
+            UCI = round(UCI,3)
+            for U in UCI2UCIInterval.keys():
                 if UCI >= U and UCI < U + 0.1:
                     UCI2UCIInterval[U].append(UCI)
             if os.path.exists(f"{PlotDir}/grid_{UCI}.png"):
@@ -143,6 +144,8 @@ def RetrieveUCI2UCIIntervalFromSavedGrid(dir_new_grids,dir_grid):
                 fig, ax = plt.subplots(1,1, figsize=(10,10))
                 grid.plot("population",ax=ax, legend=True)    
                 ax.set_title(f"UCI: {UCI}")
+                if not os.path.exists(PlotDir):
+                    os.makedirs(PlotDir,exist_ok=True)
                 plt.savefig(f"{PlotDir}/grid_{UCI}.png")
     return UCI2UCIInterval
 
@@ -274,7 +277,7 @@ class GeometricalSettingsSpatialPartition:
             1- Get the Grid.
             2- Compute the Boundaries and interior of the Grid.
         """
-        if self.city != "":
+        if not os.path.exists(os.path.join(self.save_dir_grid,'grid.geojson')):
             logger.info(f"Get Grid {self.city}")
             self.grid = GetGrid(self.grid_size,self.bounding_box,self.crs,self.save_dir_local)
             logger.info(f"Get Boundaries and Interior {self.city}")
@@ -340,13 +343,21 @@ class GeometricalSettingsSpatialPartition:
                                                             GeometryName ='grid',
                                                             save_dir_local = self.save_dir_local,
                                                             resolution = grid_size)
+        
         self.grid["with_roads"] = self.grid['index'].apply(lambda x: str(x) in list(self.grid2OD.keys()))            
         SaveGrid(self.save_dir_local,self.grid_size,self.grid)
+        self.grid = self.grid.cx[self.bounding_box[0]:self.bounding_box[2], self.bounding_box[1]:self.bounding_box[3]]
+        self.gdf_polygons = self.gdf_polygons.cx[self.bounding_box[0]:self.bounding_box[2], self.bounding_box[1]:self.bounding_box[3]] 
         self.ObtainDirectionMatrix()
         self.ObtainODMatrixGrid()
         logger.info(f"Compute grid Idx 2 Origin Destination {self.city}")
         self.gridIdx2dest = GridIdx2OD(self.grid)
-        self.gridIdx2ij = {self.grid['index'][i]: (self.grid['i'].tolist()[i],self.grid['j'].tolist()[i]) for i in range(len(self.grid))}
+        self.gridIdx2ij = defaultdict()
+        i = 0
+        for Index in self.grid.index:
+            self.gridIdx2ij[Index] = (self.grid['i'].tolist()[i],self.grid['j'].tolist()[i])
+            i += 1
+#        self.gridIdx2ij = {self.grid['index'][i]: (self.grid['i'].tolist()[i],self.grid['j'].tolist()[i]) for i in range(len(self.grid))}
 
 
 ### GENERATE MASS ###
@@ -361,31 +372,30 @@ class GeometricalSettingsSpatialPartition:
                 - In this way UCIInterval2UCI contains all the UCIs that are going to be used for the simulations.
         """
         self.UCIInterval2UCI = RetrieveUCI2UCIIntervalFromSavedGrid(self.save_dir_local,self.save_dir_grid)
+        IsFull = True
+        for UCIInterval,UCIs in self.UCIInterval2UCI.items():
+            if len(UCIs) < 4:
+                IsFull = False
+                break
         # Either Fill From Zero or Complete the Missing UCIs (In case the simulations stop or some problem occurs)
-        if self.UCIInterval2UCI is None:
-            IsFull = True
-            for UCIInterval,UCIs in self.UCIInterval2UCI.items():
-                if len(UCIs) < 4:
-                    IsFull = False
-                    break
-            if not IsFull:
-                # Compute Parallely all the UCIs
-                self.UCIInterval2UCI,_ = GenerateRandomPopulationAndComputeUCI(self.config['covariances'],
-                                                                    ['gaussian'],
-                                                                    self.config['list_peaks'],
-                                                                    self.grid,
-                                                                    np.sum(self.grid["population"]),
-                                                                    self.df_distance,
-                                                                    self.IndicesInside,
-                                                                    self.Smaxi_Mass,
-                                                                    self.Dmax_ij_Mass,
-                                                                    self.UCIInterval2UCI,
-                                                                    None,#self.AcceptedConfigurations,
-                                                                    self.save_dir_local)
+        if not IsFull:
+            # Compute Parallely all the UCIs
+            self.UCIInterval2UCI,_ = GenerateRandomPopulationAndComputeUCI(self.config['covariances'],
+                                                                ['gaussian'],
+                                                                self.config['list_peaks'],
+                                                                self.grid,
+                                                                np.sum(self.grid["population"]),
+                                                                self.df_distance,
+                                                                self.IndicesInside,
+                                                                self.Smaxi_Mass,
+                                                                self.Dmax_ij_Mass,
+                                                                self.UCIInterval2UCI,
+                                                                None,#self.AcceptedConfigurations,
+                                                                self.save_dir_local)
 
-        with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json'),"w") as f:
-            json.dump(self.UCIInterval2UCI,f)
         self.UCIInterval2UCI = PlotUCIsAvailable(self.UCIInterval2UCI,self.save_dir_local)
+        with open(os.path.join(self.save_dir_local,'UCIInterval2UCI.json'),"w") as f:
+            json.dump(dict(self.UCIInterval2UCI),f)
 
 
 #### Vector Fields ####

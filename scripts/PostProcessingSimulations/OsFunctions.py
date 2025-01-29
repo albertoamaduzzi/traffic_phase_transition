@@ -10,7 +10,7 @@ TRAFFIC_DIR = os.environ["TRAFFIC_DIR"]
 LIVING_CITY_DIR = os.path.join(LPSIM_DIR,"LivingCity")
 BERKELEY_DIR = os.path.join(LIVING_CITY_DIR,"berkeley_2018")
 NEW_FULL_NETWORK_DIR = os.path.join(BERKELEY_DIR,"new_full_network")
-
+CARTO_DIR = os.path.join(TRAFFIC_DIR,"data","carto")
 
 def JoinDir(BaseDir,TreeDir):
     return os.path.join(BaseDir,TreeDir)
@@ -42,7 +42,7 @@ def CopyCartoGraphy(SourceFile,CityName):
         @description : Copy the cartography file in the directory of the simulation
     """
     # Input
-    SourceDir = os.path.join(BERKELEY_DIR,CityName)
+    SourceDir = os.path.join(CARTO_DIR,CityName)
     SourceFileComplete = os.path.join(SourceDir,SourceFile)
     # Output
 
@@ -63,7 +63,8 @@ def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
     """
     # Set Path of Destination LivingCity/berkeley_2018/CityName/Output/UCI/
     saving_dir = os.path.join(LIVING_CITY_DIR,'berkeley_2018',CityName,'Output')
-    destination_dir = os.path.join(saving_dir, str(round(UCI,3)))
+    destination_dir = os.path.join("data_1","alberto",CityName,'Output',str(round(UCI,3)))
+#    destination_dir = os.path.join(saving_dir, str(round(UCI,3)))
     os.makedirs(os.path.join(destination_dir), exist_ok=True)
 #    name_parquet = f"R_{0}_UCI_{1}_{2}".format(R,round(UCI,3),output_file.split('.csv')[0] + '.parquet')
     name_parquet = f"R_{R}_UCI_{round(UCI, 3)}_{output_file.replace('.csv', '.parquet')}"

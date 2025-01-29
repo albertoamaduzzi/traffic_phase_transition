@@ -15,13 +15,12 @@ def PlotGammaTau(Taus,Gammas,City,UCI,PlotDir):
         NOTE: The Plot is Saved with the corresponding curve so that it can be used for collective study.
     """
     fig,ax = plt.subplots(1,1,figsize = (10,10))
-    for UCI in Taus.keys():
-        ax.scatter(Taus,Gammas)
-    ax.set_xlabel(r'$\\tau$',fontsize=15)
-    ax.set_ylabel(r'$\\gamma$',fontsize=15)
+    ax.scatter(Taus,Gammas)
+    ax.set_xlabel(r'$\gamma$',fontsize=15)
+    ax.set_ylabel(r'$\tau$',fontsize=15)
     plt.savefig(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.png'))
     plt.close()
-    pd.to_parquet(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.parquet'),pd.DataFrame({'Tau':Taus,'Gamma':Gammas}))
+    pd.write_parquet(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.parquet'),pd.DataFrame({'Tau':Taus,'Gamma':Gammas}))
 
 
 def PlotFigure4(R2NtNtFit,R2epsilon,alpha,Time,t0,UCI,Rc,City,PlotDir):
@@ -34,14 +33,18 @@ def PlotFigure4(R2NtNtFit,R2epsilon,alpha,Time,t0,UCI,Rc,City,PlotDir):
     fig,ax = plt.subplots(1,1,figsize = (10,10))
     fig1,ax1 = plt.subplots(1,1,figsize = (10,10))
     for R in R2NtNtFit.keys():
-        SmallestIndexForPlot = min(len(R2NtNtFit[R]['n']),Time[t0:],len(R2NtNtFit[R]['n_fit']))
+#        SmallestIndexForPlot = min(len(R2NtNtFit[R]['n']),Time[t0:],len(R2NtNtFit[R]['n_fit']))
         tminust0epsilon = (np.array(R2NtNtFit[R]['t']) -t0)*R2epsilon[R]
-        nttalpha = R2NtNtFit[R]['n'][:SmallestIndexForPlot]*Time[t0:SmallestIndexForPlot]**(-alpha)
+#        nttalpha = R2NtNtFit[R]['n'][:SmallestIndexForPlot]*Time[t0:SmallestIndexForPlot]**(-alpha)
+        nttalpha = R2NtNtFit[R]['n'][:]*Time[t0:]**(-alpha)
+
         # Plot Bottom
         ax.scatter(tminust0epsilon,nttalpha,linestyle = '--')
         # Plot Top
-        ax1.scatter(Time[t0:SmallestIndexForPlot],R2NtNtFit[R]['n'][:SmallestIndexForPlot])
-        ax1.scatter(Time[t0:SmallestIndexForPlot],R2NtNtFit[R]['n_fit'][:SmallestIndexForPlot],linestyle = '--')
+#        ax1.scatter(Time[t0:SmallestIndexForPlot],R2NtNtFit[R]['n'][:SmallestIndexForPlot])
+#        ax1.scatter(Time[t0:SmallestIndexForPlot],R2NtNtFit[R]['n_fit'][:SmallestIndexForPlot],linestyle = '--')
+        ax1.scatter(Time[t0],R2NtNtFit[R]['n'][:])
+        ax1.scatter(Time[t0],R2NtNtFit[R]['n_fit'][:],linestyle = '--')
     ax.ahline(y=1)
     ax.text(0.01,2,r'$R_c = $'+ str(Rc),fontsize=15)
     ax.set_xlabel(r'$(t-t_0)\epsilon$',fontsize=15)

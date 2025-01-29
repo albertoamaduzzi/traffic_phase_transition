@@ -1,4 +1,6 @@
-# Phase transition for traffic
+# Description
+This project consists in a pipeline for studying traffic phase transition to the absorbing state of gridlock.
+In particular, we analyze the number of people that remain trapped in the road network after long times.
 This description is highly incomplete and working progress...
 Is a library that is build to study the phase transition to traffic whose order parameter is the fraction of people that remain trapped in the network after some limiting time, and
 whose control parameter is the number of people that enter in the network per unit time (time of update for the simulator used).

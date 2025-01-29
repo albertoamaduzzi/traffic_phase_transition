@@ -515,6 +515,9 @@ def VespignaniBlock(df_distance,grid,Tij,potentialdir):
     ax.set_xlim(0,90)
     ax.set_ylabel('$W_{ij} (M)/W_{ij} (D)$')
     plt.savefig(os.path.join(potentialdir,'PlotFitVespignaniNewDataModel.png'),dpi = 200)
+    return k[0],k[1],k[2],k[3]
+
+
 def _VespignaniBlock(df_distance,grid,Tij,potentialdir):
     """
         @df_distance: (pd.DataFrame) [i,j,distance]

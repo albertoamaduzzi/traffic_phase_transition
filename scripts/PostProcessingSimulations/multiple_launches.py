@@ -281,7 +281,9 @@ def ProcessMain(case,
     output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
     output_file_parquet = output_file.replace('.csv','.parquet')
     check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file}"
-    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
+    DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+    destination_file = os.path.join(DataDir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
+#    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
     InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_R_{R}_UCI_{round(UCI1,3)}.csv"
     # BRANCH VARIABLES
     InputDocker = os.path.join(dir_new_full_network,InputFile)
@@ -318,7 +320,7 @@ def ProcessMain(case,
                 CopyCartoGraphy("nodes.csv",GeoInfo.city)
                 # Modify Config.ini 
                 ModifyConfigIni(GeoInfo.city,start,end,R,round(UCI1,3), True)
-                concurrent_manager.LogMessage(Messages)
+#                concurrent_manager.LogMessage(Messages)
             except Exception as e:
                 logger.info(f"Error ModifyConfigIni: {e}")
             # TransportError, BrockenPipe: 0,0 -> 1 (Continue)  
@@ -345,6 +347,7 @@ def ProcessMain(case,
             # Check Errors in GPU
             ErrorGPU = check_out_of_memory_error(stderr.decode())                
             logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error GPU: {ErrorGPU}")
+            logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error Docker: {ErrorDocker}")
             FailedSimulation = ErrorGPU or ErrorDocker
             if not FailedSimulation:
                 output_files = [

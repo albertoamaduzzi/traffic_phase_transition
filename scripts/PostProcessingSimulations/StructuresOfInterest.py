@@ -134,9 +134,28 @@ def ReturnMessageTime2Road(CountFunctions,LogFile,Time2Road2MFDNotProcessed,Time
     AddMessageToLog(Message,LogFile)
 
 
-def InitializeDictionariesFit(t_vect,nt,Z_n,RangePlFit):
-    Time2ErrorFit = {t_vect[t]:{"PowerLaw":0,"Exponential":0} for t in RangePlFit if t - 4 >= 6}
-    Time2BestFit = {t_vect[t]:"" for t in RangePlFit if t - 4 >= 6}
-    Time2nt = {t_vect[t]:{"n":list(nt[:t]/Z_n),"n_fit":[]} for t in RangePlFit if t - 4 >= 6}
-    Time2Fit = {t_vect[t]:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in RangePlFit if t - 4 >= 6}
+def InitializeDictionariesFit(nt,Z_n):
+    """
+        @return:
+            ErrorFit 
+            Fits
+            Nt
+    """
+    Fits = {"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0}
+    ErrorFit = {"PowerLaw":0,"Exponential":0}
+    Nt = {"n":list(nt/Z_n),"n_fit":[],"t":[]}
+    return Fits,ErrorFit, Nt
+
+## DEPRECATED
+def _InitializeDictionariesFit(t_vect,nt,Z_n,RangePlFit,FirstTime = 5,LoadingInterval = 4):
+    """
+        @t_vect: np.array -> Time in hours (float)
+        @nt: np.array -> Number of people at time t
+        @Z_n: float -> Total number of people
+        @RangePlFit: np.array -> Range of time to fit the power law
+    """
+    Time2ErrorFit = {t_vect[t]:{"PowerLaw":0,"Exponential":0} for t in RangePlFit if t - LoadingInterval >= FirstTime}
+    Time2BestFit = {t_vect[t]:"" for t in RangePlFit if t - LoadingInterval >= FirstTime}
+    Time2nt = {t_vect[t]:{"n":list(nt[:t]/Z_n),"n_fit":[]} for t in RangePlFit if t - LoadingInterval >= FirstTime}
+    Time2Fit = {t_vect[t]:{"A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0} for t in RangePlFit if t - LoadingInterval >= FirstTime}
     return Time2ErrorFit,Time2BestFit,Time2nt,Time2Fit

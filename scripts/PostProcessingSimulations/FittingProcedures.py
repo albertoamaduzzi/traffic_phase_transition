@@ -125,7 +125,16 @@ def Fitting(x,y_measured,label = 'powerlaw',initial_guess = (6000,0.3),bounds = 
     print('Message: ',result_powerlaw.message)
     return fit,result_powerlaw.success
 
+
+
+
 ## NEW FIT FOR GRAVITY MODEL
+def GravityModel(Mi,Mj,Dij,k,alpha,gamma,d0minus1):
+    return k*Mi**alpha*Mj**gamma* np.exp(Dij*d0minus1)
+def FluxesOverProductMasses(GravityFluxes,Mi,Mj,Alpha,Beta):
+    return GravityFluxes/(Mi**Alpha*Mj**Beta)
+
+
 def FittingGravity(x,y_measured,initial_guess = (0,1,1,-0.001),bounds = (np.array([-50,0,0,-2]),np.array([50,2,2,0])),maxfev = 50000):
     '''
         Input:
@@ -159,6 +168,7 @@ def EstimateLogk(Tij_dist_fit_gravity):
 
 
 def EstimateD0minus1(Tij_dist_fit_gravity):
+    import polars as pl
     Tij_D0_diff = Tij_dist_fit_gravity.filter(pl.col('distance') != 0)
     d0minus1_av = 1/np.mean(Tij_D0_diff['distance'].to_numpy())
     print("Average d0minus1: ",d0minus1_av)
@@ -233,7 +243,9 @@ def FittingPowerlaw(x,y,initial_guess = (1,0.5),maxfev = 10000):
     # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
     A_pl = np.exp(fit[0][1])
     alpha_pl = fit[0][0]
-
+    y_fit_pl = powerlaw(x0,A_pl,alpha_pl)
+    ErrorPL = np.sqrt(np.sum((np.log(powerlaw(x0,A_pl,alpha_pl))-np.log(y0))**2)/len(y0))
+    return y_fit_pl,ErrorPL,A_pl,alpha_pl
 
 class Fitter:
     def __init__(self, x, y_measured, label = 'powerlaw', initial_guess = (6000,0.3), maxfev = 10000):

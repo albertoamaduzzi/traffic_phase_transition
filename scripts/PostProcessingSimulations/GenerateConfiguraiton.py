@@ -36,7 +36,7 @@ def RsUCIsFromDir(OD_dir):
     list_UCIs = [] 
     list_Rs = []
     for file_or_dir in os.listdir(OD_dir):
-        if file_or_dir != "Plots" and "parquet" not in file_or_dir and "json" not in file_or_dir and "csv" not in file_or_dir:
+        if file_or_dir != "Plots" and "parquet" not in file_or_dir and "json" not in file_or_dir and "csv" not in file_or_dir and "GammaTau" not in file_or_dir:
             UCI = float(file_or_dir)
             DIR_UCI = os.path.join(OD_dir,str(UCI))
             if UCI not in list_UCIs:
@@ -94,8 +94,13 @@ def InitConfigPolycentrismAnalysis(CityName):
     City2Config = {CityName:defaultdict()}
     if "LPSim" not in os.environ.keys():
         BaseData = "/home/alberto/LPSim/LivingCity/berkeley_2018/{}/Output".format(CityName)
+#        BaseData = os.path.join("data_1","alberto",CityName,"Output")
+        BaseData = f"/data_1/alberto/{CityName}/Output"
     else:
         BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",CityName,"Output")
+#        BaseData = os.path.join("data_1","alberto",CityName,"Output")
+        BaseData = f"/data_1/alberto/{CityName}/Output"
+        
     UCIs,Rs = RsUCIsFromDir(BaseData)
     City2Config[CityName] = GenerateConfig(BaseData,City2Config[CityName],CityName,Rs,UCIs)  
     return City2Config,Rs,UCIs

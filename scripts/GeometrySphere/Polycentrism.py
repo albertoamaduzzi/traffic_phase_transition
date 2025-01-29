@@ -291,12 +291,14 @@ def ComputePIPotential(grid,distance_matrix,PotentialDf,column_PI = "V_out"):
     PI = 1 - V["sum_dij_vivj"][0]/Vmax["sum_dij_vivj_edge"][0]
     return PI,g[f"fraction_{column_PI}"].to_numpy()
 
+
 def ComputePIMass(grid,distance_matrix,column_PI = "population"):
     """
         @params grid: pd.DataFrame -> Grid with the potential values
         @params distance_matrix: pd.DataFrame -> Distance matrix between the grids
     """
-    g = grid[[column_PI,"index","relation_to_line","position"]]
+    import geopandas as gpd
+    g = grid[[column_PI,"index","relation_to_line","position","with_roads"]]
     if isinstance(grid,pd.DataFrame):
         g = pl.DataFrame(g)
     if isinstance(distance_matrix,pd.DataFrame):
@@ -307,7 +309,7 @@ def ComputePIMass(grid,distance_matrix,column_PI = "population"):
         g = pl.DataFrame(g)
     # Compute The Fraction 
     g = g.with_columns((pl.col(column_PI)/pl.col(column_PI).sum()).alias(f"fraction_{column_PI}"))
-    g = g[[column_PI,"index",f"fraction_{column_PI}","relation_to_line","position"]]
+    g = g[[column_PI,"index",f"fraction_{column_PI}","relation_to_line","position","with_roads"]]
     dm = distance_matrix.join(g, left_on="i", right_on="index", how="inner",suffix = "_i")
     dm = dm.join(g, left_on="j", right_on="index", how="inner",suffix = "_j")
     dm = dm.with_columns(pl.struct(["distance",f"fraction_{column_PI}",f"fraction_{column_PI}_j"]).map_batches(lambda x: ComputeSumDijViVj(x.struct.field('distance'),x.struct.field(f"fraction_{column_PI}"),x.struct.field(f"fraction_{column_PI}_j"))).alias("sum_dij_vivj"))
@@ -325,6 +327,10 @@ def ComputePIMass(grid,distance_matrix,column_PI = "population"):
     dm.filter(pl.col("relation_to_line") == "edge",
             pl.col("relation_to_line_j") == "edge")#.select(pl.col("sum_dij_vivj").sum())
     PI = 1 - V["sum_dij_vivj"][0]/Vmax["sum_dij_vivj_edge"][0]
+    # NOTE: Consider just those grids that are considered, therefore, are inside, have population and have roads
+    g = g.filter(pl.col("population") > 0,
+                pl.col("position") == "inside",
+                pl.col("with_roads") == True)
     return PI,g[f"fraction_{column_PI}"].to_numpy() 
 
 
@@ -368,52 +374,6 @@ def LorenzCenters(potential,verbose =True):
     return result_indices,dy_over_dx,cumulative,Fstar
 
 
-def _ComputeUCICase(df_distance,DfGridOrPot,IndicesInside,Vmax,case = 'Potential'):
-    """
-        @params df_distance: pd.DataFrame ['distance','direction vector','i','j'] -> NOTE: Stores the matrix in order in one dimension 'j' increases faster than 'i' index
-        @params DfGridOrPot: pd.DataFrame ['index','population'] or ['index','V_out'] -> Potential values for the grid
-        @params IndicesInside: Index of the grid for which extracting distances and potential
-        @params Vmax: float [Maximum V]
-        @params case: str -> 'Potential' or 'Mass' [Case to compute the UCI]
-        @description: Compute the UCI for the given number of centers.
-    """
-    assert len(df_distance) == len(DfGridOrPot)**2, f'The number of distances {len(df_distance)} must be the same of square number of grids {len(DfGridOrPot)**2}, {len(DfGridOrPot)}'
-    assert np.array_equal(df_distance["i"].unique(), df_distance["j"].unique()), 'The indices must be the same'
-    assert np.array_equal(df_distance["i"].unique(), DfGridOrPot['index'].unique()), 'The indices must be the same'    # Number of squares in the grid that are edges
-    if case == 'Potential':
-        # POTENTIAL
-        logger.info("Compute V for Potential...")
-        Si,Dij = MaskDistanceGridGivenIndices(df_distance,IndicesInside,DfGridOrPot,case = 'Potential')
-        Si_Normalized = Si/np.sum(Si)
-        assert np.sum(Si_Normalized)-1 < 0.000005, 'The sum of the potential on the edge must be 1'
-        V = ComputeJitV(Si_Normalized,Dij)/2
-        logger.info(f'Potential: #Inside: {len(Si)},#Inside: {len(Dij)},Vmax: {Vmax}, V: {V}')
-        assert V <= Vmax, f'V must be less than Vmax: {Vmax}, V: {V}'
-        PI = ComputePI(V,Vmax)
-        result_indices,angle,cumulative,Fstar = LorenzCenters(np.array(Si_Normalized))
-        LC = Fstar/len(cumulative)
-        UCI = PI*LC
-        logger.info(f"UCI Pot: LC: {LC}, PI: {PI}, UCI: {round(UCI,3)}")    
-        return PI,LC,UCI,result_indices,angle,cumulative,Fstar
-    if case == 'Mass':
-        logger.info("Compute V for Mass...")
-        SiMass,DijMass = MaskDistanceGridGivenIndices(df_distance,IndicesInside,DfGridOrPot,case = 'Mass')
-        SiMass_Normalized = SiMass/np.sum(SiMass)
-        assert np.sum(SiMass_Normalized)-1 < 0.000005, 'The sum of the potential on the edge must be 1'
-        VMass = ComputeJitV(SiMass_Normalized,DijMass)/2
-        logger.info(f'Mass: #Inside: {len(SiMass)},#Inside: {len(DijMass)},Vmax: {Vmax}, VMass: {VMass}')
-        assert VMass <= Vmax, f'VMass must be less than Vmax: {Vmax}, V: {VMass}'
-        PIM = ComputePI(VMass,Vmax)
-        result_indicesM,angleM,cumulativeM,FstarM = LorenzCenters(np.array(SiMass_Normalized))
-        LCM = FstarM/len(cumulativeM)
-        UCIM = PIM*LCM
-        GridInside = DfGridOrPot.loc[IndicesInside]
-        PlotGridUsedComputationUCI(GridInside)   
-        PlotGridUsedComputationUCIEdges(GridInside)
-
-        logger.info(f"UCI Mass: LC: {LCM}, PI: {PIM}, UCI: {round(UCIM,3)}")
-        return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
-
 
 def ComputeUCICase(df_distance,Grid,DfPotential,IndicesInside,case = 'Potential'):
     """
@@ -446,15 +406,52 @@ def ComputeUCICase(df_distance,Grid,DfPotential,IndicesInside,case = 'Potential'
         return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
 
 def ComputeUCIPidMass(Grid,df_distance,IndicesInside):
-        logger.info("Compute UCI for Mass...")
-        PIM,SiMass_Normalized = ComputePIMass(Grid,df_distance)
-        result_indicesM,angleM,cumulativeM,FstarM = LorenzCenters(np.array(SiMass_Normalized))
-        LCM = FstarM/len(cumulativeM)
-        UCIM = PIM*LCM
-        GridInside = Grid.loc[IndicesInside]
-        PlotGridUsedComputationUCI(GridInside)   
-        PlotGridUsedComputationUCIEdges(GridInside)
-        return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
+    """
+        @params df_distance: pd.DataFrame ['distance','direction vector','i','j'] -> NOTE: Stores the matrix in order in one dimension 'j' increases faster than 'i' index
+        @params Grid: pd.DataFrame ['index','population'] or ['index','V_out'] -> Potential values for the grid
+        @params IndicesInside: Index of the grid for which extracting distances and potential
+        @description: Compute the UCI for the given number of centers.
+    """
+    logger.info("Compute UCI for Mass...")
+    PIM,SiMass_Normalized = ComputePIMass(Grid,df_distance)
+    result_indicesM,angleM,cumulativeM,FstarM = LorenzCenters(np.array(SiMass_Normalized))
+    LCM = FstarM/len(cumulativeM)
+    UCIM = PIM*LCM
+    GridInside = Grid.loc[IndicesInside]
+    PlotGridUsedComputationUCI(GridInside)   
+    PlotGridUsedComputationUCIEdges(GridInside)
+    return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
+
+
+##---- 
+def AddColumnPI2DfDistance(grid,df_distance,column_PI = "population"):
+    """
+        @description:
+            Adds informations about the grid to the distance matrix.
+            In particular adds the column: sum_dij_vivj_edge
+    """
+    g = grid[[column_PI,"index","relation_to_line","position","with_roads"]]
+    if isinstance(grid,pd.DataFrame):
+        g = pl.DataFrame(g)
+    if isinstance(df_distance,pd.DataFrame):
+        df_distance = pl.DataFrame(df_distance)
+    if isinstance(grid,gpd.GeoDataFrame):
+        g = pl.DataFrame(g)
+    if isinstance(grid,np.ndarray):
+        g = pl.DataFrame(g)
+    # Compute The Fraction 
+    g = g.with_columns((pl.col(column_PI)/pl.col(column_PI).sum()).alias(f"fraction_{column_PI}"))
+    g = g[[column_PI,"index",f"fraction_{column_PI}","relation_to_line","position","with_roads"]]
+    dm = df_distance.join(g, left_on="i", right_on="index", how="inner",suffix = "_i")
+    dm = dm.join(g, left_on="j", right_on="index", how="inner",suffix = "_j")
+    dm = dm.with_columns(pl.struct(["distance",f"fraction_{column_PI}",f"fraction_{column_PI}_j"]).map_batches(lambda x: ComputeSumDijViVj(x.struct.field('distance'),x.struct.field(f"fraction_{column_PI}"),x.struct.field(f"fraction_{column_PI}_j"))).alias("sum_dij_vivj"))
+    # COMPUTE THE MAX VIA COMPUTATION EDGES
+    ConditionEdge = (pl.col("relation_to_line") == "edge") & (pl.col("relation_to_line_j") == "edge")
+    NumberEdges = np.sqrt(len(dm.filter(ConditionEdge)))
+    dm = dm.with_columns(pl.when(ConditionEdge).then(1/NumberEdges).otherwise(0).alias(f"fraction_{column_PI}_edge_i"))
+    dm = dm.with_columns(pl.when(ConditionEdge).then(1/NumberEdges).otherwise(0).alias(f"fraction_{column_PI}_edge_j"))
+    dm = dm.with_columns(pl.struct(["distance",f"fraction_{column_PI}_edge_i",f"fraction_{column_PI}_edge_j"]).map_batches(lambda x: ComputeSumDijViVj(x.struct.field('distance'),x.struct.field(f'fraction_{column_PI}_edge_i'),x.struct.field(f'fraction_{column_PI}_edge_j'))).alias("sum_dij_vivj_edge"))
+    return dm
 
 def GenerateRandomPopulationPid(Grid,df_distance,IndicesInside,Smax_i_Mass,Dmax_ij_Mass,UCIsInterval,UCIInterval2UCI,LockUCIInterval2UCI,AcceptedConfigurations,LockAcceptedConfigurations,FlagEnd,LockFlagEnd,cov,distribution,num_peaks,total_population,SaveDir):
     """
@@ -462,7 +459,7 @@ def GenerateRandomPopulationPid(Grid,df_distance,IndicesInside,Smax_i_Mass,Dmax_
     """
     from numba import set_num_threads
     from ModifyPotential import GenerateRandomPopulation
-    set_num_threads(10)
+    set_num_threads(10)    
     while not FlagEnd.value:
         InfoCenters = {'center_settings': {"type":distribution},
                             'covariance_settings':{
@@ -470,25 +467,34 @@ def GenerateRandomPopulationPid(Grid,df_distance,IndicesInside,Smax_i_Mass,Dmax_
                             "Isotropic": True,
                             "Random": False}}
         new_population,index_centers = GenerateRandomPopulation(Grid,num_peaks,total_population,InfoCenters)
-        Grid['population'] = new_population        
+        Grid['population'] = new_population  
+#        df_distance = AddColumnPI2DfDistance(Grid,df_distance,column_PI = "population")              
         PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM = ComputeUCIPidMass(Grid,df_distance,IndicesInside)
         logger.info(f"UCI Mass: LC: {LCM}, PI: {PIM}, UCI: {round(UCIM,3)}, Cov: {cov}, NumPeaks: {num_peaks}")
-
-        for i,UCI in enumerate(UCIsInterval):
-            if UCIM > UCI and UCIM <= UCIsInterval[i+1]:
+        for i,UCI in enumerate(list(UCIInterval2UCI.keys())):
+            FloatUCI = float(UCI)
+            if i == len(UCIsInterval)-1:
+                break
+            FloatUCI1 = float(UCIsInterval[i+1])
+            if UCIM > FloatUCI and UCIM <= FloatUCI1:
                 with LockUCIInterval2UCI:
-                    if len(UCIInterval2UCI[round(UCI,3)]) <= 4:
-                        UCIInterval2UCI[round(UCI,3)].append(round(UCIM,3))
+                    if len(UCIInterval2UCI[UCI]) <= 4:
+                        UCIInterval2UCI[UCI].append(round(UCIM,3))
                         Grid.to_parquet(os.path.join(SaveDir,f'Grid_{round(UCIM,3)}.parquet'),index = False)
+                        from PolycentrismPlot import PlotLorenzCurve
+                        PlotLorenzCurve(cumulativeM,FstarM,result_indicesM,SaveDir,round(UCIM,3))
                         with LockAcceptedConfigurations:
-                            if round(UCI, 3) not in AcceptedConfigurations:
-                                AcceptedConfigurations[round(UCI, 3)] = []
-                            AcceptedConfigurations[round(UCI,3)].append({'UCI':UCIM,"cov":cov,"distribution":distribution,"num_peaks":num_peaks,"PI":PIM,"LC":LCM,"Fstar":FstarM})
+                            if UCI not in AcceptedConfigurations:
+                                AcceptedConfigurations[UCI] = []
+                            AcceptedConfigurations[UCI].append({'UCI':UCIM,"cov":cov,"distribution":distribution,"num_peaks":num_peaks,"PI":PIM,"LC":LCM,"Fstar":FstarM})
             with LockFlagEnd:
                 FlagEnd.value = CheckDictionaryFull(UCIInterval2UCI,4)
                 if FlagEnd.value:
                     break
     return UCIInterval2UCI,AcceptedConfigurations
+
+
+
 
 def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Grid,total_population,df_distance,IndicesInside,Smax_i_Mass,Dmax_ij_Mass,UCIInterval2UCI,AcceptedConfigurations,SaveDir):
     """
@@ -508,12 +514,13 @@ def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Gr
     if UCIInterval2UCI is None:
         UCIInterval2UCI = {round(UCIInterval,3):[] for UCIInterval in UCIsInterval}
     if AcceptedConfigurations is None:
-        AcceptedConfigurations = defaultdict(list)
+        AcceptedConfigurations = {UCI: defaultdict() for UCI in UCIInterval2UCI.keys()}
     # Check That The computations are not completed: If the dictionary is full
     # The dictionary is full only if each interval has 4 values
     Break = CheckDictionaryFull(UCIInterval2UCI,4)
     if Break:
         return UCIInterval2UCI,AcceptedConfigurations
+    print("UCIInterval2UCI\n",UCIInterval2UCI)
     log_to_stderr()
     # INITIALIZE PARALLELISM
     manager = Manager()
@@ -523,15 +530,18 @@ def GenerateRandomPopulationAndComputeUCI(Covariances,Distributions,ListPeaks,Gr
     # AcceptedConfigurations
     AcceptedConfigurations = manager.dict(AcceptedConfigurations)
     LockAcceptedConfigurations = manager.Lock()
-    for UCI in UCIsInterval:
-        UCIInterval2UCI[round(UCI, 3)] = manager.list(UCIInterval2UCI[round(UCI, 3)])
-        AcceptedConfigurations[round(UCI, 3)] = manager.list(AcceptedConfigurations[round(UCI, 3)])    
+    for UCI in UCIInterval2UCI.keys():
+        UCIInterval2UCI[UCI] = manager.list(UCIInterval2UCI[UCI])
+        AcceptedConfigurations[UCI] = manager.list(AcceptedConfigurations[UCI])    
     # Flag End
     FlagEnd = manager.Value('b',False)
     LockFlagEnd = manager.Lock()
     processes = []
-    NumberGrids = len(Grid)
-    ListPeaks = [1,2,3,4,5,NumberGrids,NumberGrids/2,NumberGrids/3]
+    ListPeaks = [1,2,3,4,5]
+    if "SFO" in SaveDir:
+        Covariances = [5,10,20,50,100,500]
+    else:
+        Covariances = [1,5,10,20,50,100,500,1000,5000]
     for cov in Covariances:
         for distribution in Distributions:
             for num_peaks in ListPeaks:
