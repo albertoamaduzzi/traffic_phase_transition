@@ -280,14 +280,18 @@ def ProcessMain(case,
     saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output',str(round(UCI1,3)))
     output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
     output_file_parquet = output_file.replace('.csv','.parquet')
-    check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file}"
-    DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
-    destination_file = os.path.join(DataDir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
-#    destination_file = os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
+    check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file_parquet}"
+    if GeoInfo.city == "BOS":
+        DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+        destination_file = os.path.join(DataDir, check_file)
+    else:
+        DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+        destination_file = os.path.join(DataDir, check_file)
+#        destination_file = os.path.join(saving_dir, check_file)
     InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_R_{R}_UCI_{round(UCI1,3)}.csv"
     # BRANCH VARIABLES
     InputDocker = os.path.join(dir_new_full_network,InputFile)
-    ComputedDockerInput = os.path.isfile(InputDocker) # Input Exists: True -> SKIP COMPUTATION 
+    ComputedDockerInput = os.path.isfile(InputDocker) # Input Exists: True -> SKIP COMPUTATION OD
     ComputedOutput = os.path.isfile(destination_file) or os.path.isfile(os.path.join(saving_dir, f"R_{R}_UCI_{round(UCI1,3)}_{output_file_parquet}"))# Output Exists: True -> NOT LAUNCH DOCKER: SuccessSimulation = True
     # Compute The Docker Only If I Do Not Have Already Computed It and The OutputFile does not Exist
     # Not Parallel Case

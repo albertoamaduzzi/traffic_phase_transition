@@ -287,8 +287,10 @@ class GeometricalSettingsSpatialPartition:
         else:
             self.grid = gpd.read_file(os.path.join(self.save_dir_grid,'grid.geojson'))
 
-
-
+        self.grid = self.grid.cx[self.bounding_box[0]:self.bounding_box[2], self.bounding_box[1]:self.bounding_box[3]]
+        self.gdf_polygons = self.gdf_polygons.cx[self.bounding_box[0]:self.bounding_box[2], self.bounding_box[1]:self.bounding_box[3]]
+        if "LAX" == self.city:
+            self.grid = ModifyEdgesAdHocLAX(self.grid)
 
     def ObtainDirectionMatrix(self):
         if not self.StateAlgorithm["GetDirectionMatrix"]:

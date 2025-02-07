@@ -87,7 +87,7 @@ class OutputStats:
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
         # Edges and Nodes .csv
-        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'nodes.csv'))
+        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'nodes.csv'),dtypes={'ref':pl.Utf8})
         self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'edges.csv'))
         self.AddCapacity2Edges()
         self.ConvertSpeedRoad2kmhInEdges()
@@ -107,7 +107,10 @@ class OutputStats:
                             "IsJam":None}
         # SKIP
         self.SkipAnalysisR = os.path.exists(os.path.join(self.PlotDir,f"PercolationPlots_{round(self.UCI,3)}_{self.R}")) and os.path.exists(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"))
-
+        # ENOUGH DATA
+        self.IsEnoughData = True
+        # Cut Midnight
+        self.CutMidnight = 2
 
     @timing_decorator
     def CompleteAnalysis(self):
@@ -115,22 +118,28 @@ class OutputStats:
             This is the Function one wants to Call to get the Analysis of the Simulation
         """
         if not self.SkipAnalysisR:
-            # Join DfPeople, Edges And DfRoute
-            self.PreprocessDfRouteUnionDfPeople()
+            # Join DfPeople, Edges And DfRoute 
+            self.HavlinPercolation = False
+            if self.HavlinPercolation:
+                self.PreprocessDfRouteUnionDfPeople() # It consumes a lot of resources and it is not actually needed for our DP pourposes
             # Compute The Unload Curve
             self.ComputeUnloadCurve()   # Output: DfUnload
             # Instantiate All The Variables To Understand If The Network Is Jammed
-            self.ComputeBestFitPlExpo() 
-            # Decide If The Network Is Jammed NOTE: (sel.TCritical, self.CriticalNt, self.CriticalAlpha)
-#            self.DecideIfJam()
-            # Compute The Gamma And Tau
-            self.ComputeGammaAndTau()
-            # Show The Unload Curve
-            self.PlotUnloadCurve()
-            # Compute The Fluxes And Speeds in time
-#            self.ComputeFluxesAndSpeedDfRoute()
-            # Percolation Analysis
-#            AnalysisPercolationSpeed(self.IntTimeArray,self.GeoJsonEdges,self.EdgesWithFluxesAndSpeed,self.UCI,self.R,self.PlotDir)
+            if self.IsEnoughData:
+                # Compute The Best Fit For The Power Law And Exponential
+                self.ComputeBestFitPlExpo() 
+                # Decide If The Network Is Jammed NOTE: (sel.TCritical, self.CriticalNt, self.CriticalAlpha)
+    #            self.DecideIfJam()
+                # Compute The Gamma And Tau
+                self.ComputeGammaAndTau()
+                # Show The Unload Curve
+                self.PlotUnloadCurve()
+                # Compute The Fluxes And Speeds in time
+    #            self.ComputeFluxesAndSpeedDfRoute()
+                # Percolation Analysis
+    #            AnalysisPercolationSpeed(self.IntTimeArray,self.GeoJsonEdges,self.EdgesWithFluxesAndSpeed,self.UCI,self.R,self.PlotDir)
+            else:
+                pass
         else:
             import json
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
@@ -138,7 +147,7 @@ class OutputStats:
             self.InfoTraffic["n"] = np.array(self.InfoTraffic["n"])
             self.InfoTraffic["t"] = np.array(self.InfoTraffic["t"])
             self.InfoTraffic["n_fit"] = np.array(self.InfoTraffic["n_fit"])
-            logger.info(f"Skip Analysis for UCI: {round(self.UCI,3)}, R: {self.R}")
+            logger.info(f"{self.city} Skip Analysis for UCI: {round(self.UCI,3)}, R: {self.R}")
     def AddCapacity2Edges(self):
         """
             Add the capacity to the Edges DataFrame.
@@ -165,7 +174,7 @@ class OutputStats:
                 Read the People File:
                 NOTE: columns: p, distance, time_departure, last_time_simulated, num_steps, avg_v(mph), a, b, T, gas, co, path_length_cpu, path_length_gpu
         """
-        logger.info(f"Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        logger.info(f"{self.city} Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         if IsFile(self.PeopleFile):
             if ".parquet" in self.PeopleFile:
                 self.DfPeople = pl.read_parquet(self.PeopleFile)
@@ -184,7 +193,7 @@ class OutputStats:
                 Read the Route File:
             NOTE: columns: p, route, distance
         """
-        logger.info(f"Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        logger.info(f"{self.city} Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         if IsFile(self.RouteFile):
             if ".parquet" in self.RouteFile:
                 self.DfRoute = pl.read_parquet(self.RouteFile)
@@ -199,7 +208,7 @@ class OutputStats:
 
 
     def GetGeopandas(self,GeoJsonEdges):
-        logger.info(f"Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        logger.info(f"{self.city} Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         self.GeoJsonEdges = GeoJsonEdges
         self.GetGeopandasBool
         self.CountFunctions += 1
@@ -233,10 +242,14 @@ class OutputStats:
                 - time_leaving_road: Time of Leaving the Road (in seconds)
                 NOTE: See EmbdedTrajectoriesInRoadsAndTime
         """
-        logger.info(f"Preprocessing DfRoute Union DfPeople R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        logger.info(f"{self.city} Preprocessing DfRoute Union DfPeople R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         # Prepare the DataFrame: NOTE: Compute the Fluxes and Speeds is Deprecated
-        self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)
-
+        if self.HavlinPercolation:
+            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)
+        else:
+            # This one contains informations just about the control group, NOTE: the logic is sloppy but should work
+            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfControlGroup,self.Edges)
+            
 
 # Trajectories Info
     @timing_decorator
@@ -252,9 +265,15 @@ class OutputStats:
                 Interval2NumberPeopleInNet: Dictionary containing the number of people in the network at each time interval
             NOTE: self.DfUnload: DataFrame
         """
-        logger.info(f"Computing Unload Curve R: {self.R}, UCI: {self.UCI}")
+        logger.info(f"{self.city} Computing Unload Curve R: {self.R}, UCI: {self.UCI}")
         self.IntTimeArray, self.HourTimeArray, self.Interval2NumberPeopleInNet = InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,self.delta_t)
-        self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfRoute,"time_departure","last_time_simulated")
+        if self.HavlinPercolation:
+            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)            
+            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfRoute,"time_departure","last_time_simulated")
+        else:
+            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfPeople,"time_departure","last_time_simulated")
+            self.DfControlGroup = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfControlGroup,self.Edges)
+
         if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI))):
             # Initialize Time Variables IntTimeArray = [0,delta_t,2*delta_t,...,SecondsInDay], HourTimeArray = [0,1,2,...,24], Interval2NumberPeopleInNet = {0:0,1:0,...,24:0}
             # NOTE: Filter the People in the Control Group  
@@ -270,7 +289,9 @@ class OutputStats:
             }
             self.DfUnload = pl.DataFrame(data)
             self.VolumeTraffic = np.sum(self.DfUnload["NumberPeople"].to_numpy())
-            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople"))            
+            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople")
+                                                       (pl.col("NumberPeople").diff().fill_none(0)).alias("DiffNumberPeople")
+                                                       )            
             # Add Time_hours column
             self.DfUnload = self.DfUnload.with_columns(
                 (pl.col("Time") / 3600).alias("Time_hours")
@@ -302,8 +323,16 @@ class OutputStats:
             mask = nt>0
             nt = nt[mask]
             t_vect = t_vect[mask]
+            if t_vect[-1] > 23:
+                t_vect = t_vect[:-self.CutMidnight]
+                nt = nt[:-self.CutMidnight]
+
             # # Look at just the last two, if one of the two is a powerlaw, then I have a powerlaw
             if len(t_vect[4:])>= 4:
+                logger.info(f"Size nt: {len(nt[3:])}, size t_vect: {len(np.array(t_vect[4:])-np.array(t_vect[3]))}")
+#                if len(nt[3:]) != len(np.array(t_vect[4:])-np.array(t_vect[3])):
+#                    print("nt\n",nt[3:])
+#                    print("t_vect\n",np.array(t_vect[4:])-np.array(t_vect[3]))
                 # Consider 1 hour before fitting, NOTE: Scale the time to close to 0
                 ErrorExp,A0,alpha_exp,y_fit_exp,ErrorPL,A_pl,alpha_pl,y_fit_pl = ComparePlExpo(np.array(t_vect[4:])-np.array(t_vect[3]),nt[3:],initial_guess_powerlaw = (max(nt),-1), initial_guess_expo = (max(nt),-1),maxfev = 10000)
                 # Standardize for a DataFrame the y_fit
@@ -335,18 +364,18 @@ class OutputStats:
                     self.InfoTraffic["n_fit"] = list(y_fit_exp/Z_n)
                     self.InfoTraffic["IsJam"] = False
                     self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]       # In hours
-                    logger.info("Network is not jammed at time with alpha = None and Tau = {}".format(self.InfoTraffic["Tau"]))
+                    logger.info("{0} Network is not jammed at time with alpha = None and Tau = {1}".format(self.city,self.InfoTraffic["Tau"]))
                 else:
                     self.InfoTraffic["best_fit"] = "PowerLaw"
                     self.InfoTraffic["n_fit"] = list(y_fit_pl/Z_n)
                     self.InfoTraffic["IsJam"] = True
 
-                    logger.info(f"Network is jammed with alpha = {alpha_pl} and Tau = None")
+                    logger.info(f"{self.city} Network is jammed with alpha = {alpha_pl} and Tau = None")
                 self.ComputeGammaAndTau()
                 self.InfoTraffic["Gamma"] = self.Gamma
             else:
-                logger.info(f"Time Vector is too short to compute the best fit for the Power Law and Exponential")
-                raise ValueError
+                logger.info(f"{self.city} Time Vector is too short to compute the best fit for the Power Law and Exponential")
+                self.IsEnoughData = False
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
                 json.dump(self.InfoTraffic,f,indent = 4)
             self.InfoTraffic["n"] = np.array(self.InfoTraffic["n"])
@@ -369,10 +398,10 @@ class OutputStats:
                 @ return self.EdgesWithFluxesAndSpeed: DataFrame with the fluxes and speeds in the road network
         """
         if os.path.exists(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet")):
-            logger.info(f"Reading Traffic File R: {self.R}, UCI: {self.UCI}")
+            logger.info(f"{self.city} Reading Traffic File R: {self.R}, UCI: {self.UCI}")
             self.EdgesWithFluxesAndSpeed = pl.read_parquet(os.path.join(self.PlotDir,f"R_{self.R}_UCI_{self.UCI}_traffic.parquet"))
         else:
-            logger.info(f"Computing Traffic File R: {self.R}, UCI: {self.UCI}")
+            logger.info(f"{self.city} Computing Traffic File R: {self.R}, UCI: {self.UCI}")
             for t in range(len(self.IntTimeArray)):
                 DfRoadsFluxes = self.DfRoute.with_columns(
                     pl.lit(0).alias(f"flux_{t}")
@@ -409,7 +438,7 @@ class OutputStats:
                     the integrated fluxes of maximum capacity
                 Tau: float
         """
-        logger.info(f"Computing Gamma And Tau R: {self.R}, UCI: {self.UCI}")
+        logger.info(f"{self.city} Computing Gamma And Tau R: {self.R}, UCI: {self.UCI}")
         self.Gamma = ComputeGamma(self.DfControlGroup)
         if self.InfoTraffic["IsJam"]:
             nt0 = max(self.DfUnload["FractionPeople"].to_numpy())
@@ -443,6 +472,13 @@ class OutputStats:
         t_vect = self.DfUnload["Time_hours"].to_numpy()[mask]
 #        SmallerVect = min([len(t_vect),len(self.InfoTraffic["n"]),len(self.InfoTraffic["n_fit"])])
 #        PlotPeopleInNetwork(self.InfoTraffic["n"][:SmallerVect],self.InfoTraffic["n_fit"][:SmallerVect],t_vect[:SmallerVect],self.InfoTraffic["best_fit"],self.InfoTraffic["t"][-1],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+        if len(self.InfoTraffic["n_fit"]) > len(self.InfoTraffic["t"]) and len(self.InfoTraffic["n_fit"]) > len(self.InfoTraffic["n"]):
+            dt = self.InfoTraffic["t"][1] - self.InfoTraffic["t"][0]
+            DeltaDimension = len(self.InfoTraffic["n_fit"]) - len(self.InfoTraffic["t"])
+            t2add = [self.InfoTraffic["t"][-1]+k*dt for k in range(DeltaDimension)]
+            n2add = [0 for k in range(DeltaDimension)]
+            self.InfoTraffic["t"] = np.concatenate((self.InfoTraffic["t"],t2add))
+            self.InfoTraffic["n"] = np.concatenate((self.InfoTraffic["n"],n2add))
         PlotPeopleInNetwork(self.InfoTraffic["n"],self.InfoTraffic["n_fit"],self.InfoTraffic["t"],self.InfoTraffic["best_fit"],self.InfoTraffic["t"][-1],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
         count += 1
         Message = f"PlotUnloadCurve: Plot the number of people in the network at each time interval"

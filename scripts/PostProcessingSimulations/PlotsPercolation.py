@@ -15,12 +15,12 @@ def PlotGammaTau(Taus,Gammas,City,UCI,PlotDir):
         NOTE: The Plot is Saved with the corresponding curve so that it can be used for collective study.
     """
     fig,ax = plt.subplots(1,1,figsize = (10,10))
-    ax.scatter(Taus,Gammas)
-    ax.set_xlabel(r'$\gamma$',fontsize=15)
+    ax.scatter(Gammas,Taus)
+    ax.set_xlabel(r'$\Gamma$',fontsize=15)
     ax.set_ylabel(r'$\tau$',fontsize=15)
     plt.savefig(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.png'))
     plt.close()
-    pd.write_parquet(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.parquet'),pd.DataFrame({'Tau':Taus,'Gamma':Gammas}))
+    pd.DataFrame({'Tau':Taus,'Gamma':Gammas}).to_parquet(os.path.join(PlotDir,f'{City}_{round(UCI,3)}_GammaTau.parquet'))
 
 
 def PlotFigure4(R2NtNtFit,R2epsilon,alpha,Time,t0,UCI,Rc,City,PlotDir):

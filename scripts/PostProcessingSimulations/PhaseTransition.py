@@ -78,7 +78,8 @@ def ComputeGamma(DfRouteControlGroup):
         @return Gamma: Gamma of the Traffic simulation considering just the people of the control group.
     """
     Lexe = DfRouteControlGroup.select(pl.col("length").sum().alias("Lexe"))
-    Z = DfRouteControlGroup.select((pl.col("capacity")*pl.col("length")).sum().alias("Z"))
+    sampled_routes = DfRouteControlGroup.group_by("route").agg(pl.all().first())
+    Z = sampled_routes.select((pl.col("capacity")*pl.col("length")).sum().alias("Z"))
     return Lexe["Lexe"][0]/Z["Z"][0]
 
 

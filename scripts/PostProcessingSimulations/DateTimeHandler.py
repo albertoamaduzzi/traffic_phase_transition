@@ -31,6 +31,18 @@ def ConvertArray2HMS(array):
         raise ValueError("Array type not supported")
     
 def InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,delta_t):
+    """
+        @params:
+            - HOURS_IN_DAY: int
+            - MINUTES_IN_HOUR: int
+            - SECONDS_IN_MINUTE: int
+            - TIMESTAMP_OFFSET: int
+            - delta_t: int
+        @return:
+            - IntTimeArray: np.array
+            - HourTimeArray: np.array
+            - Interval2NumberPeopleInNet: dict (Hourly Time -> Number of People in Network)
+    """
     SecondsInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR*SECONDS_IN_MINUTE)
     MinutesInDay = int(HOURS_IN_DAY*MINUTES_IN_HOUR)
     # I count people in Network at each time interval (15 mins)

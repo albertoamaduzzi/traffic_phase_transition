@@ -37,7 +37,7 @@ def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,BestTime,FileName):
         ax.set_xlabel('t(h)')
         ax.set_ylabel('n(t)')
     #    ax.set_xticks(ticks = interval15,labels = interval15,rotation=90)
-        ax.set_xscale('log')
+#        ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_title('Best Fit: ' + BestFunctionFit)
         plt.savefig(FileName,dpi = 200)

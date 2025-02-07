@@ -10,3 +10,4 @@ tests/
 *artemis.json
 OutputPlanarGraph/
 *__pycache__/
+data_1/*

@@ -192,8 +192,6 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-
             - y_fit: The fitted y values
     '''
     # Fit on the log-log scale POWERLAW
-#    dx = np.diff(x)
-#    if np.sum(y[1:]*dx)!=1:
     Z = np.sum(y)
     y = y/Z
     x0 = np.array([x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
@@ -203,8 +201,6 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-
     logy = np.log(y0)
     # Adjust The Initial Guess # alpha*x + log(A) 
     log_initial_guess_pl = (initial_guess_powerlaw[1],np.log(initial_guess_powerlaw[0]))
-#    result_powerlaw = minimize(objective_function_linear, log_initial_guess_pl, args = (logx, logy))
-#    optimal_params_pl = result_powerlaw.x
     fit = curve_fit(linear, xdata = logx, ydata = logy,maxfev = maxfev)
     # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
     A_pl = np.exp(fit[0][1])
@@ -222,8 +218,8 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-
     y_fit_pl = powerlaw(x0,A_pl,alpha_pl)
     if len(y0)!=0:
         # Compare the two fits NOTE: Scale for the number of samples since the 
-        ErrorExp = np.sqrt(np.sum((np.log(exponential(x0,A0,alpha_exp))-np.log(y0))**2)/len(y0))
-        ErrorPL = np.sqrt(np.sum((np.log(powerlaw(x0,A_pl,alpha_pl))-np.log(y0))**2)/len(y0))
+        ErrorExp = np.sqrt(np.sum((exponential(x0,A0,alpha_exp)-y0)**2)/len(y0))
+        ErrorPL = np.sqrt(np.sum((powerlaw(x0,A_pl,alpha_pl)-y0)**2)/len(y0))
         return ErrorExp,A0,alpha_exp,Z*y_fit_exp,ErrorPL,A_pl,alpha_pl,Z*y_fit_pl
     else:
         raise ValueError(f'ComparePlExpo: x {x} and y {y} are empty')

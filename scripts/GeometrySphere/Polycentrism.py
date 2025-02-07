@@ -44,9 +44,11 @@ def ExtractCenterByPopulation(grid,verbose = False):
         and returns them as a numpy array coords_center along with the index center_idx.
     '''
     assert 'population' in grid.columns
-    population = grid['population'].copy()
+    population = np.array(grid['population'].copy())
+    centroidx = np.array(grid['centroidx'].copy())
+    centroidy = np.array(grid['centroidy'].copy())
     center_idx = np.argmax(population)
-    coords_center = np.array([grid['centroidx'][center_idx],grid['centroidy'][center_idx]]) 
+    coords_center = np.array([centroidx[center_idx],centroidy[center_idx]]) 
     if verbose:
         print("++++++++ Extract Center By Population ++++++++")
         print("Grid with Highest Population: ",center_idx)
@@ -398,7 +400,8 @@ def ComputeUCICase(df_distance,Grid,DfPotential,IndicesInside,case = 'Potential'
         result_indicesM,angleM,cumulativeM,FstarM = LorenzCenters(np.array(SiMass_Normalized))
         LCM = FstarM/len(cumulativeM)
         UCIM = PIM*LCM
-        GridInside = Grid.loc[IndicesInside]
+        # NOTE: We are using indices of numpy array, so the indices inside are the same.
+        GridInside = Grid[Grid["index"].isin(IndicesInside)]
         PlotGridUsedComputationUCI(GridInside)   
         PlotGridUsedComputationUCIEdges(GridInside)
 
@@ -417,7 +420,8 @@ def ComputeUCIPidMass(Grid,df_distance,IndicesInside):
     result_indicesM,angleM,cumulativeM,FstarM = LorenzCenters(np.array(SiMass_Normalized))
     LCM = FstarM/len(cumulativeM)
     UCIM = PIM*LCM
-    GridInside = Grid.loc[IndicesInside]
+    # NOTE: We are using indices of numpy array, so the indices inside are the same.
+    GridInside = Grid[Grid["index"].isin(IndicesInside)]
     PlotGridUsedComputationUCI(GridInside)   
     PlotGridUsedComputationUCIEdges(GridInside)
     return PIM,LCM,UCIM,result_indicesM,angleM,cumulativeM,FstarM
@@ -638,3 +642,32 @@ def PlotGridUsedComputationUCIEdges(grid):
     grid.plot(ax = ax,column = 'position',legend = True)
     plt.savefig(os.path.join(os.environ['TRAFFIC_DIR'],'grid_edges_used_UCI.png'))
     plt.close()
+
+## AD HOC LAX (Do not know where to put it)
+
+def RuleNewIndices(grid,case):
+    if case == "min":
+        mincentroidy = min(grid['centroidy'])
+        ismincentroidy = grid['centroidy']==mincentroidy
+        isbiggerminx = grid['centroidx']>-118.83
+        issmallermaxx = grid['centroidx']<-117.9
+        log_and = np.logical_and(ismincentroidy,isbiggerminx)
+        log_and = np.logical_and(log_and,issmallermaxx)
+        idceslowestcentroidy = grid[log_and]['index'].values
+
+
+    return idceslowestcentroidy
+
+def ModifyEdgesAdHocLAX(grid):
+    """
+        Modify the edges of the grid for LAX
+        Consider in particular edges the bottom of the figure since 
+        it is a cut of the initial cartography.    
+    """
+    idceslowestcentroidy = RuleNewIndices(grid,"min")
+    IsEdgeMin = grid['index'].apply(lambda x: x in idceslowestcentroidy)
+    grid["temporary_relation_to_line"] = ["edge" if x else "not_edge" for x in IsEdgeMin]
+    grid["relation_to_line"] = ["edge" if (x["relation_to_line"] == "edge") or (x["temporary_relation_to_line"] == "edge") else  "not_edge" for i,x in grid.iterrows()]
+
+    grid = grid.drop(columns = ["temporary_relation_to_line"])
+    return grid

@@ -145,7 +145,14 @@ def ComputeNewPopulation(grid,index_centers,covariances,total_population,Distrib
     '''
     total_population_center = total_population/len(index_centers)
     new_population = np.ones(len(grid))
-    centers = grid.loc[index_centers][['centroidx','centroidy']].to_numpy()
+    centers = grid[grid["index"].isin(index_centers)][["centroidx","centroidy"]].to_numpy()
+#    centroidx = grid['centroidx'].to_numpy()
+#    centroidy = grid['centroidy'].to_numpy()
+#    centers = np.zeros((len(index_centers),2))
+#    for i in range(len(index_centers)):
+#        centers[i] = np.array([centroidx[index_centers[i]],centroidy[index_centers[i]]])
+#    centers = grid.loc[index_centers][['centroidx','centroidy']].to_numpy()
+#    centers = grid[['centroidx','centroidy']].to_numpy()[index_centers]
     count_center = 0
 #    if verbose:
 #        print('++++++++++ POPULATION DISTRIBUTION +++++++++')
