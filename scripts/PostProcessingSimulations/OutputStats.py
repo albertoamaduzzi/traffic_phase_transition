@@ -63,7 +63,7 @@ class OutputStats:
             @params GeoJsonEdges: GeoJsonEdges (contains informations about capacity)
 
     """
-    def __init__(self,R,UCI,config,GeoJsonEdges):
+    def __init__(self,R,UCI,config,GeoJsonEdges,Nodes,Edges):
         
         self.verbose = True
         # Add Logic to Take All The Files From The Base Dir
@@ -77,6 +77,12 @@ class OutputStats:
         self.PlotDir = JoinDir(self.PlotDir,f'{round(self.UCI,3)}')
         self.LogFile = JoinDir(self.PlotDir,"Log.txt")
         self.CountFunctions = 0
+        # Group Control
+        self.t_start_control_group = 7*3600
+        self.t_end_control_group = 8*3600
+        self.t_start_hour = 7
+        self.t_end_hour = 8
+        # Create the Plot Directory
         os.makedirs(self.PlotDir,exist_ok = True)
         # Flags
         self.ReadPeopleInfoBool = False
@@ -86,21 +92,18 @@ class OutputStats:
         self.GetPeopleInfo()
         self.GetRouteInfo()    
         self.GetGeopandas(GeoJsonEdges)
+        self.Nodes = Nodes
+        self.Edges = Edges
         # Edges and Nodes .csv
-        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'nodes.csv'),dtypes={'ref':pl.Utf8})
-        self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.city,'edges.csv'))
         self.AddCapacity2Edges()
         self.ConvertSpeedRoad2kmhInEdges()
-        # Group Control
-        self.t_start_control_group = 7*3600
-        self.t_end_control_group = 8*3600
         # TRAFFIC VARIABLES
         self.DfUnload = None
         self.DfControlGroup = None
         # Total Volume Traffic
         self.VolumeTraffic = 0
         # Dictionary Traffic
-        self.InfoTraffic = {"n_fit":[],"n":[],"t":[],
+        self.InfoTraffic = {#"n_fit":[],"n":[],"t":[],
                             "ErrorPl":0,"ErrorExp":0,"best_fit":"",
                             "Gamma":None,"Tau":None,
                             "A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0,
@@ -111,6 +114,87 @@ class OutputStats:
         self.IsEnoughData = True
         # Cut Midnight
         self.CutMidnight = 2
+
+#### Preprocess: Road Network -> GeoJsonEdges, Nodes, Edges Static Informations #####
+    def GetGeopandas(self,GeoJsonEdges):
+        """
+            @Description:
+                Read the GeoJsonEdges File
+        """
+        logger.info(f"{self.city} Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        self.GeoJsonEdges = GeoJsonEdges
+        self.GetGeopandasBool
+        self.CountFunctions += 1
+        Message = f"Function {self.CountFunctions}: GetGeopandas: GeoJsonEdges was read"
+        AddMessageToLog(Message,self.LogFile)
+
+    def AddCapacity2Edges(self):
+        """
+            Add the capacity to the Edges DataFrame.
+            @ NOTE: Useful For Considerations about traffic.
+        """
+        logger.info(f"Adding Capacity to Edges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
+        df = df.with_columns([
+            pl.col("capacity").cast(pl.Int64),
+            pl.col("uv").cast(pl.Int64)
+        ])
+        self.Edges = self.Edges.join(df, left_on = "uniqueid",right_on = "uv", how = "inner")
+
+
+    def ConvertSpeedRoad2kmhInEdges(self):
+        """
+            Convert the speed in the road to km/h
+        """
+        self.Edges = self.Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_kmh"))
+        DropColumnsDfIfThere(self.Edges,["speed_mph"])
+
+#### Preprocess: People -> GeoJsonEdges, Nodes, Edges #####
+
+
+    def GetPeopleInfo(self):
+        """
+            @description:
+                Read the People File:
+                NOTE: columns: p, distance, time_departure, last_time_simulated, num_steps, avg_v(mph), a, b, T, gas, co, path_length_cpu, path_length_gpu
+        """
+        logger.info(f"{self.city} Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        if IsFile(self.PeopleFile):
+            if ".parquet" in self.PeopleFile:
+                self.DfPeople = pl.read_parquet(self.PeopleFile)
+            elif ".csv" in self.PeopleFile:
+                self.DfPeople = pl.read_csv(self.PeopleFile)
+            self.DfPeople = self.DfPeople.filter(pl.col("time_departure")>self.t_start_hour*3600)
+            self.ReadPeopleInfoBool = True
+            self.CountFunctions += 1
+            Message = f"Function {self.CountFunctions}: GetPeopleInfo: {self.PeopleFile} was read"
+            AddMessageToLog(Message,self.LogFile)
+
+#### Preprocess: Trajectories in Road Network  #####
+
+
+    def GetRouteInfo(self):
+        """
+            @description:
+                Read the Route File:
+            NOTE: columns: p, route, distance
+        """
+        logger.info(f"{self.city} Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        if IsFile(self.RouteFile):
+            if ".parquet" in self.RouteFile:
+                self.DfRoute = pl.read_parquet(self.RouteFile)
+            elif ".csv" in self.RouteFile:
+                self.DfRoute = pl.read_csv(self.RouteFile,separator = ':')
+                if self.DfRoute.schema["route"] == pl.Utf8:
+                    pass
+            self.ReadRouteInfoBool = True
+            self.CountFunctions += 1
+            Message = f"Function {self.CountFunctions}: GetRouteInfo: {self.RouteFile} was read"
+            AddMessageToLog(Message,self.LogFile)
+
+
+
+
 
     @timing_decorator
     def CompleteAnalysis(self):
@@ -141,79 +225,13 @@ class OutputStats:
             else:
                 pass
         else:
+            # Import the Unloading Curve, The InfoTraffic and the DfUnload
             import json
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                 self.InfoTraffic = json.load(f)
-            self.InfoTraffic["n"] = np.array(self.InfoTraffic["n"])
-            self.InfoTraffic["t"] = np.array(self.InfoTraffic["t"])
-            self.InfoTraffic["n_fit"] = np.array(self.InfoTraffic["n_fit"])
+            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
             logger.info(f"{self.city} Skip Analysis for UCI: {round(self.UCI,3)}, R: {self.R}")
-    def AddCapacity2Edges(self):
-        """
-            Add the capacity to the Edges DataFrame.
-            @ NOTE: Useful For Considerations about traffic.
-        """
-        logger.info(f"Adding Capacity to Edges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
-        df = df.with_columns([
-            pl.col("capacity").cast(pl.Int64),
-            pl.col("uv").cast(pl.Int64)
-        ])
-        self.Edges = self.Edges.join(df, left_on = "uniqueid",right_on = "uv", how = "inner")
 
-    def ConvertSpeedRoad2kmhInEdges(self):
-        """
-            Convert the speed in the road to km/h
-        """
-        self.Edges = self.Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_kmh"))
-        DropColumnsDfIfThere(self.Edges,["speed_mph"])
-
-    def GetPeopleInfo(self):
-        """
-            @description:
-                Read the People File:
-                NOTE: columns: p, distance, time_departure, last_time_simulated, num_steps, avg_v(mph), a, b, T, gas, co, path_length_cpu, path_length_gpu
-        """
-        logger.info(f"{self.city} Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        if IsFile(self.PeopleFile):
-            if ".parquet" in self.PeopleFile:
-                self.DfPeople = pl.read_parquet(self.PeopleFile)
-            elif ".csv" in self.PeopleFile:
-                self.DfPeople = pl.read_csv(self.PeopleFile)
-            self.ReadPeopleInfoBool = True
-            self.CountFunctions += 1
-            Message = f"Function {self.CountFunctions}: GetPeopleInfo: {self.PeopleFile} was read"
-            AddMessageToLog(Message,self.LogFile)
-
-
-
-    def GetRouteInfo(self):
-        """
-            @description:
-                Read the Route File:
-            NOTE: columns: p, route, distance
-        """
-        logger.info(f"{self.city} Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        if IsFile(self.RouteFile):
-            if ".parquet" in self.RouteFile:
-                self.DfRoute = pl.read_parquet(self.RouteFile)
-            elif ".csv" in self.RouteFile:
-                self.DfRoute = pl.read_csv(self.RouteFile,separator = ':')
-                if self.DfRoute.schema["route"] == pl.Utf8:
-                    pass
-            self.ReadRouteInfoBool = True
-            self.CountFunctions += 1
-            Message = f"Function {self.CountFunctions}: GetRouteInfo: {self.RouteFile} was read"
-            AddMessageToLog(Message,self.LogFile)
-
-
-    def GetGeopandas(self,GeoJsonEdges):
-        logger.info(f"{self.city} Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        self.GeoJsonEdges = GeoJsonEdges
-        self.GetGeopandasBool
-        self.CountFunctions += 1
-        Message = f"Function {self.CountFunctions}: GetGeopandas: GeoJsonEdges was read"
-        AddMessageToLog(Message,self.LogFile)
 
 
 ## PREPROCESSING ##
@@ -263,7 +281,15 @@ class OutputStats:
             Compute the number of people in the network at each time interval
             Returns:
                 Interval2NumberPeopleInNet: Dictionary containing the number of people in the network at each time interval
-            NOTE: self.DfUnload: DataFrame
+                self.DfUnload: DataFrame
+                Columns: 
+                    Time: int -> seconds
+                    Time_Str: str -> Time in Hours 00:00:00
+                    NumberPeople: int -> Number of People in the Network
+                    FractionPeople: int -> Fraction of People in the Network
+                    DiffNumberPeople: int -> Difference in Number of People (between t+1 and t)
+                    Time_hours: int -> Time in hours
+                    Time_hours_shifted: int -> Time in hours shifted by start time NOTE: is the one used for fit and plots about fraction people remaining in the road network
         """
         logger.info(f"{self.city} Computing Unload Curve R: {self.R}, UCI: {self.UCI}")
         self.IntTimeArray, self.HourTimeArray, self.Interval2NumberPeopleInNet = InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,self.delta_t)
@@ -289,14 +315,17 @@ class OutputStats:
             }
             self.DfUnload = pl.DataFrame(data)
             self.VolumeTraffic = np.sum(self.DfUnload["NumberPeople"].to_numpy())
-            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople")
-                                                       (pl.col("NumberPeople").diff().fill_none(0)).alias("DiffNumberPeople")
+            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople"),
+                                                       (pl.col("NumberPeople").diff().shift(1).fill_null(0)).alias("DiffNumberPeople")
                                                        )            
             # Add Time_hours column
             self.DfUnload = self.DfUnload.with_columns(
                 (pl.col("Time") / 3600).alias("Time_hours")
             )
-            self.DfUnload.write_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+            self.DfUnload = self.DfUnload.filter(pl.col("Time") > self.t_start_control_group)
+            self.DfUnload = self.DfUnload.with_columns((pl.col("Time_hours") - self.t_start_hour).alias("Time_hours_shifted"))
+            self.DfUnload = self.DfUnload.with_columns((pl.col("FractionPeople") > 0).alias("IsPeople"))
+            self.DfUnload = self.DfUnload.with_columns((pl.col("Time") >= self.t_end_control_group).alias("IsUnload"))
         else:
             self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
             self.HourTimeArray = self.DfUnload["Time_Str"]
@@ -304,90 +333,68 @@ class OutputStats:
     @timing_decorator
     def ComputeBestFitPlExpo(self):
         """
-            Compute the best fit for the Power Law and Exponential
-            Returns:
-                ErrorExp: float
-                A0: float
-                tau: float
-                PowerLawFitted: bool
-            self.Time2ErrorFit: dict -> {t:{"error_pl":0,"error_exp":0}}
-            I want t extract informations about the best fit for the power law and the exponential
-            NOTE: 
-                The nt is cut in the time window. The cut is done in hours
+            Compute the best fit for the Power Law and Exponential:
+            @Description:
+            Assigns:
+                - InfoTraffic = {
+                        "ErrorPl":0,"ErrorExp":0,"best_fit":"",
+                        "Gamma":None,"Tau":None,
+                        "A_exp":0,"A_pl":0,"alpha_exp":0,"alpha_pl":0,
+                        "IsJam":None}
+                - DfUnload: polars.DataFrame
+                    Columns:
+                        - FractionPeople: np.array (Fraction of people in the network)
+                        - Time_hours: np.array (Time in hours from t_start_hour)
+                        - Time_hours_shifted: np.array (Time in hours after the unloading period starts) 
+                        - IsPeople: np.array
+                        - IsUnload: np.array
+                        - NumberPeople: np.array (Number of people, not fraction)
+                        - NumberPeopleFit: np.array (Number of people fitted)
+                        - Time: np.array (Time in seconds)
+                        - y_fit_exp: np.array (Fitted exponential)
+                        - y_fit_pl: np.array (Fitted powerlaw)
+                        - log_y: np.array (log of the fraction of people)
+                        - log_x: np.array (log of the time in hours)
+        NOTE: DfUnload is the DataFrame of interest to compute the Unloading curve
+        NOTE: InfoTraffic is the dictionary of interest to compute the Traffic Analysis
         """
         import json
-        if not os.path.isfile(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json")):
-            t_vect = self.DfUnload["Time_hours"].to_numpy().astype(float)
-            nt = self.DfUnload["NumberPeople"].to_numpy()
-            Z_n = np.sum(nt)
-            mask = nt>0
-            nt = nt[mask]
-            t_vect = t_vect[mask]
-            if t_vect[-1] > 23:
-                t_vect = t_vect[:-self.CutMidnight]
-                nt = nt[:-self.CutMidnight]
-
-            # # Look at just the last two, if one of the two is a powerlaw, then I have a powerlaw
-            if len(t_vect[4:])>= 4:
-                logger.info(f"Size nt: {len(nt[3:])}, size t_vect: {len(np.array(t_vect[4:])-np.array(t_vect[3]))}")
-#                if len(nt[3:]) != len(np.array(t_vect[4:])-np.array(t_vect[3])):
-#                    print("nt\n",nt[3:])
-#                    print("t_vect\n",np.array(t_vect[4:])-np.array(t_vect[3]))
-                # Consider 1 hour before fitting, NOTE: Scale the time to close to 0
-                ErrorExp,A0,alpha_exp,y_fit_exp,ErrorPL,A_pl,alpha_pl,y_fit_pl = ComparePlExpo(np.array(t_vect[4:])-np.array(t_vect[3]),nt[3:],initial_guess_powerlaw = (max(nt),-1), initial_guess_expo = (max(nt),-1),maxfev = 10000)
-                # Standardize for a DataFrame the y_fit
-                if len(y_fit_exp) != 0:
-                    y_fit_exp = np.append(y_fit_exp,np.zeros(len(nt)-len(y_fit_exp)))
-                    MultiplicativeFactor = nt[4]/y_fit_exp[0]
-                    y_fit_exp = y_fit_exp*MultiplicativeFactor
-                    y_fit_exp = np.concatenate((nt[:4],y_fit_exp))
-                    self.t0 = 28
-
-                if len(y_fit_pl) != 0:
-                    y_fit_pl = np.append(y_fit_pl,np.zeros(len(nt)-len(y_fit_pl)))
-                    MultiplicativeFactor = nt[4]/y_fit_pl[0]
-                    y_fit_pl = y_fit_pl*MultiplicativeFactor
-                    y_fit_pl = np.concatenate((nt[:4],y_fit_pl))
-                    self.t0 = 28
-                # Save the Error
-                self.InfoTraffic["ErrorExp"] = ErrorExp
-                self.InfoTraffic["ErrorPl"] = ErrorPL
-                # Save the Fitted Parameters
-                self.InfoTraffic["A_exp"] = A0
-                self.InfoTraffic["A_pl"] = A_pl
-                self.InfoTraffic["alpha_exp"] = alpha_exp
-                self.InfoTraffic["alpha_pl"] = alpha_pl
-                self.InfoTraffic["t"] = list(t_vect)
-                self.InfoTraffic["n"] = list(nt/np.sum(nt))
-                if ErrorExp<ErrorPL:
-                    self.InfoTraffic["best_fit"] = "Exponential"
-                    self.InfoTraffic["n_fit"] = list(y_fit_exp/Z_n)
-                    self.InfoTraffic["IsJam"] = False
-                    self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]       # In hours
-                    logger.info("{0} Network is not jammed at time with alpha = None and Tau = {1}".format(self.city,self.InfoTraffic["Tau"]))
-                else:
-                    self.InfoTraffic["best_fit"] = "PowerLaw"
-                    self.InfoTraffic["n_fit"] = list(y_fit_pl/Z_n)
-                    self.InfoTraffic["IsJam"] = True
-
-                    logger.info(f"{self.city} Network is jammed with alpha = {alpha_pl} and Tau = None")
-                self.ComputeGammaAndTau()
-                self.InfoTraffic["Gamma"] = self.Gamma
+        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI))):
+            logger.info(f"{self.city} Computing Best Fit Pl Exponential R: {self.R}, UCI: {self.UCI}")
+            # Consider Just the period after the load finishes.
+            # Consider just when traffic is there             
+            self.DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl = ComparePlExpoDf(self.DfUnload,
+                                                                                        maxfev = 10000)
+            
+            
+            # Error & Fit
+            self.InfoTraffic["ErrorExp"] = ErrorExp
+            self.InfoTraffic["ErrorPl"] = ErrorPL
+            self.InfoTraffic["A_exp"] = A0
+            self.InfoTraffic["A_pl"] = A_pl
+            self.InfoTraffic["alpha_exp"] = alpha_exp
+            self.InfoTraffic["alpha_pl"] = alpha_pl
+            if ErrorExp<ErrorPL:
+                self.InfoTraffic["best_fit"] = "Exponential"
+                self.InfoTraffic["IsJam"] = False
+                self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]       # In hours
+                logger.info("{0} Network is not jammed at time with alpha = None and Tau = {1}".format(self.city,self.InfoTraffic["Tau"]))
             else:
-                logger.info(f"{self.city} Time Vector is too short to compute the best fit for the Power Law and Exponential")
-                self.IsEnoughData = False
+                self.InfoTraffic["best_fit"] = "PowerLaw"
+                self.InfoTraffic["IsJam"] = True
+                logger.info(f"{self.city} Network is jammed with alpha = {alpha_pl} and Tau = None")
+            self.ComputeGammaAndTau()
+            self.InfoTraffic["Gamma"] = self.Gamma
+            # Save 
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
                 json.dump(self.InfoTraffic,f,indent = 4)
-            self.InfoTraffic["n"] = np.array(self.InfoTraffic["n"])
-            self.InfoTraffic["t"] = np.array(self.InfoTraffic["t"])
-            self.InfoTraffic["n_fit"] = np.array(self.InfoTraffic["n_fit"])
+            self.DfUnload.write_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+
         else:
+            logger.info(f"{self.city} Reading InfoTraffic File R: {self.R}, UCI: {self.UCI}")
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                 self.InfoTraffic = json.load(f)
-            self.InfoTraffic["n"] = np.array(self.InfoTraffic["n"])
-            self.InfoTraffic["t"] = np.array(self.InfoTraffic["t"])
-            self.InfoTraffic["n_fit"] = np.array(self.InfoTraffic["n_fit"])
-
+            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
             
 ### FLUXES AND GAMMA
     @timing_decorator
@@ -444,7 +451,8 @@ class OutputStats:
             nt0 = max(self.DfUnload["FractionPeople"].to_numpy())
             # Choose the index for which the fraction of people in the network is less than 1/e of the maximum
             self.IndexTau = np.where(self.DfUnload["FractionPeople"].to_numpy() <= nt0*np.exp(-1))[0][0]
-            self.Tau = self.DfUnload["Time_hours"].to_numpy()[self.IndexTau]
+            self.Tau = self.DfUnload["Time_hours_shifted"].to_numpy()[self.IndexTau]
+            self.InfoTraffic["Tau"] = self.Tau
         else:
             # NOTE: in this case Tau was already computed in DecideIfJam.
             pass
@@ -466,23 +474,16 @@ class OutputStats:
                 For each time window checks wether exponential is better than powerlaw. If powerlaw is better than exponential, then we have a jam.
             NOTE: The time is shifted to be close to 0 when it starts to decrease since the fit otherwhise would work.
         """
-        count = 0
-        n = self.DfUnload["NumberPeople"].to_numpy()
-        mask = n > 0
-        t_vect = self.DfUnload["Time_hours"].to_numpy()[mask]
-#        SmallerVect = min([len(t_vect),len(self.InfoTraffic["n"]),len(self.InfoTraffic["n_fit"])])
-#        PlotPeopleInNetwork(self.InfoTraffic["n"][:SmallerVect],self.InfoTraffic["n_fit"][:SmallerVect],t_vect[:SmallerVect],self.InfoTraffic["best_fit"],self.InfoTraffic["t"][-1],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
-        if len(self.InfoTraffic["n_fit"]) > len(self.InfoTraffic["t"]) and len(self.InfoTraffic["n_fit"]) > len(self.InfoTraffic["n"]):
-            dt = self.InfoTraffic["t"][1] - self.InfoTraffic["t"][0]
-            DeltaDimension = len(self.InfoTraffic["n_fit"]) - len(self.InfoTraffic["t"])
-            t2add = [self.InfoTraffic["t"][-1]+k*dt for k in range(DeltaDimension)]
-            n2add = [0 for k in range(DeltaDimension)]
-            self.InfoTraffic["t"] = np.concatenate((self.InfoTraffic["t"],t2add))
-            self.InfoTraffic["n"] = np.concatenate((self.InfoTraffic["n"],n2add))
-        PlotPeopleInNetwork(self.InfoTraffic["n"],self.InfoTraffic["n_fit"],self.InfoTraffic["t"],self.InfoTraffic["best_fit"],self.InfoTraffic["t"][-1],JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
-        count += 1
-        Message = f"PlotUnloadCurve: Plot the number of people in the network at each time interval"
-        AddMessageToLog(Message,self.LogFile)
+        if self.InfoTraffic["IsJam"]:
+            y_fit = self.DfUnload["y_fit_pl"].to_numpy()
+        else:
+            y_fit = self.DfUnload["y_fit_exp"].to_numpy()
+        PlotPeopleInNetwork(self.DfUnload["FractionPeople"],
+                            y_fit,self.DfUnload["Time_hours_shifted"],
+                            self.InfoTraffic["best_fit"],
+                            JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+        PlotGt(self.DfUnload,
+               JoinDir(self.PlotDir,"dN_dt_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
 
     @timing_decorator
     def PlotNtAndFitSingleR(self):
@@ -496,196 +497,3 @@ class OutputStats:
         PlotNtAndFitSingleR(self.DfUnload["Time_hours"].to_numpy(),self.Time2nt[LastTime]["n"],self.Tau,self.Time2nt[LastTime]["n_fit"],self.R,self.UCI,self.PlotDir)
 
 
-    ## HERE WOULD START PROPERTIES OF THE CONTROL GROUP
-
-
-## DEPRECATED
-    @timing_decorator
-    def _ComputeBestFitPlExpo(self):
-        """
-            Compute the best fit for the Power Law and Exponential
-            Returns:
-                ErrorExp: float
-                A0: float
-                tau: float
-                PowerLawFitted: bool
-            self.Time2ErrorFit: dict -> {t:{"error_pl":0,"error_exp":0}}
-            I want t extract informations about the best fit for the power law and the exponential
-            NOTE: 
-                The nt is cut in the time window. The cut is done in hours
-        """
-        import json
-        if not os.path.isfile(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json")):
-            t_vect = self.DfUnload["Time_hours"].to_numpy().astype(float)
-            nt = self.DfUnload["NumberPeople"].to_numpy()
-            Z_n = np.sum(nt)
-            mask = nt>0
-            nt = nt[mask]
-            t_vect = t_vect[mask]
-            # # Look at just the last two, if one of the two is a powerlaw, then I have a powerlaw
-            if len(t_vect[4:])>= 4:
-                self.RangePlFit = range(9,len(t_vect))   
-                # Check The t For Which The Power Law Fit the Best and Is Better Than The Exponential
-                self.Time2ErrorFit,self.Time2BestFit,self.Time2nt,self.Time2Fit = InitializeDictionariesFit(t_vect,nt,Z_n,self.RangePlFit)
-                for t0 in self.RangePlFit:
-                    logger.info(f"Computing Best Fit For Time {t0}")
-                    # Constraint to have a minimum of 1 hour of observation
-                    if t0 - 4 >= 5:
-                        t = t_vect[t0]
-                        # Consider 1 hour before fitting, NOTE: Scale the time to close to 0
-                        ErrorExp,A0,alpha_exp,y_fit_exp,ErrorPL,A_pl,alpha_pl,y_fit_pl = ComparePlExpo(np.array(t_vect[4:t0])-np.array(t_vect[3]),nt[3:t0],initial_guess_powerlaw = (max(nt),-1), initial_guess_expo = (max(nt),-1),maxfev = 10000)
-                        # Standardize for a DataFrame the y_fit
-                        if len(y_fit_exp) != 0:
-                            y_fit_exp = np.append(y_fit_exp,np.zeros(len(nt)-len(y_fit_exp)))
-                            MultiplicativeFactor = nt[4]/y_fit_exp[0]
-                            y_fit_exp = y_fit_exp*MultiplicativeFactor
-                            y_fit_exp = np.concatenate((nt[:4],y_fit_exp))
-                            self.t0 = 28
-
-                        if len(y_fit_pl) != 0:
-                            y_fit_pl = np.append(y_fit_pl,np.zeros(len(nt)-len(y_fit_pl)))
-                            MultiplicativeFactor = nt[4]/y_fit_pl[0]
-                            y_fit_pl = y_fit_pl*MultiplicativeFactor
-                            y_fit_pl = np.concatenate((nt[:4],y_fit_pl))
-                            self.t0 = 28
-                        if ErrorExp<ErrorPL:
-                            self.Time2BestFit[t] = "Exponential"
-                            self.Time2nt[t]["n_fit"] = list(y_fit_exp/Z_n)
-                        else:
-                            self.Time2BestFit[t] = "PowerLaw"
-                            self.Time2nt[t]["n_fit"] = list(y_fit_pl/Z_n)
-                        # Save the Error
-                        self.Time2ErrorFit[t]["Exponential"] = ErrorExp
-                        self.Time2ErrorFit[t]["PowerLaw"] = ErrorPL
-                        # Save the Fitted Parameters
-                        self.Time2Fit[t]["A_exp"] = A0
-                        self.Time2Fit[t]["A_pl"] = A_pl
-                        self.Time2Fit[t]["alpha_exp"] = alpha_exp
-                        self.Time2Fit[t]["alpha_pl"] = alpha_pl
-                    
-            else:
-                logger.info(f"Time Vector is too short to compute the best fit for the Power Law and Exponential")
-                self.Time2ErrorFit = None
-                self.Time2BestFit = None
-                self.Time2nt = None
-                self.Time2Fit = None
-            if self.Time2ErrorFit is not None:
-                with open(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
-                    json.dump(self.Time2ErrorFit,f,indent = 4)
-            if self.Time2BestFit is not None:
-                with open(os.path.join(self.PlotDir,f"Time2BestFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
-                    json.dump(self.Time2BestFit,f,indent = 4)
-            if self.Time2nt is not None:
-                with open(os.path.join(self.PlotDir,f"Time2nt_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
-                    json.dump(self.Time2nt,f,indent = 4)
-                for t in self.Time2nt.keys():
-                    self.Time2nt[t]["n"] = np.array(self.Time2nt[t]["n"])
-                    self.Time2nt[t]["n_fit"] = np.array(self.Time2nt[t]["n_fit"])
-            if self.Time2Fit is not None:
-                with open(os.path.join(self.PlotDir,f"Time2Fit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
-                    json.dump(self.Time2Fit,f,indent = 4)
-                with open(os.path.join(self.PlotDir,f"RangePlFit_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
-                    json.dump({"RangePl":list(self.RangePlFit)},f,indent = 4)
-            
-        else:
-            if os.path.isfile(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json")):
-                with open(os.path.join(self.PlotDir,f"Time2ErrorFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
-                    self.Time2ErrorFit = json.load(f)
-                with open(os.path.join(self.PlotDir,f"Time2BestFit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
-                    self.Time2BestFit = json.load(f)
-                with open(os.path.join(self.PlotDir,f"Time2nt_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
-                    self.Time2nt = json.load(f)
-                for t in self.Time2nt.keys():
-                    self.Time2nt[t]["n"] = np.array(self.Time2nt[t]["n"])
-                    self.Time2nt[t]["n_fit"] = np.array(self.Time2nt[t]["n_fit"])
-                with open(os.path.join(self.PlotDir,f"Time2Fit_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
-                    self.Time2Fit = json.load(f)
-                with open(os.path.join(self.PlotDir,f"RangePlFit_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
-                    self.RangePlFit = json.load(f)["RangePl"]
-        self.Time2Fit = {float(k):v for k,v in dict(self.Time2Fit).items()}
-        self.Time2nt = {float(k):v for k,v in dict(self.Time2nt).items()}
-        self.Time2ErrorFit = {float(k):v for k,v in dict(self.Time2ErrorFit).items()}
-        self.Time2BestFit = {float(k):v for k,v in dict(self.Time2BestFit).items()}
-        self.RangePlFit = [int(i) for i in self.RangePlFit]
-
-
-    
-    @timing_decorator
-    def _GetBestFitTimes(self):
-        """
-        Extract the t values such that self.Time2ErrorFit[t]["PowerLaw"] or self.Time2ErrorFit[t]["Exponential"] are minimum.
-        
-        :return: Tuple containing the t values for minimum PowerLaw and Exponential errors.
-        NOTE: I accept traffic if there is at least one time in which the powerlaw wins
-                """
-        min_powerlaw_error = float('inf')
-        min_exponential_error = float('inf')
-        best_t_powerlaw = None
-        best_t_exponential = None
-        old = False
-        BestFits = self.Time2BestFit.values()
-        PowerLawInBestFits = False
-        if "PowerLaw" in BestFits:
-            PowerLawInBestFits = True    
-        if old:
-            for t, errors in self.Time2ErrorFit.items():
-                if errors["PowerLaw"] < min_powerlaw_error:
-                    min_powerlaw_error = errors["PowerLaw"]
-                    best_t_powerlaw = t
-                if errors["Exponential"] < min_exponential_error:
-                    min_exponential_error = errors["Exponential"]
-                    best_t_exponential = t
-            if min_exponential_error < min_powerlaw_error:
-                logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
-                self.BestFunctionFit = "Exponential"
-                return "Exponential", best_t_exponential
-            else:
-                logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
-                self.BestFunctionFit = "PowerLaw"
-                return "PowerLaw", best_t_powerlaw
-        else:
-            if PowerLawInBestFits:
-                for t, errors in self.Time2ErrorFit.items():
-                    if errors["PowerLaw"] < min_powerlaw_error:
-                        min_powerlaw_error = errors["PowerLaw"]
-                        best_t_powerlaw = t
-                logger.info(f"PowerLaw fit is better than Exponential fit at time {best_t_powerlaw}")
-                return "PowerLaw", best_t_powerlaw
-            else:
-                for t, errors in self.Time2ErrorFit.items():
-                    if errors["Exponential"] < min_exponential_error:
-                        min_exponential_error = errors["Exponential"]
-                        best_t_exponential = t
-                logger.info(f"Exponential fit is better than PowerLaw fit at time {best_t_exponential}")
-                return "Exponential", best_t_exponential
-
-
-    @timing_decorator
-    def _DecideIfJam(self):
-        """
-            @description:
-            Looking at each self.Time2BestFit, if there is powerlaw at some point, then we have a jam
-            NOTE: Decides wether the network is jammed or not, if it is Jammed saves CrticalNt (UnoloadCurve) and TCritical (Critical Time To Consider For Alpha)
-            self.CriticalAlpha
-            NOTE: The Criticality Of Behavior Is Defined For R,UCI couple here in isJam that corresponds to the condition that the best fit is an exponential
-        """
-        self.TCritical = None
-        self.CriticalNt = None
-        self.CrirticalAlpha = None
-        BestFunctionFit, BestTime = self.GetBestFitTimes()
-        self.BestFunctionFit = BestFunctionFit
-        self.BestTime = BestTime
-        if BestFunctionFit == "PowerLaw":
-            self.IsJam = True
-            self.TCritical = BestTime
-            self.CriticalNt = self.Time2nt[BestTime]["n"]
-            self.CriticalAlpha = self.Time2Fit[BestTime]["alpha_pl"]
-            self.Tau = None
-            logger.info(f"Network is jammed at time {BestTime} with alpha = {self.CriticalAlpha} and Tau = None")
-        else:
-            self.IsJam = False
-            self.TCritical = None
-            self.CriticalNt = None
-            self.CriticalAlpha = None
-            self.Tau = - 1/self.Time2Fit[BestTime]["alpha_exp"]       # In hours
-            logger.info(f"Network is not jammed at time {BestTime} with alpha = None and Tau = {self.Tau}")

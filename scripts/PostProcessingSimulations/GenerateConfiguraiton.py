@@ -95,11 +95,11 @@ def InitConfigPolycentrismAnalysis(CityName):
     if "LPSim" not in os.environ.keys():
         BaseData = "/home/alberto/LPSim/LivingCity/berkeley_2018/{}/Output".format(CityName)
 #        BaseData = os.path.join("data_1","alberto",CityName,"Output")
-        BaseData = f"/data_1/alberto/{CityName}/Output"
+        BaseData = f"/data_2/alberto/{CityName}/Output"
     else:
         BaseData = os.path.join(os.environ["LPSim"],"LivingCity","berkeley_2018",CityName,"Output")
 #        BaseData = os.path.join("data_1","alberto",CityName,"Output")
-        BaseData = f"/data_1/alberto/{CityName}/Output"
+        BaseData = f"/data_2/alberto/{CityName}/Output"
         
     UCIs,Rs = RsUCIsFromDir(BaseData)
     City2Config[CityName] = GenerateConfig(BaseData,City2Config[CityName],CityName,Rs,UCIs)  

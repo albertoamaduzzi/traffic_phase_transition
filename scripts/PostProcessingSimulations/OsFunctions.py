@@ -53,31 +53,32 @@ def CopyCartoGraphy(SourceFile,CityName):
         raise Exception(f"CopyCartoGraphy: Cannot copy {SourceFileComplete} : It does not exist")
 
 
-def RenameMoveOutput(output_file,CityName,R,UCI,verbose = False):
+def RenameMoveOutput(source_file,destination_file,destination_file_parquet,CityName,R,UCI,verbose = False):
     """
-        @params output_file: File to move
+        @params source_file: Copmlete path of the file to move -> /LPSim/source_file.csv
+        @params output_file: Complete path of the output file -> /data_dir/output_file.csv
         @params CityName: Name of the city
         @params R: Number of people per unit time
         @params UCI: Urban Centrality Index
         @description: Move the output file in the correct
     """
     # Set Path of Destination LivingCity/berkeley_2018/CityName/Output/UCI/
-    saving_dir = os.path.join(LIVING_CITY_DIR,'berkeley_2018',CityName,'Output')
-    destination_dir = os.path.join("data_1","alberto",CityName,'Output',str(round(UCI,3)))
+#    saving_dir = os.path.join(LIVING_CITY_DIR,'berkeley_2018',CityName,'Output')
+#    destination_dir = os.path.join("data_2","alberto",CityName,'Output',str(round(UCI,3)))
 #    destination_dir = os.path.join(saving_dir, str(round(UCI,3)))
-    os.makedirs(os.path.join(destination_dir), exist_ok=True)
+
 #    name_parquet = f"R_{0}_UCI_{1}_{2}".format(R,round(UCI,3),output_file.split('.csv')[0] + '.parquet')
-    name_parquet = f"R_{R}_UCI_{round(UCI, 3)}_{output_file.replace('.csv', '.parquet')}"
+#    name_parquet = f"R_{R}_UCI_{round(UCI, 3)}_{output_file.replace('.csv', '.parquet')}"
     # Complete Path
-    source_file = os.path.join(LPSIM_DIR, output_file)
-    destination_file = os.path.join(destination_dir ,f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
-    destination_file_parquet = os.path.join(destination_dir, name_parquet)
+#    source_file = os.path.join(LPSIM_DIR, output_file)
+#    destination_file = os.path.join(destination_dir ,f"R_{R}_UCI_{round(UCI,3)}_{output_file}")
+#    destination_file_parquet = os.path.join(destination_dir, name_parquet)
     logger.info(f"Transfer: {source_file} -> {destination_file}")
     if os.path.exists(source_file):
         os.rename(source_file, destination_file)
     else:
         logger.info(f"File {source_file} does not exist")
-    case = "route" if "route" in name_parquet else "default"
+    case = "route" if "route" in destination_file_parquet else "default"
     Csv2Parquet(destination_file,destination_file_parquet,case)
 #     shutil.move(os.path.join(LPSIM_DIR,f"R_{R}_UCI_{round(UCI,3)}_{output_file}"),saving_dir)  
 

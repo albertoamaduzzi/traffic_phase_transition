@@ -13,7 +13,7 @@ def ComputeTime2FitBeta(RangeFit,t_vect,R2NtNtFit,UCI2CriticalParams,Rs,UCI):
         Rs1 = [R for R in sorted(Rs) if R > UCI2CriticalParams[round(UCI,3)]["Rc"]]
         for R in sorted(Rs1):
             # Check PowerLaw fixed t0, between NRsGivent0 and (R^2 - Rc^2)/Rc^2
-            NRsGivent0.append(R2NtNtFit[R][t]["n"][t])
+            NRsGivent0.append(R2NtNtFit[R]["n"][t0])
             FRcR.append((R**2 - UCI2CriticalParams[round(UCI,3)]["Rc"]**2)/UCI2CriticalParams[round(UCI,3)]["Rc"]**2)
         y_fit_pl,ErrorPL,A_pl,Beta = FittingPowerlaw(FRcR,NRsGivent0)
         Time2FitBeta[t0] = {"n(R,epsilon)_fit":y_fit_pl,"n(R,epsilon)":NRsGivent0,"ErrorPL":ErrorPL,"A_pl":A_pl,"Beta":Beta,"epsilon":FRcR}

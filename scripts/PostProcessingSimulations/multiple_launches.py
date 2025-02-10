@@ -282,10 +282,10 @@ def ProcessMain(case,
     output_file_parquet = output_file.replace('.csv','.parquet')
     check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file_parquet}"
     if GeoInfo.city == "BOS":
-        DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+        DataDir = f"/data_2/alberto/{GeoInfo.city}/Output/{str(round(UCI1,3))}"#os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
         destination_file = os.path.join(DataDir, check_file)
     else:
-        DataDir = os.path.join("data_1","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+        DataDir = f"/data_2/alberto/{GeoInfo.city}/Output/{str(round(UCI1,3))}"#os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
         destination_file = os.path.join(DataDir, check_file)
 #        destination_file = os.path.join(saving_dir, check_file)
     InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_R_{R}_UCI_{round(UCI1,3)}.csv"
@@ -360,8 +360,13 @@ def ProcessMain(case,
                                 '0_route{0}to24.csv'.format(start),
                                 '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start)
                                 ]
+                destination_dir_output_file = os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
+                os.makedirs(os.path.join(destination_dir_output_file), exist_ok=True)
                 for output_file in output_files:
-                    RenameMoveOutput(output_file,GeoInfo.city,R,UCI1,True)
+                    source_file = os.path.join(LPSIM_DIR, output_file)
+                    destination_file = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
+                    destination_file_parquet = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file.replace('.csv', '.parquet')}")
+                    RenameMoveOutput(source_file,destination_file,destination_file_parquet,GeoInfo.city,R,UCI1,True)
                     DeleteFile(InputDocker)                    
             return not FailedSimulation
 

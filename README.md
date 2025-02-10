@@ -1,14 +1,24 @@
 # Description
 This project consists in a pipeline for studying traffic phase transition to the absorbing state of gridlock.
-In particular, we analyze the number of people that remain trapped in the road network after long times.
-This description is highly incomplete and working progress...
-Is a library that is build to study the phase transition to traffic whose order parameter is the fraction of people that remain trapped in the network after some limiting time, and
-whose control parameter is the number of people that enter in the network per unit time (time of update for the simulator used).
-In particular, tries to show the dependence of the phase transition on different regimes of polycentricity and mopmcentricity.
+In particular, we analyze the number of people that remain trapped in the road network after long times.   
+The project defines a pipeline that evolves into three different phases.
+1. `geometry_creation`: we define the geometrical objects necessary to compute what is needed.
+2. `morphology_handling`:     
+    2a. we define and compute urban centrality index `UCI`    
+    2b. compute the gravitational model for fluxes in terms of population.        
+3. `morphology_generation`:     
+    3a. We define a model to generate different morpholgies (the difference is thought as difference in `UCI`)    
+    3b. Produce new fluxes accordingly exploiting infomration about previous step.    
+4. `simulation`:    
+    4a. Generate the origin and destination in the road network    
+    4b. Launch the simulations    
+5. `analysis_DP`:    
+    We handle the results of the simulation and we focus on the analysis of directed percolation universality class.
+
 # SetUp
 Set the base directory where the project is to be downloaded:
-```bash
-export TRAFFIC_DIR=/path/to/ProjectBaseDir
+```
+bash export TRAFFIC_DIR=/path/to/ProjectBaseDir
 ```
 
 
@@ -46,8 +56,9 @@ To postprocess the results create a new environment so that the packages needed 
 
 Hierarchy of Calls Post Processing:   
 MainAnalysis: for City in ListCities -> TrajectoryAnalysis: for UCI in UCIs: for R in R -> OutputStats: Compute things that are conditional on these variables.
-
-
+# Directed Percolation
+Objects of Interest:
+`GeoJsonEdges`
 # Input
 `{NameCity}.shp`: Shape File Containing Polygons
 `OD_{NameCity}_{StartTime}_{EndTime}.fma`: This file contains information about origin and destinations.    

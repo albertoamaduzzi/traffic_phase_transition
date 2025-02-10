@@ -15,7 +15,7 @@ from EfficiencyAnalysis import *
 
 # Unloading Curve
 @timing_decorator
-def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,BestTime,FileName):
+def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,FileName):
     '''
         Input:
             df_people: DataFrame containing the people information (stay time in the network, time of departure, travel time, etc.)
@@ -31,7 +31,6 @@ def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,BestTime,FileName):
         fig,ax = plt.subplots(1,1,figsize = (15,15))
         ax.plot(interval15,n)
         ax.plot(interval15,n_fit,linestyle = "--")
-        ax.vlines(BestTime,0,max(n),color = 'black',linestyle = '--')
     #    ax.set_xticks(second2hour(interval15))
     #    ax.set_xticklabels([str(t) for t in interval15])
         ax.set_xlabel('t(h)')
@@ -42,6 +41,17 @@ def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,BestTime,FileName):
         ax.set_title('Best Fit: ' + BestFunctionFit)
         plt.savefig(FileName,dpi = 200)
         plt.close()
+
+def PlotGt(DfUnload,FileName):
+    """
+        @Plots G(t) = dN(t)/dt -> the variation of people that are exiting from the network.
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.plot(DfUnload['Time_hours_shifted'],DfUnload['DiffNumberPeople'])
+    ax.set_xlabel('t')
+    ax.set_ylabel(r'$\frac{dN(t)}{dt}$')
+    plt.savefig(FileName)
+    plt.close()
 
 # Hopefully traffic in the road network
 '''def PlotTrafficInGeopandasNet(TrafficGdf,TrafficLevel,ColorBarExplanation,PlotFile,Title,dpi = 300,IsLognorm = False):

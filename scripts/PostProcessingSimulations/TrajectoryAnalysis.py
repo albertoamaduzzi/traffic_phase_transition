@@ -44,6 +44,8 @@ class Polycentrism2TrafficAnalyzer:
         # FLAGS
         self.GetGeoJsonBool = False
         self.GetGeoJson()
+        self.Nodes = pl.read_csv(os.path.join(BERKELEY_DIR,self.Name,'nodes.csv'),dtypes={'ref':pl.Utf8})
+        self.Edges = pl.read_csv(os.path.join(BERKELEY_DIR,self.Name,'edges.csv'))
         self.Rs = Rs
         self.UCIs = UCIs
         # Aggregated Variables
@@ -68,9 +70,20 @@ class Polycentrism2TrafficAnalyzer:
             Description:
                 - For each UCI:
                     - For each R:
-                        - Compute the time2road2traveller
-                        - Plot the unload curve
-                        - Animate the network traffic
+                        - DfUnload: pl.DataFrame -> Columns: 
+                            - FractionPeople: np.array (Fraction of people in the network)
+                            - Time_hours: np.array (Time in hours from t_start_hour)
+                            - Time_hours_shifted: np.array (Time in hours after the unloading period starts) 
+                            - IsPeople: np.array (True if people are in network, used as mask for fit)
+                            - IsUnload: np.array (True if people are unloading, used to make the y,and y fit coincide at the plotting stage)
+                            - NumberPeople: np.array (Number of people, not fraction)
+                            - NumberPeopleFit: np.array (Number of people fitted)
+                            - Time: np.array (Time in seconds)
+                            - y_fit_exp: np.array (Fitted exponential)
+                            - y_fit_pl: np.array (Fitted powerlaw)
+                            - log_y: np.array (log of the fraction of people)
+                            - log_x: np.array (log of the time in hours)
+                        - InfoTraffic: dict ->
         """
 
         # Treat each UCI independently
@@ -79,6 +92,7 @@ class Polycentrism2TrafficAnalyzer:
             FoundRc = False
             R2NtNtFit = {R:defaultdict() for R in sorted(self.Rs)}
             logger.info(f"{self.BaseDir}")
+            
             # Compute The Gamma Beta Tau for each UCI for which I did not compute it already
             if not os.path.exists(os.path.join(self.BaseDir,f'{self.Name}_{round(UCI,3)}_GammaTau.parquet')):
                 for R in sorted(self.Rs):
@@ -86,11 +100,12 @@ class Polycentrism2TrafficAnalyzer:
                     if os.path.isfile(os.path.join(self.BaseDir,str(round(UCI,3)),f"R_{R}_UCI_{round(UCI,3)}_0_people7to24.parquet")):
                         logger.info(f"Generation OS: UCI: {UCI} and R: {R}")
                         # Make The Analysis For The sinle Couple Of UCI and R
-                        OS = OutputStats(R,UCI,self.config,self.GeoJsonEdges)
+                        OS = OutputStats(R,UCI,self.config,self.GeoJsonEdges,self.Nodes,self.Edges)
                         logger.info(f"OS Complete Analysis: UCI: {UCI} and R: {R}")
                         OS.CompleteAnalysis()
                         # NOTE: To look for the best Beta
-                        self.t_vect = OS.InfoTraffic["t"]
+                        self.DfUnload = OS.DfUnload
+                        self.InfoTraffic = OS.InfoTraffic
                         # Evidence for Traffic Changing R
                         self.Taus[round(UCI,3)].append(OS.InfoTraffic["Tau"])
                         self.Gammas[round(UCI,3)].append(OS.InfoTraffic["Gamma"])
@@ -108,15 +123,24 @@ class Polycentrism2TrafficAnalyzer:
                                     json.dump(self.UCI2CriticalParams,f,indent = 4)
                         # OS.Time2nt contains both n,n_fit, for different times.
                         # We need to find the t that best gives a fit to beta.
-                        R2NtNtFit[R]["n"] = OS.InfoTraffic["n"]
-                        R2NtNtFit[R]["t"] = OS.InfoTraffic["t"]
-                        R2NtNtFit[R]["n_fit"] = OS.InfoTraffic["n_fit"]
+                        R2NtNtFit[R]["n"] = OS.DfUnload["FractionPeople"].to_numpy()
+#                        R2NtNtFit[R]["t"] = OS.InfoTraffic["Time_hours_shifted"].to_numpy()
+                        if self.t_vect is None:
+                            self.t_vect = OS.DfUnload["Time_hours_shifted"].to_numpy()
+                        if OS.InfoTraffic["IsJam"]:
+                            y_fit = OS.DfUnload["y_fit_pl"].to_numpy()
+                        else:
+                            y_fit = OS.DfUnload["y_fit_exp"].to_numpy()
+                        R2NtNtFit[R]["n_fit"] = y_fit
                         del OS
-                self.RangeFit = np.arange(10,len(self.t_vect))
+                self.R2NtNtFit = R2NtNtFit
+                with open(os.path.join(self.BaseDir,"Plots",f"R2NtNtFit_UCI_{round(UCI,3)}.json"),'w') as f:
+                    json.dump(R2NtNtFit,f,indent = 4)
                 PlotGammaTau(self.Taus[round(UCI,3)],self.Gammas[round(UCI,3)],self.Name,UCI,self.BaseDir)
                 # Compute Beta, such that the fit for an increasing powerlaw is top
+                self.RangeFit = range(10,len(self.DfUnload["Time_hours_shifted"]))
                 if FoundRc:
-                    Time2FitBeta = ComputeTime2FitBeta(self.RangeFit,self.t_vect,R2NtNtFit,self.UCI2CriticalParams,self.Rs,UCI)
+                    Time2FitBeta = ComputeTime2FitBeta(self.RangeFit,self.t_vect,self.R2NtNtFit,self.UCI2CriticalParams,self.Rs,UCI)
                     BestBeta,BestA,BestT,t1 = ChooseBestBeta(Time2FitBeta,self.t_vect)
                     PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,t1)
                     self.UCI2PhaseTransition[round(UCI,3)] = {"Beta":BestBeta,"best_A_fit_Beta":BestA,"time_best_fit":BestT,"int_time_best_fit":t1}            
@@ -127,6 +151,7 @@ class Polycentrism2TrafficAnalyzer:
                     # Extract The informations for the analysis to be Global.
                     # In this way I do not loose Informations but the process is very power consuming
     #                self.R2UCI2OutputStats[UCI][R] =  OS
+
 
         pass
 
