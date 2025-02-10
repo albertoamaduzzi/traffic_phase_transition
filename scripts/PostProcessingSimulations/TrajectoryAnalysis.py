@@ -134,6 +134,9 @@ class Polycentrism2TrafficAnalyzer:
                         R2NtNtFit[R]["n_fit"] = y_fit
                         del OS
                 self.R2NtNtFit = R2NtNtFit
+                for key in R2NtNtFit.keys():
+                    if isinstance(R2NtNtFit[key],np.ndarray):
+                        R2NtNtFit[key] = list(R2NtNtFit[key])
                 with open(os.path.join(self.BaseDir,"Plots",f"R2NtNtFit_UCI_{round(UCI,3)}.json"),'w') as f:
                     json.dump(R2NtNtFit,f,indent = 4)
                 PlotGammaTau(self.Taus[round(UCI,3)],self.Gammas[round(UCI,3)],self.Name,UCI,self.BaseDir)
