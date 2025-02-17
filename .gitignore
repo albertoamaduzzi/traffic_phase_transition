@@ -12,3 +12,5 @@ OutputPlanarGraph/
 *__pycache__/
 data_1/*
 data_2/*
+MemoryUsage/*
+main.log

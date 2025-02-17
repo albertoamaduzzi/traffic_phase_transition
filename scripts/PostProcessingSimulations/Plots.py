@@ -26,7 +26,6 @@ def PlotPeopleInNetwork(n,n_fit,interval15,BestFunctionFit,FileName):
             seconds_in_minute: Number of seconds in a minute
             interval_in_minutes: Number of minutes in each interval
     '''
-    logger.info(f"Plotting People in Network")
     if not os.path.isfile(os.path.dirname(FileName)):
         fig,ax = plt.subplots(1,1,figsize = (15,15))
         ax.plot(interval15,n)

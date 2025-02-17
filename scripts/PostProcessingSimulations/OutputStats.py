@@ -382,6 +382,7 @@ class OutputStats:
             else:
                 self.InfoTraffic["best_fit"] = "PowerLaw"
                 self.InfoTraffic["IsJam"] = True
+                self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]
                 logger.info(f"{self.city} Network is jammed with alpha = {alpha_pl} and Tau = None")
             self.ComputeGammaAndTau()
             self.InfoTraffic["Gamma"] = self.Gamma
@@ -394,8 +395,8 @@ class OutputStats:
             logger.info(f"{self.city} Reading InfoTraffic File R: {self.R}, UCI: {self.UCI}")
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                 self.InfoTraffic = json.load(f)
+            self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]
             self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
-            
 ### FLUXES AND GAMMA
     @timing_decorator
     def ComputeFluxesAndSpeedDfRoute(self):
@@ -452,7 +453,7 @@ class OutputStats:
             # Choose the index for which the fraction of people in the network is less than 1/e of the maximum
             self.IndexTau = np.where(self.DfUnload["FractionPeople"].to_numpy() <= nt0*np.exp(-1))[0][0]
             self.Tau = self.DfUnload["Time_hours_shifted"].to_numpy()[self.IndexTau]
-            self.InfoTraffic["Tau"] = self.Tau
+            #self.InfoTraffic["Tau"] = self.Tau
         else:
             # NOTE: in this case Tau was already computed in DecideIfJam.
             pass
@@ -478,10 +479,12 @@ class OutputStats:
             y_fit = self.DfUnload["y_fit_pl"].to_numpy()
         else:
             y_fit = self.DfUnload["y_fit_exp"].to_numpy()
+        logger.info(f"{self.city} Plot Unload Curve R: {self.R}, UCI: {self.UCI}")
         PlotPeopleInNetwork(self.DfUnload["FractionPeople"],
                             y_fit,self.DfUnload["Time_hours_shifted"],
                             self.InfoTraffic["best_fit"],
                             JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+        logger.info(f"{self.city} Plotting dN/dt R: {self.R}, UCI: {self.UCI}")
         PlotGt(self.DfUnload,
                JoinDir(self.PlotDir,"dN_dt_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
 
