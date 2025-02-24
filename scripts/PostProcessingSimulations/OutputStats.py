@@ -73,7 +73,7 @@ class OutputStats:
         self.UCI = UCI
         self.city = config['name']
         self.delta_t = config['delta_t']
-        self.PlotDir = JoinDir(config['output_simulation_dir'],'Plots')
+        self.PlotDir = JoinDir(config['dir_output_simulation_analysis'],'Plots')
         self.PlotDir = JoinDir(self.PlotDir,f'{round(self.UCI,3)}')
         self.LogFile = JoinDir(self.PlotDir,"Log.txt")
         self.CountFunctions = 0

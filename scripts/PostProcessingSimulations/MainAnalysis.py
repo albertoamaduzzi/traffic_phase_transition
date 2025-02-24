@@ -6,7 +6,7 @@ from GenerateConfiguraiton import *
 
 """
     Example Config File Read From The Output File System:
-    "output_simulation_dir": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output",
+    "dir_output_simulation_analysis": "/home/alberto/LPSim/LivingCity/berkeley_2018/BOS/Output",
     "delta_t": 15,
     "name": "BOS",
     "graphml_file": "/home/alberto/LPSim/traffic_phase_transition/data/carto/BOS/BOS_new_tertiary_simplified.graphml",

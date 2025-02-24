@@ -3,7 +3,7 @@
     The configuration file is for each city and contains the following information:
         - name: name of the city
         - delta_t: time step (in seconds)
-        - output_simulation_dir: directory where the simulation output is stored
+        - dir_output_simulation_analysis: directory where the simulation output is stored for the analysis
         - graphml_file: file containing the graph of the city
         - UCI: {
                 R: {
@@ -43,7 +43,7 @@ class Polycentrism2TrafficAnalyzer:
         self.config = config
         self.Name = config['name']
         self.delta_t = config['delta_t']
-        self.BaseDir = config['output_simulation_dir']
+        self.BaseDir = config['dir_output_simulation_analysis']
         self.GraphmlFile = config['graphml_file']
         self.R2UCI2OutputStats = defaultdict()
         # Phase Transition
@@ -108,15 +108,20 @@ class Polycentrism2TrafficAnalyzer:
                 logger.info(f"{self.Name}: Start: UCI: {UCI} and R: {R}")
                 if os.path.isfile(os.path.join(self.BaseDir,str(round(UCI,3)),f"R_{R}_UCI_{round(UCI,3)}_0_people7to24.parquet")):
                     # Make The Analysis For The sinle Couple Of UCI and R
-                    OS = OutputStats(R,UCI,self.config,self.GeoJsonEdges,self.Nodes,self.Edges)
+                    OS = OutputStats(R,
+                                     UCI,
+                                     self.config,
+                                     self.GeoJsonEdges,
+                                     self.Nodes,
+                                     self.Edges)
                     logger.info(f"{self.Name}: Completed Single Analysis: UCI: {UCI} and R: {R}")
                     OS.CompleteAnalysis()
                     # NOTE: To look for the best Beta
                     self.DfUnload = OS.DfUnload
                     self.InfoTraffic = OS.InfoTraffic
                     # Evidence for Traffic Changing R
-                    self.Taus[round(UCI,3)].append(OS.InfoTraffic["Tau"])
-                    self.Gammas[round(UCI,3)].append(OS.InfoTraffic["Gamma"])
+                    self.Taus[round(UCI,3)].append(float(OS.InfoTraffic["Tau"]))
+                    self.Gammas[round(UCI,3)].append(float(OS.InfoTraffic["Gamma"]))
                     self.UsedRs[round(UCI,3)].append(R)
                     # NOTE: Each of these is a list, take the smaller to 
                     if OS.InfoTraffic["IsJam"]:
@@ -162,25 +167,26 @@ class Polycentrism2TrafficAnalyzer:
                 Rc = self.UCI2CriticalParams[round(UCI,3)]["Rc"]
                 alpha = self.UCI2CriticalParams[round(UCI,3)]["Alpha"]
                 R2Epsilon = {R:(R**2 - Rc**2)/Rc**2 for R in sorted(self.Rs)}
-                PlotFigure4(R2NtNtFit,
-                            R2Epsilon,
-                            alpha,
-                            self.t_vect,
-                            self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
-                            UCI,
-                            Rc,
-                            self.Name,
-                            BestT,
-                            os.path.join(self.BaseDir,"Plots"))
-                PlotRRcTauTauc(self.Taus[round(UCI,3)],
-                               self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
-                               self.UsedRs[round(UCI,3)],
-                               self.UCI2CriticalParams[round(UCI,3)]["Rc"],
-                               alpha,
-                               self.Name,
-                               UCI,
-                               os.path.join(self.BaseDir,"Plots")
-                               )
+                if False:
+                    PlotFigure4(R2NtNtFit,
+                                R2Epsilon,
+                                alpha,
+                                self.t_vect,
+                                self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
+                                UCI,
+                                Rc,
+                                self.Name,
+                                BestT,
+                                os.path.join(self.BaseDir,"Plots"))
+                    PlotRRcTauTauc(self.Taus[round(UCI,3)],
+                                self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
+                                self.UsedRs[round(UCI,3)],
+                                self.UCI2CriticalParams[round(UCI,3)]["Rc"],
+                                alpha,
+                                self.Name,
+                                UCI,
+                                os.path.join(self.BaseDir,"Plots")
+                                )
                 uci2beta_path = os.path.join(self.BaseDir,"Plots","uci2beta.json")
                 if os.path.exists(uci2beta_path):
                     with open(uci2beta_path, 'r') as f:
@@ -188,7 +194,7 @@ class Polycentrism2TrafficAnalyzer:
                 else:
                     existing_data = self.UCI2PhaseTransition
                 # Update the existing data with the new results
-                existing_data.update(self.UCI2PhaseTransition)
+                existing_data.update({round(UCI,3):self.UCI2PhaseTransition[round(UCI,3)]})
 
                 # Save the updated data back to the JSON file
                 with open(uci2beta_path, 'w') as f:

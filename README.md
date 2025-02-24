@@ -24,7 +24,16 @@ bash export TRAFFIC_DIR=/path/to/ProjectBaseDir
 
 # Preprocessing
 In this project we are considering the realization of synthetic traffic conditions for different cities: Boston, San Francisco,Rio De Janeiro, Los Angeles, Lisbon.
-The alorithm, starting from informations about population and fluxes in different hours of the day has the goal to produce diff
+The algorithm, starting from informations about population and fluxes in different hours of the day has the goal to produce diff
+## geometry_creation
+Everything starts with:   
+`GenerateConfigGeometricalSettingsSpatialPartition`: -> `config.py`, contains the parameters used for the computations.
+## morphology_handling/generation
+
+## simulation
+
+## Analysis DP
+
 ## Population/Origin-Destination/Grid
 `python3 ./scripts/GeometrySphere/ComputeGeometryMain.py`   
 The script reads the shape file of the region of interest with the relative Origin-Destinations file (.fma) (see `Input` Section).

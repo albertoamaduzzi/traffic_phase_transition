@@ -2,11 +2,22 @@ import json
 import os
 from GenerateModifiedFluxesSimulation import CityName2RminRmax
 import logging
+import sys
+sys.path.append(os.path.join(os.environ['TRAFFIC_DIR'],'scripts'))
+from Constants import *
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
-def GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR,start = 7,end = 8,grid_size = 0.02,hexagon_resolution = 8,list_peaks = [1,2,3,4,5,6,8,10,100,200,400,1000],covariances = [0.1,0.5,1,2,4,6,10,15,20],distribution_population_from_center = ["exponential"]):
+#SERVER_TRAFFIC_DIR = '/home/alberto/LPSim/LivingCity/berkeley_2018'
+def GenerateConfigGeometricalSettingsSpatialPartition(city,
+                                                      TRAFFIC_DIR,
+                                                      start = 7,
+                                                      end = 8,
+                                                      grid_size = 0.02,
+                                                      hexagon_resolution = 8,
+                                                      list_peaks = [1,2,3,4,5,6,8,10,100,200,400,1000],
+                                                      covariances = [0.1,0.5,1,2,4,6,10,15,20],
+                                                      distribution_population_from_center = ["exponential"]):
     if city == "BOS" or city == "LIS":
         list_peaks = [1,2,3,5,10,100,1000]
     else:
@@ -20,7 +31,7 @@ def GenerateConfigGeometricalSettingsSpatialPartition(city,TRAFFIC_DIR,start = 7
         'shape_file_dir_local': os.path.join(TRAFFIC_DIR,'data','carto',city,'shape_files'),
         'ODfma_dir': os.path.join(TRAFFIC_DIR,'data','carto',city,'ODfma'),
         'save_dir_local': os.path.join(TRAFFIC_DIR,'data','carto',city),
-        'save_dir_server': os.path.join(SERVER_TRAFFIC_DIR,city),
+        'save_dir_server': os.path.join(BERKELEY_2018_DIR,city),
         'file_GraphFromPhml': os.path.join(TRAFFIC_DIR,'data','carto',city,city + '_new_tertiary_simplified.graphml'),
         'file_gdf_polygons': os.path.join(TRAFFIC_DIR,'data','carto',city,'shape_files',city + '.shp'),
         'start_group_control': start,

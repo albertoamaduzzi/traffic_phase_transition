@@ -23,6 +23,12 @@ def UploadGravitationalFit(TRAFFIC_DIR,name):
 
 
 def ConcatenateODsInputSimulation(SFO_obj,grid_size,NameCity):
+    """
+        @params SFO_obj: Preprocessing object
+        @params grid_size: size of the grid
+        @params NameCity: name of the city
+        @return: df1: pandas dataframe
+    """
     FirstFile = True
     for file in os.listdir(os.path.join(SFO_obj.ODfma_dir)):
         if file.endswith('.fma'):

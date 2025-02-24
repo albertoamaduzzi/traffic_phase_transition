@@ -315,7 +315,7 @@ def FittingPowerlaw(x,y,initial_guess = (1,0.5),maxfev = 10000):
         alpha_pl = fit[0][0]
         y_fit_pl = powerlaw(x,A_pl,alpha_pl)
         y_fit_pl_err = powerlaw(x0,A_pl,alpha_pl)
-        ErrorPL = np.sqrt(np.sum((y_fit_pl_err-np.log(y0))**2)/len(y0))
+        ErrorPL = np.sqrt(np.sum((y_fit_pl_err-y0)**2)/len(y0))
         return y_fit_pl,ErrorPL,A_pl,alpha_pl
     else:
         print(f"FittingPowerlaw: len x0: {len(x0)} len y0: {len(y0)}")

@@ -269,7 +269,10 @@ class GeometricalSettingsSpatialPartition:
             1- Gets Lattice from grid.
 
         """
-        self.lattice = GetLattice(self.grid,self.grid_size,self.bounding_box,self.save_dir_local)
+        self.lattice = GetLattice(self.grid,
+                                  self.grid_size,
+                                  self.bounding_box,
+                                  self.save_dir_local)
         self.StateAlgorithm["GetLattice"] = True
 
     def GetGrid(self):
@@ -434,7 +437,6 @@ class GeometricalSettingsSpatialPartition:
             self.Dmax_ij_Mass = pd.read_parquet(os.path.join(self.save_dir_grid,f'DmaxMass.parquet'))["DmaxMass"].to_numpy(dtype=np.float64)
 
 
-    # this comment is not a bug
     def RoutineVectorFieldAndPotential(self):
         """
             Computes:
@@ -702,15 +704,20 @@ class GeometricalSettingsSpatialPartition:
 
 
 ## Simulation Output File ##
-    def ComputeDf4SimChangedMorphology(self,UCI,R,Modified_Fluxes):
+    def ComputeDf4SimChangedMorphology(self,
+                                       UCI,
+                                       R,
+                                       Modified_Fluxes,
+                                       complete_path_od_demand_file):
         """
             @params UCI: float -> Urban Centrality Index
             @params R: int -> fraction of people per second
             @params Modified_Fluxes: DataFrame: [number_people,i,j] (Fluxes produced by gravitational model)
+            @params complete_path_od_demand_file: str -> Path to save the simulation file
         """
         # If it has not been computed or it is already saved the simulation
         end = self.start + 1
-        if not os.path.isfile(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))):
+        if not os.path.isfile(complete_path_od_demand_file):
             # Computte the Df for Simulation
             NPeopleOffset = len(self.DfBegin)
             logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
@@ -727,13 +734,17 @@ class GeometricalSettingsSpatialPartition:
             end = self.start + 1
             logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
 #            PlotDepTime(Df, self.city, self.save_dir_local)
-            Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
+            Df.to_csv(complete_path_od_demand_file,sep=',',index=False)
+#            Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
         else:
             pass
-        return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
+        return complete_path_od_demand_file
         
 
-    def ComputeDf4SimNotChangedMorphology(self,UCI,R):
+    def ComputeDf4SimNotChangedMorphology(self,
+                                          UCI,
+                                          R,
+                                          complete_path_od_demand_file):
         """
             @params: UCI: float (Urban Centrality Index)
             Compute the Df for Simulation without changing the morphology of the city
@@ -753,8 +764,8 @@ class GeometricalSettingsSpatialPartition:
         end = self.start + 1
         logger.info(f"Save Sim-File ControlGroup NOT Generated {self.city}, R: {R}, UCI: {UCI}...")
         
-        Df.to_csv(os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3))),sep=',',index=False)
-        return os.path.join(self.new_full_network_dir ,'{0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv'.format(self.city,self.start,end,str(int(R)),round(UCI,3)))
+        Df.to_csv(complete_path_od_demand_file,sep=',',index=False)
+        return complete_path_od_demand_file
 
 
 #### Prepare Input For Simulation ####

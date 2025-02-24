@@ -64,7 +64,7 @@ def GenerateConfig(BaseData,Config,City,Rs,UCIs):
     """
     from collections import defaultdict
 #    Config = {float(UCIs): {int(R):defaultdict()} for UCIs in UCIs for R in Rs}
-    Config["output_simulation_dir"] = BaseData
+    Config["dir_output_simulation_analysis"] = BaseData
     Config["delta_t"] = 10 # Length in minutes of the interval in which I accumulate the people in the network
     Config['name'] = City
     Config["graphml_file"]= os.path.join(os.environ["TRAFFIC_DIR"],'data','carto',City,City + '_new_tertiary_simplified.graphml')    
