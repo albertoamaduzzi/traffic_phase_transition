@@ -39,12 +39,22 @@ def convert_ndarray(obj):
         return obj
 
 class Polycentrism2TrafficAnalyzer:
-    def __init__(self,config,Rs,UCIs):
-        self.config = config
-        self.Name = config['name']
-        self.delta_t = config['delta_t']
-        self.BaseDir = config['dir_output_simulation_analysis']
-        self.GraphmlFile = config['graphml_file']
+    def __init__(self,Df_City2Config,Rs,UCIs):
+        assert isinstance(Df_City2Config, pl.DataFrame), f"Df_City2Config must be a polars DataFrame, instead {type(Df_City2Config)}"
+        assert isinstance(Rs,list), f"Rs must be a list, instead {type(Rs)}"
+        assert isinstance(UCIs,list), f"UCIs must be a list, instead {type(UCIs)}"
+        assert len(Rs) > 0, f"Rs must be a list of length > 0, instead {len(Rs)}"
+        assert len(UCIs) > 0, f"UCIs must be a list of length > 0, instead {len(UCIs)}"
+        assert "name" in Df_City2Config.columns, f"Df_City2Config must contain a column 'name', instead {Df_City2Config.columns}"
+        assert "delta_t" in Df_City2Config.columns, f"Df_City2Config must contain a column 'delta_t', instead {Df_City2Config.columns}"
+        assert "dir_output_simulation_analysis" in Df_City2Config.columns, f"Df_City2Config must contain a column 'dir_output_simulation_analysis', instead {Df_City2Config.columns}"
+        assert "complete_path_graphml" in Df_City2Config.columns, f"Df_City2Config must contain a column 'complete_path_graphml', instead {Df_City2Config.columns}"
+        self.Df_config = Df_City2Config
+        # Unique variables
+        self.Name = Df_City2Config['name'].unique().to_numpy()[0]
+        self.delta_t = Df_City2Config['delta_t'].unique().to_numpy()[0]
+        self.BaseDir = Df_City2Config['dir_output_simulation_analysis'].unique().to_numpy()[0]
+        self.GraphmlFile = Df_City2Config['complete_path_graphml'].unique().to_numpy()[0]
         self.R2UCI2OutputStats = defaultdict()
         # Phase Transition
         self.UCI2R2Time2PeopleInNet = defaultdict()
@@ -63,7 +73,7 @@ class Polycentrism2TrafficAnalyzer:
         self.Taus = {round(UCI,3):[] for UCI in UCIs}
         self.Gammas = {round(UCI,3):[] for UCI in UCIs}
         self.UsedRs = {round(UCI,3):[] for UCI in UCIs}
-        # One per UCI\
+        # One per UCI
         self.UCI2CriticalParams = {round(UCI,3):defaultdict() for UCI in UCIs}
         self.Rcs = {round(UCI,3):[] for UCI in UCIs}
         self.Alphas = {round(UCI,3):[] for UCI in UCIs}
@@ -167,26 +177,25 @@ class Polycentrism2TrafficAnalyzer:
                 Rc = self.UCI2CriticalParams[round(UCI,3)]["Rc"]
                 alpha = self.UCI2CriticalParams[round(UCI,3)]["Alpha"]
                 R2Epsilon = {R:(R**2 - Rc**2)/Rc**2 for R in sorted(self.Rs)}
-                if False:
-                    PlotFigure4(R2NtNtFit,
-                                R2Epsilon,
-                                alpha,
-                                self.t_vect,
-                                self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
-                                UCI,
-                                Rc,
-                                self.Name,
-                                BestT,
-                                os.path.join(self.BaseDir,"Plots"))
-                    PlotRRcTauTauc(self.Taus[round(UCI,3)],
-                                self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
-                                self.UsedRs[round(UCI,3)],
-                                self.UCI2CriticalParams[round(UCI,3)]["Rc"],
-                                alpha,
-                                self.Name,
-                                UCI,
-                                os.path.join(self.BaseDir,"Plots")
-                                )
+                PlotFigure4(R2NtNtFit,
+                            R2Epsilon,
+                            alpha,
+                            self.t_vect,
+                            self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
+                            UCI,
+                            Rc,
+                            self.Name,
+                            BestT,
+                            os.path.join(self.BaseDir,"Plots"))
+                PlotRRcTauTauc(self.Taus[round(UCI,3)],
+                            self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
+                            self.UsedRs[round(UCI,3)],
+                            self.UCI2CriticalParams[round(UCI,3)]["Rc"],
+                            alpha,
+                            self.Name,
+                            UCI,
+                            os.path.join(self.BaseDir,"Plots")
+                            )
                 uci2beta_path = os.path.join(self.BaseDir,"Plots","uci2beta.json")
                 if os.path.exists(uci2beta_path):
                     with open(uci2beta_path, 'r') as f:
@@ -240,10 +249,32 @@ if __name__ == "__main__":
     list_cities = ["BOS","SFO","RIO"]
     ListPeopleFile = []
     ListRoutesFile = []
+    complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
+
     def MainMultiprocessing(City):
-        City2Config,Rs,UCIs = InitConfigPolycentrismAnalysis(City)  
-        PCTA = Polycentrism2TrafficAnalyzer(City2Config[City],Rs,UCIs)  
+        """
+            @City: str
+            Description:
+                - For each city, load the configuration file
+                - For each UCI, load the output file
+                - For each R, load the output file
+                - Compute the average unload curve
+                - Compute the average volume traffic
+                - Compute the average speed
+        """
+
+#        City2Config,Rs,UCIs = InitConfigPolycentrismAnalysis(City)  
+        Df_Info_Simulations = pl.read_parquet(complete_path_info_simulations_df)
+        Rs = Df_Info_Simulations.filter(pl.col("city") == City)["R"].unique().to_numpy()
+        UCIs = Df_Info_Simulations.filter(pl.col("city") == City)["UCI"].unique().to_numpy()
+        R = Rs[0]
+
+        Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == City,
+                                                pl.col("R") == R)
+        # 10) NOTE: Analyze the Output
+        PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,Rs,UCIs)  
         PCTA.CompleteAnalysis()
+
     if True:
         with multiprocessing.Pool(3) as p:
             p.map(MainMultiprocessing, list_cities)

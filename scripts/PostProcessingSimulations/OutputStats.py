@@ -16,6 +16,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 from EfficiencyAnalysis import *
+from OutputStats_Functions import *
 """
     @ description:
         This script contains the class OutputStats that is used to analyze the output of the simulation.
@@ -63,17 +64,31 @@ class OutputStats:
             @params GeoJsonEdges: GeoJsonEdges (contains informations about capacity)
 
     """
-    def __init__(self,R,UCI,config,GeoJsonEdges,Nodes,Edges):
-        
+    def __init__(self,
+                 R,
+                 UCI,
+                 Df_City2Config,
+                 GeoJsonEdges,
+                 Nodes,
+                 Edges):
+        assert type(R) == int, "R must be an integer"
+        assert isinstance(Df_City2Config,pl.DataFrame), f"Df_City2Config must be a polars DataFrame instead of {type(Df_City2Config)}"
+        assert "complete_path_route_file" in Df_City2Config.columns, "Df_City2Config must contain the column complete_path_route_file"
+        assert "complete_path_people_file" in Df_City2Config.columns, "Df_City2Config must contain the column complete_path_people_file"
+        assert "complete_path_unloading_curve_base" in Df_City2Config.columns, "Df_City2Config must contain the column complete_path_unloading_curve_base"
         self.verbose = True
-        # Add Logic to Take All The Files From The Base Dir
-        self.RouteFile = config[UCI][R]['route_file']
-        self.PeopleFile = config[UCI][R]['people_file']
+        # iter_ indexed variables
+        self.RouteFiles = Df_City2Config['complete_path_route_file'].to_numpy()
+        self.PeopleFiles = Df_City2Config['complete_path_people_file'].to_numpy()
+        self.complete_path_unloading_curve_base = Df_City2Config['complete_path_unloading_curve_base'].to_numpy() 
+        self.iters = Df_City2Config['iter'].to_numpy()
+        # unique variables
         self.R = R
         self.UCI = UCI
-        self.city = config['name']
-        self.delta_t = config['delta_t']
-        self.PlotDir = JoinDir(config['dir_output_simulation_analysis'],'Plots')
+        self.city = Df_City2Config['name'].unique()[0]
+        self.delta_t = Df_City2Config['delta_t'].unique()[0]
+        self.complete_path_unloading_curve_base =  Df_City2Config["complete_path_unloading_curve_base"].unique().to_numpy()[0]
+        self.PlotDir = JoinDir(Df_City2Config['dir_output_simulation_analysis'].unique()[0],'Plots')
         self.PlotDir = JoinDir(self.PlotDir,f'{round(self.UCI,3)}')
         self.LogFile = JoinDir(self.PlotDir,"Log.txt")
         self.CountFunctions = 0
@@ -97,9 +112,15 @@ class OutputStats:
         # Edges and Nodes .csv
         self.AddCapacity2Edges()
         self.ConvertSpeedRoad2kmhInEdges()
+        # Roads and People
+        self.iter_2_DfRoute = defaultdict()
+        self.iter_2_DfPeople = defaultdict()
         # TRAFFIC VARIABLES
+        self.iter_2_DfUnload = defaultdict()
+        self.iter_2_DfControlGroup = defaultdict()
         self.DfUnload = None
         self.DfControlGroup = None
+        self.iter_2_VolumeTraffic = defaultdict()
         # Total Volume Traffic
         self.VolumeTraffic = 0
         # Dictionary Traffic
@@ -120,6 +141,7 @@ class OutputStats:
         """
             @Description:
                 Read the GeoJsonEdges File
+            NOTE: Unique for every simulation
         """
         logger.info(f"{self.city} Reading GeoJsonEdges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         self.GeoJsonEdges = GeoJsonEdges
@@ -132,6 +154,7 @@ class OutputStats:
         """
             Add the capacity to the Edges DataFrame.
             @ NOTE: Useful For Considerations about traffic.
+
         """
         logger.info(f"Adding Capacity to Edges R: {self.R}, UCI: {self.UCI}, City: {self.city}")
         df = pl.DataFrame(self.GeoJsonEdges[["capacity","uv"]])
@@ -158,17 +181,17 @@ class OutputStats:
                 Read the People File:
                 NOTE: columns: p, distance, time_departure, last_time_simulated, num_steps, avg_v(mph), a, b, T, gas, co, path_length_cpu, path_length_gpu
         """
-        logger.info(f"{self.city} Reading People File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        if IsFile(self.PeopleFile):
-            if ".parquet" in self.PeopleFile:
-                self.DfPeople = pl.read_parquet(self.PeopleFile)
-            elif ".csv" in self.PeopleFile:
-                self.DfPeople = pl.read_csv(self.PeopleFile)
-            self.DfPeople = self.DfPeople.filter(pl.col("time_departure")>self.t_start_hour*3600)
-            self.ReadPeopleInfoBool = True
-            self.CountFunctions += 1
-            Message = f"Function {self.CountFunctions}: GetPeopleInfo: {self.PeopleFile} was read"
-            AddMessageToLog(Message,self.LogFile)
+        logger.info(f"{self.city} Reading People Files R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        count_people_file = 0
+        for PeopleFile in self.PeopleFiles:
+            iter_ = self.iters[count_people_file]
+            if IsFile(PeopleFile):
+                if ".parquet" in PeopleFile:
+                    self.iter_2_DfPeople[iter_] = pl.read_parquet(PeopleFile)
+                elif ".csv" in PeopleFile:
+                    self.iter_2_DfPeople[iter_] = pl.read_csv(PeopleFile)
+                self.iter_2_DfPeople[iter_] = self.iter_2_DfPeople[iter_].filter(pl.col("time_departure")>self.t_start_hour*3600)
+                logger.info(f"{self.city}: GetPeopleInfo: {PeopleFile} was read, updated iter_2_DfPeople")
 
 #### Preprocess: Trajectories in Road Network  #####
 
@@ -179,18 +202,21 @@ class OutputStats:
                 Read the Route File:
             NOTE: columns: p, route, distance
         """
-        logger.info(f"{self.city} Reading Route File R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        if IsFile(self.RouteFile):
-            if ".parquet" in self.RouteFile:
-                self.DfRoute = pl.read_parquet(self.RouteFile)
-            elif ".csv" in self.RouteFile:
-                self.DfRoute = pl.read_csv(self.RouteFile,separator = ':')
-                if self.DfRoute.schema["route"] == pl.Utf8:
-                    pass
-            self.ReadRouteInfoBool = True
-            self.CountFunctions += 1
-            Message = f"Function {self.CountFunctions}: GetRouteInfo: {self.RouteFile} was read"
-            AddMessageToLog(Message,self.LogFile)
+        logger.info(f"{self.city} Reading Route Files R: {self.R}, UCI: {self.UCI}, City: {self.city}")
+        count_route_file = 0
+        for RouteFile in self.RouteFiles:
+            iter_ = self.iters[count_route_file]
+            if IsFile(RouteFile):
+                if ".parquet" in RouteFile:
+                    self.iter_2_DfRoute[iter_] = pl.read_parquet(RouteFile)
+                elif ".csv" in RouteFile:
+                    self.iter_2_DfRoute[iter_] = pl.read_csv(RouteFile,separator = ':')
+                    if self.iter_2_DfRoute[iter_].schema["route"] == pl.Utf8:
+                        pass
+                self.ReadRouteInfoBool = True
+                self.CountFunctions += 1
+                logger.info(f"{self.city}: GetRouteInfo: {RouteFile} was read -> updated iter_2_DfRoute")
+            count_route_file += 1
 
 
 
@@ -204,19 +230,15 @@ class OutputStats:
         if not self.SkipAnalysisR:
             # Join DfPeople, Edges And DfRoute 
             self.HavlinPercolation = False
-            if self.HavlinPercolation:
-                self.PreprocessDfRouteUnionDfPeople() # It consumes a lot of resources and it is not actually needed for our DP pourposes
-            # Compute The Unload Curve
-            self.ComputeUnloadCurve()   # Output: DfUnload
+            # 1) NOTE: Compute The Unload Curve DfUnload
+            self.ComputeUnloadCurve()   
             # Instantiate All The Variables To Understand If The Network Is Jammed
             if self.IsEnoughData:
-                # Compute The Best Fit For The Power Law And Exponential
+                # 2) NOTE: Compute The Best Fit For The Power Law And Exponential
                 self.ComputeBestFitPlExpo() 
-                # Decide If The Network Is Jammed NOTE: (sel.TCritical, self.CriticalNt, self.CriticalAlpha)
-    #            self.DecideIfJam()
-                # Compute The Gamma And Tau
+                # 3) NOTE: Compute The Gamma And Tau
                 self.ComputeGammaAndTau()
-                # Show The Unload Curve
+                # 4) NOTE> Show The Unload Curve
                 self.PlotUnloadCurve()
                 # Compute The Fluxes And Speeds in time
     #            self.ComputeFluxesAndSpeedDfRoute()
@@ -225,50 +247,16 @@ class OutputStats:
             else:
                 pass
         else:
-            # Import the Unloading Curve, The InfoTraffic and the DfUnload
+            # 1) NOTE: Import the DfUnload,InfoTraffic NOTE: Only needed variables 
             import json
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                 self.InfoTraffic = json.load(f)
-            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+            self.DfUnload = pl.read_parquet(self.complete_path_unloading_curve_base)
             logger.info(f"{self.city} Skip Analysis for UCI: {round(self.UCI,3)}, R: {self.R}")
 
 
 
 ## PREPROCESSING ##
-    def PreprocessDfRouteUnionDfPeople(self):
-        """
-            @description:
-                Preprocess the DfRoute with the DfPeople  and the Edges
-                NOTE: This Object is The Main Object We are Going to Use To Compute Everything about the Traffic
-                NOTE: columns
-                - p: User Id
-                - distance: Distance Travelled By User
-                - init_intersection: Origin (in uniqueid Nodes index)
-                - end_intersection: Destination (in uniqueid Nodes index)
-                - time_departure: Time of Departure (in seconds)	
-                - last_time_simulated: Time of Arrival (in seconds)
-                - route: List of Edges in the route
-                - avg_v(km/h): Average Velocity of the User (in km/h)
-                - osmid_u: Index Node Front in Osmid Code	
-                - osmid_v: Index Node Back in Osmid Code
-                - length: Length of the Road (in m)	
-                - u: Index Node Front in Uniqueid Code
-                - v: Index Node Back in Uniqueid Code
-                - length_km: Length of the Road (in km)
-                - distance_km: Distance Travelled By User (in km)
-                - avg_v(m/s): Average Velocity of the User (in m/s)
-                - time_leaving_road: Time of Leaving the Road (in seconds)
-                NOTE: See EmbdedTrajectoriesInRoadsAndTime
-        """
-        logger.info(f"{self.city} Preprocessing DfRoute Union DfPeople R: {self.R}, UCI: {self.UCI}, City: {self.city}")
-        # Prepare the DataFrame: NOTE: Compute the Fluxes and Speeds is Deprecated
-        if self.HavlinPercolation:
-            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)
-        else:
-            # This one contains informations just about the control group, NOTE: the logic is sloppy but should work
-            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfControlGroup,self.Edges)
-            
-
 # Trajectories Info
     @timing_decorator
     def ComputeUnloadCurve(self):
@@ -290,46 +278,54 @@ class OutputStats:
                     DiffNumberPeople: int -> Difference in Number of People (between t+1 and t)
                     Time_hours: int -> Time in hours
                     Time_hours_shifted: int -> Time in hours shifted by start time NOTE: is the one used for fit and plots about fraction people remaining in the road network
+            @return:
+                self.DfUnload: DataFrame -> This is the object for the traffic analysis for DP.
         """
         logger.info(f"{self.city} Computing Unload Curve R: {self.R}, UCI: {self.UCI}")
+        # 1) Initialize time variables
         self.IntTimeArray, self.HourTimeArray, self.Interval2NumberPeopleInNet = InitializeTimeVariablesOutputStats(HOURS_IN_DAY,MINUTES_IN_HOUR,SECONDS_IN_MINUTE,TIMESTAMP_OFFSET,self.delta_t)
-        if self.HavlinPercolation:
-            self.DfRoute = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfPeople,self.Edges)            
-            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfRoute,"time_departure","last_time_simulated")
-        else:
-            self.DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,self.t_end_control_group,self.DfPeople,"time_departure","last_time_simulated")
-            self.DfControlGroup = EmbdedTrajectoriesInRoadsAndTime(self.DfRoute,self.DfControlGroup,self.Edges)
-
-        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI))):
-            # Initialize Time Variables IntTimeArray = [0,delta_t,2*delta_t,...,SecondsInDay], HourTimeArray = [0,1,2,...,24], Interval2NumberPeopleInNet = {0:0,1:0,...,24:0}
-            # NOTE: Filter the People in the Control Group  
-            for t in range(len(self.Interval2NumberPeopleInNet.keys())-1):
-                # DataFrame Filtered With People in the Network at time t in the time interval t,t+1
-                DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(self.IntTimeArray[t],self.IntTimeArray[t+1],"last_time_simulated",self.DfControlGroup)
-                # Number Of People in the Network at time t
-                self.Interval2NumberPeopleInNet[self.HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
-            data = {
-                "Time": list(self.IntTimeArray[:-1]),
-                "Time_Str": list(self.Interval2NumberPeopleInNet.keys()),
-                "NumberPeople": list(self.Interval2NumberPeopleInNet.values())
-            }
-            self.DfUnload = pl.DataFrame(data)
-            self.VolumeTraffic = np.sum(self.DfUnload["NumberPeople"].to_numpy())
-            self.DfUnload = self.DfUnload.with_columns((pl.col("NumberPeople")/self.VolumeTraffic).alias("FractionPeople"),
-                                                       (pl.col("NumberPeople").diff().shift(1).fill_null(0)).alias("DiffNumberPeople")
-                                                       )            
-            # Add Time_hours column
-            self.DfUnload = self.DfUnload.with_columns(
-                (pl.col("Time") / 3600).alias("Time_hours")
-            )
-            self.DfUnload = self.DfUnload.filter(pl.col("Time") > self.t_start_control_group)
-            self.DfUnload = self.DfUnload.with_columns((pl.col("Time_hours") - self.t_start_hour).alias("Time_hours_shifted"))
-            self.DfUnload = self.DfUnload.with_columns((pl.col("FractionPeople") > 0).alias("IsPeople"))
-            self.DfUnload = self.DfUnload.with_columns((pl.col("Time") >= self.t_end_control_group).alias("IsUnload"))
-        else:
-            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
-            self.HourTimeArray = self.DfUnload["Time_Str"]
-            self.Interval2NumberPeopleInNet = self.DfUnload["NumberPeople"]
+        # 2) NOTE: Iter over ensemble realizations
+        for iter_ in self.iter_2_DfRoute.keys():
+            DfRoute = self.iter_2_DfRoute[iter_]
+            DfPeople = self.iter_2_DfPeople[iter_]
+            # 3) NOTE: Filter the People in the Control Group
+            if self.HavlinPercolation:
+                DfRoute = EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,self.Edges)            
+                DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,
+                                                            self.t_end_control_group,
+                                                            DfRoute,
+                                                            "time_departure","last_time_simulated")
+            else:
+                DfControlGroup = FilterDfPeopleControlGroup(self.t_start_control_group,
+                                                            self.t_end_control_group,
+                                                            DfPeople,
+                                                            "time_departure","last_time_simulated")
+                DfControlGroup = EmbdedTrajectoriesInRoadsAndTime(DfRoute,
+                                                                  DfControlGroup,
+                                                                  self.Edges)
+            self.iter_2_DfControlGroup[iter_] = DfControlGroup
+            # 4) NOTE: Compute the Unload Curve
+            if not os.path.exists(self.complete_path_unloading_curve_iter[iter_]):
+                VolumeTraffic, DfUnload = ComputeSingleUnloadCurve(self.Interval2NumberPeopleInNet,
+                                                                    self.IntTimeArray,
+                                                                    self.HourTimeArray,
+                                                                    self.t_start_control_group,
+                                                                    self.t_start_hour,
+                                                                    self.t_end_control_group,
+                                                                    self.DfControlGroup)  
+                self.iter_2_VolumeTraffic[iter_] = VolumeTraffic
+                self.iter_2_DfUnload[iter_] = DfUnload
+            else:
+                self.iter_2_DfUnload[iter_] = pl.read_parquet(self.complete_path_unloading_curve_base[iter_])
+                self.iter_2_VolumeTraffic[iter_] = self.iter_2_DfUnload[iter_]["NumberPeople"].sum()
+                self.HourTimeArray = self.iter_2_DfUnload[iter_]["Time_Str"]
+                self.Interval2NumberPeopleInNet = self.iter_2_DfUnload[iter_]["NumberPeople"]
+        # 5) NOTE: Compute the average Unloading curve and Volume of traffic
+        self.DfUnload = ComputeAverageUnloadCurve(self.iter_2_DfUnload,
+                                                  self.t_end_control_group
+                                                  )
+        self.VolumeTraffic = ComputeAverageVolumeTraffic(self.iter_2_VolumeTraffic)
+    
     @timing_decorator
     def ComputeBestFitPlExpo(self):
         """
@@ -359,44 +355,29 @@ class OutputStats:
         NOTE: InfoTraffic is the dictionary of interest to compute the Traffic Analysis
         """
         import json
-        if not os.path.exists(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI))):
+        if not os.path.exists(self.complete_path_unloading_curve_base):
             logger.info(f"{self.city} Computing Best Fit Pl Exponential R: {self.R}, UCI: {self.UCI}")
-            # Consider Just the period after the load finishes.
-            # Consider just when traffic is there             
+            # 1) NOTE: Compute the Best Fit for the Power Law and Exponential
             self.DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl = ComparePlExpoDf(self.DfUnload,
                                                                                         maxfev = 10000)
             
             
-            # Error & Fit
-            self.InfoTraffic["ErrorExp"] = ErrorExp
-            self.InfoTraffic["ErrorPl"] = ErrorPL
-            self.InfoTraffic["A_exp"] = A0
-            self.InfoTraffic["A_pl"] = A_pl
-            self.InfoTraffic["alpha_exp"] = alpha_exp
-            self.InfoTraffic["alpha_pl"] = alpha_pl
-            if ErrorExp<ErrorPL:
-                self.InfoTraffic["best_fit"] = "Exponential"
-                self.InfoTraffic["IsJam"] = False
-                self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]       # In hours
-                logger.info("{0} Network is not jammed at time with alpha = None and Tau = {1}".format(self.city,self.InfoTraffic["Tau"]))
-            else:
-                self.InfoTraffic["best_fit"] = "PowerLaw"
-                self.InfoTraffic["IsJam"] = True
-                self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]
-                logger.info(f"{self.city} Network is jammed with alpha = {alpha_pl} and Tau = None")
+            # 2) NOTE: Error & Fit
+            self.InfoTraffic = FillInfoTraffic(ErrorExp, ErrorPL, A0, A_pl, alpha_exp, alpha_pl,self.city)
+            # 3) NOTE: Compute Gamma and Tau
             self.ComputeGammaAndTau()
             self.InfoTraffic["Gamma"] = self.Gamma
-            # Save 
+            # NOTE: Writing InfoTraffic, DfUnload 
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'w') as f:
                 json.dump(self.InfoTraffic,f,indent = 4)
-            self.DfUnload.write_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+            self.DfUnload.write_parquet(self.complete_path_unloading_curve_base)
 
         else:
             logger.info(f"{self.city} Reading InfoTraffic File R: {self.R}, UCI: {self.UCI}")
             with open(os.path.join(self.PlotDir,f"InfoTraffic_R_{self.R}_UCI_{round(self.UCI,3)}.json"),'r') as f:
                 self.InfoTraffic = json.load(f)
             self.InfoTraffic["Tau"] = - 1/self.InfoTraffic["alpha_exp"]
-            self.DfUnload = pl.read_parquet(JoinDir(self.PlotDir,"UnloadCurve_R_{0}_UCI_{1}.parquet".format(self.R,self.UCI)))
+            self.DfUnload = pl.read_parquet(self.complete_path_unloading_curve_base)
 ### FLUXES AND GAMMA
     @timing_decorator
     def ComputeFluxesAndSpeedDfRoute(self):
@@ -485,8 +466,8 @@ class OutputStats:
                             self.InfoTraffic["best_fit"],
                             JoinDir(self.PlotDir,"UnloadingCurve_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
         logger.info(f"{self.city} Plotting dN/dt R: {self.R}, UCI: {self.UCI}")
-        PlotGt(self.DfUnload,
-               JoinDir(self.PlotDir,"dN_dt_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
+#        PlotGt(self.DfUnload,
+#               JoinDir(self.PlotDir,"dN_dt_R_{0}_UCI_{1}.png".format(self.R,self.UCI)))
 
     @timing_decorator
     def PlotNtAndFitSingleR(self):

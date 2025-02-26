@@ -27,11 +27,17 @@ In this project we are considering the realization of synthetic traffic conditio
 The algorithm, starting from informations about population and fluxes in different hours of the day has the goal to produce diff
 ## geometry_creation
 Everything starts with:   
-`GenerateConfigGeometricalSettingsSpatialPartition`: -> `config.py`, contains the parameters used for the computations.
+- `GenerateConfigGeometricalSettingsSpatialPartition`: -> `config.py`, contains the parameters used for the 
+computations.    
+- `GetGeometries`: -> computes the geometries needed for computation: `grid`,`gdf_polygons`,`hexagons`, in particular,
+the geometry that is the most used for its topological simplicity is `grid`. This data structure (GeoDataFrame), gives the reference indices for computations like vector field, potential, fit computation.    
 ## morphology_handling/generation
-
+- `RoutineVectorFieldAndPotential`: compute vector field and potential for the given city for non modified population.
+In this step is computed `UCI`.
+- `ComputeFit`: computes the gravitational fit for the city of intrest in `grid`     
+- Generation ODs: `InitializeDf4Sim`,`ComputeDf4SimNotChangedMorphology`,`ComputeEndFileInputSimulation` -> compute the OD file that is going to be used as input of the simulation machine `LPSim`. This is done for different values of `R` (loading rate) and `iter` in `iteration_number`.    
 ## simulation
-
+`LaunchSimulation`: launches the simulation given `grid` with fixed population, `ODs`. Each simulation is characterized by the triplet (`city`,`UCI`,`R`,`iter`). The `iteration_number` is the enemble number that we want to explore. Essentially, each iter corresponds to a different realization of the OD in terms of the nodes where people are generated 
 ## Analysis DP
 
 ## Population/Origin-Destination/Grid

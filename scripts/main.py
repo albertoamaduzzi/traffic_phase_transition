@@ -154,7 +154,7 @@ def Init_Info_Simulations_Df(
         complete_path_info_simulations_df,
         list_columns_df_info_simulations
         ):
-    if os.paht.isfile(complete_path_info_simulations_df):
+    if os.path.isfile(complete_path_info_simulations_df):
         from polars import read_csv
         return read_csv(complete_path_info_simulations_df)
     else:
@@ -178,40 +178,117 @@ def Update_update_dict_df(update_dict_df,
                           complete_path_output_simulation_copied,
                           NameCity,
                           dir_output_simulation_analysis,
-                          name_file_graphml,
+                          complete_path_graphml,
+                          rounded_UCI,
+                          str_UCI,
+                          R,
+                          ensemble_realization,
+                          complete_path_route_file,
+                          complete_path_people_file,
+                          complete_path_unloading_curve_base,
+                          complete_path_unloading_curve_iter,
                           dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
                           dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
                           dir_output_simulation_gpu = os.environ["LPSIM"],
                           number_realizations_OD_ensemble = 4,
                           delta_t = 10,
+                        
                           ):
     """
         @param update_dict_df: dict -> Dictionary with the information about the simulation
 
     """
+    update_dict_df = defaultdict()
+    # Main() Variables
     update_dict_df["dir_output_simulation_analysis"] = dir_output_simulation_analysis                       # NOTE: We copy simulator output here.
     update_dict_df["complete_path_od_file_input_simulation"] = complete_path_od_file_input_simulation       #
     update_dict_df["complete_path_output_simulation_copied"] = complete_path_output_simulation_copied       #
     update_dict_df["name"] = NameCity                                                                       #
-    update_dict_df["graphml_file"] = name_file_graphml                                                      #
+    update_dict_df["complete_path_graphml"] = complete_path_graphml                                                      #
+    update_dict_df["city"] = NameCity
+    update_dict_df["UCI"] = rounded_UCI                                                                    #
+    update_dict_df["R"] = R
+    update_dict_df["iter"] = ensemble_realization
+    update_dict_df["str_UCI"] = str_UCI
     #### CONSTANTS ####
         # ProcessMain() Variables
     update_dict_df["dir_file_demand"] = dir_file_demand                                                     # NOTE: Simulator checks by default here for demand
     update_dict_df["dir_new_full_network"] = dir_new_full_network                                           # NOTE: Simulator checks by default here for cartography
     update_dict_df["dir_output_simulation_gpu"] = dir_output_simulation_gpu                                 # NOTE: Simulator Puts the output of the simulation here
+    # PCTA complete analysis
     update_dict_df["number_realizations_OD_ensemble"] = number_realizations_OD_ensemble                     # NOTE: Number of different simulations launched for a couple UCI, R (what changes are the realization of nodes where people are inserted.)
-    update_dict_df["delta_t"] = delta_t                                                                 #
+    update_dict_df["delta_t"] = delta_t
+    update_dict_df["complete_path_unloading_curve_base"] = complete_path_unloading_curve_base
+    update_dict_df["complete_path_unloading_curve_iter"] = complete_path_unloading_curve_iter  
+    update_dict_df["complete_path_route_file"] = complete_path_route_file
+    update_dict_df["complete_path_people_file"] = complete_path_people_file                                                                   #
     return update_dict_df
+
+
+def Set_Paths_Simulation_Analysis_Beta(city,
+                                       str_UCI,
+                                       rounded_UCI,
+                                       R,
+                                       ensemble_realization,
+                                       Name_parameters_output,
+                                       start,
+                                       end,
+                                       dir_output_simulation_analysis_base,
+                                       number_realizations_OD_ensemble):
+    # 
+    suffix_parquet_people_file = f'0_people{start}to24.parquet'                                                                                                     # NOTE:   
+    suffix_parquet_route_file = f'0_route{start}to24.parquet'                                                                                           # Files Simulation                 
+    #
+    name_od_file_input_simulation = f"{city}_oddemand_{start}_{end}_{Name_parameters_output}.csv"                                     # NOTE: OD file name -> this is the one the simulation looks for as input: MUST be in ../new_full_netwtork/
+    complete_path_od_file_input_simulation = os.path.join(dir_file_demand,name_od_file_input_simulation)
+    #
+    dir_output_simulation_analysis = os.path.join(dir_output_simulation_analysis_base,str_UCI,str(R))                                                                      # NOTE: directory where I copy the output of the simulation
+    os.makedirs(os.path.join(dir_output_simulation_analysis), exist_ok=True)                                                                                        # NOTE: Create the directory if it does not exist
+    name_people_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_people_file}"                                                                        # NOTE: name of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
+    name_route_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_route_file}"                                                                          # NOTE: name of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
+    complete_path_output_simulation_copied = os.path.join(dir_output_simulation_analysis,name_people_simulation_copied)                                             # NOTE: complete path of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
+    # beta routine    
+    dir_output_simulation_plots_unload =os.path.join(dir_output_simulation_analysis_base,"Plots",str_UCI)
+    dir_output_simulation_plots_beta =  os.path.join(dir_output_simulation_analysis_base,"Plots")
+    os.makedirs(os.path.join(dir_output_simulation_plots_unload), exist_ok=True)                                                                                  # NOTE: Create the directory if it does not exist
+    os.makedirs(os.path.join(dir_output_simulation_plots_beta), exist_ok=True)                                                                                  # NOTE: Create the directory if it does not exist
+    # gaphml
+    complete_path_graphml = os.path.join(TRAFFIC_DIR,'data','carto',city,city + '_new_tertiary_simplified.graphml')    
+    # Unload Curve
+    name_unloading_curve_base = f"UnloadCurve_R_{R}_UCI_{str_UCI}.parquet"
+    name_unloading_curve_iter = f"UnloadCurve_R_{R}_UCI_{str_UCI}_iter_{ensemble_realization}.parquet"
+    complete_path_unloading_curve_base = os.path.join(dir_output_simulation_plots_unload,name_unloading_curve_base)
+    complete_path_unloading_curve_iter = os.path.join(dir_output_simulation_plots_unload,R,name_unloading_curve_iter)
+    complete_path_people_file = os.path.join(dir_output_simulation_analysis,name_people_simulation_copied)                                                                 # NOTE: complete path of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
+    complete_path_route_file = os.path.join(dir_output_simulation_analysis,name_route_simulation_copied)                                                                 # NOTE: complete path of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
+    update_dict_df = Update_update_dict_df(update_dict_df,
+                          complete_path_od_file_input_simulation,
+                          complete_path_output_simulation_copied,
+                          city,
+                          dir_output_simulation_analysis,
+                          complete_path_graphml,
+                          rounded_UCI,
+                          str_UCI,
+                          R,
+                          ensemble_realization,
+                          complete_path_route_file,
+                          complete_path_people_file,
+                          complete_path_unloading_curve_base,
+                          complete_path_unloading_curve_iter,
+                          dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
+                          dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
+                          dir_output_simulation_gpu = os.environ["LPSIM"],
+                          number_realizations_OD_ensemble = number_realizations_OD_ensemble,
+                          delta_t = 10)  
+    return update_dict_df            
 
 
 
 def Main(CityName,
          TRAFFIC_DIR,
-         dir_file_demand,
-         dir_new_full_network,
-         dir_output_simulation_gpu,
          dir_base_output_simulation_analysis,
          list_columns_df_info_simulations,
+         complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv"),
          round_UCI = 3,
          number_realizations_OD_ensemble = 4):
     """
@@ -219,103 +296,71 @@ def Main(CityName,
         @param list_columns_df_info_simulations: list -> 
             List of the columns of the DataFrame that contains the information about the simulations
     """
-    # Where we hold informations about the simulations
-    update_dict_df = {
-        # ProcessMain() Variables
-        "dir_file_demand":[],                               # NOTE: Simulator checks by default here for demand
-        "dir_new_full_network":[],                          # NOTE: Simulator checks by default here for cartography
-        "dir_output_simulation_gpu": [],                    # NOTE: Simulator Puts the output of the simulation here
-        "dir_output_simulation_analysis": [],               # NOTE: We copy simulator output here.
-        "complete_path_od_file_input_simulation": [],       # NOTE: Complete path of the OD file input simulation
-        "complete_path_output_simulation_copied": [],       # NOTE: Complete path of the output simulation copied
-        ## numbers
-        "number_realizations_OD_ensemble": [],              # NOTE: Number of different simulations launched for a couple UCI, R (what changes are the realization of nodes where people are inserted.)
-        # CompleteAnalysis() Variables          
-        "delta_t": [],                                      #    
-        "name": [],                                         #
-        "graphml_file": [],                                 #
-        # Shared CompleteAnalysis()/ProcessMain() Variables
-        }
     # SCOPE CONSTANTS
-    dir_output_simulation_analysis_base = os.path.join(dir_base_output_simulation_analysis,CityName,"Output")
-    list_columns_df_info_simulations = list(update_dict_df.keys())
-    complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
-    Df_Info_Simulations = Init_Info_Simulations_Df(complete_path_info_simulations_df,list_columns_df_info_simulations)
+    dir_output_simulation_analysis_base = os.path.join(dir_base_output_simulation_analysis,CityName,"Output")               # NOTE: Where I copy the output of the simulation
+    Df_Info_Simulations = Init_Info_Simulations_Df(complete_path_info_simulations_df,list_columns_df_info_simulations)      # NOTE: DataFrame with the information about the simulations
     # 1) NOTE: Create Geometry Object
-    GeoInfo = GeometricalSettingsSpatialPartition(CityName,TRAFFIC_DIR)
+    GeoInfo = GeometricalSettingsSpatialPartition(CityName,TRAFFIC_DIR)                                                     # NOTE: Create the object that contains all the information about the geometry of the city
     # 2) NOTE: Compute Geometries
-    GeoInfo.GetGeometries()
+    GeoInfo.GetGeometries()                                                                                                 # NOTE: Compute the geometries of the city (grid, gdf_hexagons, gdf_polygons, lattice)
     # 3) NOTE: Compute the Potential and Vector field for non modified fluxes
-    UCI = GeoInfo.RoutineVectorFieldAndPotential()
+    UCI = GeoInfo.RoutineVectorFieldAndPotential()                                                                          # NOTE: Compute the potential and vector field for non modified fluxes
     # 4) NOTE: Compute the Fit for the gravity model
-    GeoInfo.ComputeFit()
+    GeoInfo.ComputeFit()                                                                                                    # NOTE: Compute the fit for the gravity model
     # 5) NOTE: Initialize the Concatenated Df for Simulation [It is common for all different R]
-    GeoInfo.InitializeDf4Sim()
+    GeoInfo.InitializeDf4Sim()                                                                                              # NOTE: Initialize the concatenated DataFrame for simulation
     GeoInfo.ComputeEndFileInputSimulation()         
     # 6) NOTE: Launch Simulations Non Modified
     str_UCI = str(round(UCI,round_UCI))
+    float_rounded_UCI = round(UCI,round_UCI)
     for R in GeoInfo.ArrayRs:
         for ensemble_realization in range(number_realizations_OD_ensemble):
-            # update Dictionary
-            suffix_parquet_people_file = f'0_people{GeoInfo.start}to24.parquet'                                                                             # Files Simulation                 
-            Name_parameters_output = f"R_{R}_UCI_{round(UCI,3)}_realization_{ensemble_realization}"                                               # Ensemble Choice                          
+            Name_parameters_output = f"R_{R}_UCI_{str_UCI}_realization_{ensemble_realization}"
+            # Prepare all the paths to run smoothly everything
+            update_dict_df = Set_Paths_Simulation_Analysis_Beta(GeoInfo.city,
+                                       str_UCI,
+                                       float_rounded_UCI,
+                                       R,
+                                       ensemble_realization,
+                                       Name_parameters_output,
+                                       GeoInfo.start,
+                                       GeoInfo.start + 1,
+                                       dir_output_simulation_analysis_base,
+                                       number_realizations_OD_ensemble)            
             #
-            name_od_file_input_simulation = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"     # OD
-            complete_path_od_file_input_simulation = os.path.join(dir_file_demand,name_od_file_input_simulation)
+            is_success_simulation  = os.path.isfile(update_dict_df["complete_path_output_simulation_copied"])                                                                                 # NOTE: 1) Check if the computation is already done, aovid to recompute it
+            is_computed_od_simulation_input = os.path.isfile(update_dict_df["complete_path_od_file_input_simulation"])                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
             #
-            name_output_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_people_file}"
-            dir_output_simulation_analysis = os.path.join(dir_output_simulation_analysis_base,str_UCI)
-            complete_path_output_simulation_copied = os.path.join(dir_output_simulation_analysis,name_output_simulation_copied) # Output dir
-            os.makedirs(os.path.join(complete_path_output_simulation_copied), exist_ok=True)
-            
-            #
-            update_dict_df = Update_update_dict_df(update_dict_df,
-                                                complete_path_od_file_input_simulation = complete_path_od_file_input_simulation,
-                                                complete_path_output_simulation_copied = complete_path_output_simulation_copied,
-                                                NameCity = CityName,
-                                                dir_output_simulation_analysis = dir_output_simulation_analysis,
-                                                name_file_graphml = os.path.join(TRAFFIC_DIR,'data','carto',CityName,CityName + '_new_tertiary_simplified.graphml'),
-                                                dir_file_demand = dir_file_demand,
-                                                dir_new_full_network = dir_new_full_network,
-                                                dir_output_simulation_gpu = dir_output_simulation_gpu,
-                                                number_realizations_OD_ensemble = number_realizations_OD_ensemble,
-                                                delta_t = 10,
-                                                )                
-            #
-            is_success_simulation  = os.path.isfile(complete_path_output_simulation_copied)                               # Output file exists ?
-            is_computed_od_simulation_input = os.path.isfile(complete_path_od_file_input_simulation)                      # OD file exists ?
-            #
-            if not is_success_simulation:                                                       # Check if the simulation is already computed
-                if not is_computed_od_simulation_input:                                         # Check if the OD file is already computed
+            if not is_success_simulation:                                                                                                                                   # NOTE: Checking 1) 
+                if not is_computed_od_simulation_input:                                                                                                                     # NOTE: Checking 2) 
                     # Not Modified Mobility
-                    logger.info(f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI,3)}")
+                    logger.info(f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {str_UCI}")
                     # 7) NOTE: Compute the realization of the OD
-                    InputDocker = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,
-                                                                            R,
-                                                                            update_dict_df["complete_path_od_file_input_simulation"])
-
-                    # 8) NOTE: Launch the Simulation
-                    LaunchSimulations("NonModified",
-                                GeoInfo,
-                                None,
-                                R,
-                                UCI,
-                                Number_Realizations_OD_Ensemble,
-                                None)
-
-                else: 
+                    GeoInfo.ComputeDf4SimNotChangedMorphology(UCI,
+                                                            R,
+                                                            update_dict_df["complete_path_od_file_input_simulation"])
+                else:
                     pass
+                # 8) NOTE: Launch the Simulation
+                LaunchSimulation(GeoInfo,
+                                R,
+                                str_UCI,
+                                Name_parameters_output,
+                                update_dict_df)
+
             else:
                 pass
-                
-    # 9) NOTE: Update the DataFrame of Simulations
-    Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                    update_dict_df)        
-    City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
+            # 9) NOTE: Update the DataFrame of Simulations
+            Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                            update_dict_df)
+            Df_Info_Simulations.write_csv(complete_path_info_simulations_df)                                                                 # NOTE: Write the DataFrame to the csv file        
+    Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
                                             pl.col("R") == R,
-                                            pl.col("UCI") == UCI).to_dict()
+                                            pl.col("UCI") == UCI)
     # 10) NOTE: Analyze the Output
-    PCTA = Polycentrism2TrafficAnalyzer(City2Config,GeoInfo.ArrayRs,[UCI])  
+    PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,
+                                        GeoInfo.ArrayRs,
+                                        [UCI])  
     PCTA.CompleteAnalysis()
     logger.info(f"Finished the simulations not changed for {CityName}")
     # 11) NOTE: Generate New Population 
@@ -324,321 +369,114 @@ def Main(CityName,
         for UCIM in GeoInfo.UCIInterval2UCI[UCI_Interval]:
             from pandas import read_parquet
             from geopandas import GeoDataFrame
-            UCI = float(UCIM)
             # New Population
-            GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{round(UCIM,3)}.parquet'))        # New Grid (read)
+            GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{str_UCI}.parquet'))        # New Grid (read)
             GridNew[["geometry","centroidx","centroidy"]] = GeoInfo.grid[["geometry","centroidx","centroidy"]]  # New Grid (add centroid, geometry)
             GridNew = GeoDataFrame(GridNew)                                                                     # New Grid
             Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)                                               # New Fluxes
+            #
+            UCI = float(UCIM)
+            str_UCI = str(round(UCI,round_UCI))
+            float_rounded_UCI = round(UCI,round_UCI)
             # 12) NOTE: Launch Simulations Modified
             for R in GeoInfo.ArrayRs:
-                for ensemble_realization in range(Number_Realizations_OD_Ensemble):
-                    Name_parameters_output = f"R_{R}_UCI_{round(UCI,3)}_iter_{ensemble_realization}"                        
-                    logger.info(f"ID-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI,3)}")
+                for ensemble_realization in range(number_realizations_OD_ensemble):
+                    logger.info(f"{GeoInfo.city}: ID-Mod R: {R}, UCI: {str_UCI}, iter {ensemble_realization}")
+                    Name_parameters_output = f"R_{R}_UCI_{str_UCI}_realization_{ensemble_realization}"
+                    # Prepare all the paths to run smoothly everything
+                    update_dict_df = Set_Paths_Simulation_Analysis_Beta(GeoInfo.city,
+                                            str_UCI,
+                                            float_rounded_UCI,
+                                            R,
+                                            ensemble_realization,
+                                            Name_parameters_output,
+                                            GeoInfo.start,
+                                            GeoInfo.start + 1,
+                                            dir_output_simulation_analysis_base,
+                                            number_realizations_OD_ensemble)            
+                    
                     #
-                    name_od_file_input_simulation = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"     # OD
-                    complete_path_od_file_input_simulation = os.path.join(dir_file_demand,
-                                                                            name_od_file_input_simulation)
-                    #
-                    name_output_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_people_file}"
-                    complete_path_output_simulation_copied = os.path.join(dir_output_simulation_analysis,       # Output dir
-                                                                        name_output_simulation_copied)
-
-                    #
-                    update_dict_df = Update_update_dict_df(update_dict_df,
-                                                        complete_path_od_file_input_simulation = complete_path_od_file_input_simulation,
-                                                        complete_path_output_simulation_copied = complete_path_output_simulation_copied,
-                                                        NameCity = CityName,
-                                                        dir_output_simulation_analysis = f"/data_2/alberto/{CityName}/Output",
-                                                        name_file_graphml = os.path.join(TRAFFIC_DIR,'data','carto',CityName,CityName + '_new_tertiary_simplified.graphml'),
-                                                        dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
-                                                        dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
-                                                        dir_output_simulation_gpu = os.environ["LPSIM"],
-                                                        number_realizations_OD_ensemble = 4,
-                                                        delta_t = 10,
-                                                        )                
-                    #
-                    is_success_simulation  = os.path.isfile(complete_path_output_simulation_copied)                               # Output file exists ?
-                    is_computed_od_simulation_input = os.path.isfile(complete_path_od_file_input_simulation)                      # OD file exists ?
+                    is_success_simulation  = os.path.isfile(update_dict_df["complete_path_output_simulation_copied"])                                                                                 # NOTE: 1) Check if the computation is already done, aovid to recompute it
+                    is_computed_od_simulation_input = os.path.isfile(update_dict_df["complete_path_od_file_input_simulation"])                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
                     #
                     if not is_success_simulation:                                                       # Check if the simulation is already computed
                         if not is_computed_od_simulation_input:                                         # Check if the OD file is already computed
                             # 13) NOTE: Compute the realization of the OD
-                            InputDocker = GeoInfo.ComputeDf4SimChangedMorphology(UCI,
-                                                                                R,
-                                                                                Modified_Fluxes,
-                                                                                complete_path_od_demand_file)
-
-                
-                            # 14) NOTE: Launch the Simulation
-                            LaunchSimulations("NonModified",
-                                        GeoInfo,
-                                        None,
-                                        R,
-                                        UCI,
-                                        Number_Realizations_OD_Ensemble,
-                                        None)
+                            GeoInfo.ComputeDf4SimChangedMorphology(UCI,
+                                                                    R,
+                                                                    Modified_Fluxes,
+                                                                    update_dict_df["complete_path_od_file_input_simulation"])
 
                         else: 
                             pass
+
+                        # 14) NOTE: Launch the Simulation
+                        LaunchSimulation(GeoInfo,
+                                        R,
+                                        str_UCI,
+                                        Name_parameters_output,
+                                        update_dict_df)
+
+
                     else:
                         pass
                 
-            # 9) NOTE: Update the DataFrame of Simulations
-            Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                            update_dict_df)        
-            City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
+                    # 15) NOTE: Update the DataFrame of Simulations
+                    Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                                    update_dict_df)  
+                    Df_Info_Simulations.write_csv(complete_path_info_simulations_df)      
+            Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
                                                     pl.col("R") == R,
-                                                    pl.col("UCI") == UCI).to_dict()
+                                                    pl.col("UCI") == UCI)
             # 10) NOTE: Analyze the Output
-            PCTA = Polycentrism2TrafficAnalyzer(City2Config,GeoInfo.ArrayRs,[UCI])  
+            PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,GeoInfo.ArrayRs,[UCI])  
             PCTA.CompleteAnalysis()
+
 
 
     
 
 if __name__ == '__main__':
     # CONSTANTS
-    NameCities = ["BOS","SFO","RIO"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
+    NameCities = ["SFO"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
     container_name = "xuanjiang1998/lpsim:v1"    
     
     dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network')
     dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network')
     dir_output_simulation_gpu = os.environ["LPSIM"]
     dir_base_output_simulation_analysis = "/data_2/alberto"
-    #
-    list_columns_df_info_simulations = ["dir_file_demand",                  # NOTE: Simulator checks by default here for demand
-                                        "dir_new_full_network",             # NOTE: Simulator checks by default here for cartography
-                                        "dir_output_simulation_gpu",        # NOTE: Simulator Puts the output of the simulation here
-                                        "dir_output_simulation_analysis",   # NOTE: We copy simulator output here.    
-                                        # 
-                                        "delta_t",
-                                        "city",
-                                        "graphml_file",
-                                        
-                                        ]
+    complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
+    # NOTE: every time you change here, change also the corrispective update_dict_df
+    list_columns_df_info_simulations = [# Main() Variables
+                                        "dir_output_simulation_analysis",                   # NOTE: i.e. /data_2/alberto/CityName/Output
+                                        "complete_path_od_file_input_simulation",           # NOTE: i.e. 
+                                        "complete_path_output_simulation_copied",           # NOTE:                                                                    
+                                        "name",                                             # NOTE:
+                                        "complete_path_graphml",                            # NOTE:
+                                        "city",                                             # NOTE:
+                                        "UCI",                                              # NOTE:
+                                        "R",                                                # NOTE:
+                                        "iter",                                             # NOTE:
+                                        "str_UCI",                                          # NOTE:                     # NOTE: Name of the city, graphml file, UCI, R, iter
+                                        # ProcessMain() Variables
+                                        "dir_file_demand",                                  # NOTE:
+                                        "dir_new_full_network",                             # NOTE:
+                                        "dir_output_simulation_gpu",                        # NOTE:
+                                        # PCTA complete analysis
+                                        "number_realizations_OD_ensemble",                  # NOTE:
+                                        "delta_t",                                          # NOTE:
+                                        "complete_path_unloading_curve_base",               # NOTE:
+                                        "complete_path_unloading_curve_iter",               # NOTE:                                 # NOTE: Path to the unloading curve
+                                        "complete_path_route_file",                         # NOTE:
+                                        "complete_path_people_file"                         # NOTE:
+                                        ]                                                                                                                                # NOTE: list of informations stored from simulation for triplets (R,UCI,City)
     # Post Processing
     BaseConfig = os.path.join(os.environ["TRAFFIC_DIR"],"config")
-    BThread = False
-    if BThread:
-        num_threads = len(NameCities)
-        # Create a lock for synchronization
-        lock = Lock()
-        # Create and start threads
-        threads = []
-        for rank in range(num_threads):
-            thread = Thread(target=Threaded_main, args=(rank, num_threads, lock))
-            threads.append(thread)
-            thread.start()
-        # Wait for all threads to finish
-        for thread in threads:
-            thread.join()
-    
-    else:
-        # Create a shared dictionary
-#        manager = Manager()
-#        shared_dict = manager.dict()
-        # Create a monitor thread
-#        monitor_thread = threading.Thread(target=monitor_processes,args=(shared_dict,))
-#        monitor_thread.daemon = True
-#        monitor_thread.start()
-        # Queue
-#        queue = Queue()
-#        error_flag = Value(ctypes.c_bool, False)
-#        R_error = Value(ctypes.c_int, 0)
-        # Start the main process
-        for CityName in NameCities:
-
-            City2RUCI = {CityName: {"UCI": [], "R": []}}
-            # Everything is handled inside the object
-            GeoInfo = GeometricalSettingsSpatialPartition(CityName,TRAFFIC_DIR)
-            # Compute the Geometries
-            GeoInfo.GetGeometries()
-            # Compute the Potential and Vector field for non modified fluxes
-            UCI = GeoInfo.RoutineVectorFieldAndPotential()
-            # Compute the Fit for the gravity model
-            GeoInfo.ComputeFit()
-            # Initialize the Concatenated Df for Simulation [It is common for all different R]
-            GeoInfo.InitializeDf4Sim()
-            GeoInfo.ComputeEndFileInputSimulation()
-            # NOTE: Can Parallelize this part and launch the simulations in parallel.
-            if len(GeoInfo.ArrayRs) < cpu_count():
-                N = len(GeoInfo.ArrayRs)
-            else:
-                N = cpu_count() - 2
-            concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
-#            barrier = Barrier(N)
-#            lock = Lock()
-            # Do not Compute RArray if not necessary, stick with the given by CityRminRmax
-            FirstTry = True
-            # NOTE: Eliminate Concurrency since the Place we save stuff is the same and not conditioned
-            # So there is race condition that cannot be handled
-            Number_Realizations_OD_Ensemble = 4
-            City2Config = {CityName:{
-                # ProcessMain() Variables
-                    ## directories
-                    "dir_file_demand":os.path.join(BERKELEY_2018_DIR,'new_full_network'),           # NOTE: Simulator checks by default here for demand
-                    "dir_new_full_network":os.path.join(BERKELEY_2018_DIR,'new_full_network'),      # NOTE: Simulator checks by default here for cartography
-                    "dir_output_simulation_gpu": os.environ["LPSIM"], 
-                    "dir_output_simulation_analysis": f"/data_2/alberto/{CityName}/Output", 
-                ## numbers
-                "number_realizations_OD_ensemble": Number_Realizations_OD_Ensemble,             # Number of different simulations launched for a couple UCI, R (what changes are the realization of nodes where people are inserted.)
-                # CompleteAnalysis() Variables
-                "delta_t": 10,
-                "name": CityName,
-                "graphml_file": os.path.join(TRAFFIC_DIR,'data','carto',CityName,CityName + '_new_tertiary_simplified.graphml'),
-                # Shared CompleteAnalysis()/ProcessMain() Variables
-                }
-            }
-            City2UCI2R2Infos = {CityName: {UCI: {R: {"people_file": None, "route_file": None} for R in GeoInfo.ArrayRs} for UCI in GeoInfo.UCIInterval2UCIAccepted.keys()}} 
-            for R in GeoInfo.ArrayRs:
-                for ensemble_realization in range(City2Config[CityName]["number_realizations_OD_ensemble"]):
-                    if ensemble_realization == 0:
-                        Name_parameters_output = f"R_{R}_UCI_{round(UCI1,3)}"
-                        City2Config[CityName]["name_od_file_input_simulation"] = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"
-                        City2Config[CityName][""]
-                    else:
-                        Name_parameters_output = f"R_{R}_UCI_{round(UCI1,3)}_iter_{ensemble_realization}"                        
-                        City2Config[CityName]["name_od_file_input_simulation"] = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"                    
-                        ProcessMain("NonModified",
-                                    GeoInfo,
-                                    None,
-                                    R,
-                                    UCI,
-                                    Number_Realizations_OD_Ensemble,
-                                    None)
-            # Analyze the Output
-            PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName],GeoInfo.ArrayRs,[UCI])  
-            PCTA.CompleteAnalysis()
-
-            while(False):
-                # Reset The Processes
-                processes = []
-#                concurrency_manager.Reset()
-                if FirstTry:
-                    ArrayRs = GeoInfo.ArrayRs
-                    logger.info("FirstTry: {}".format(FirstTry))
-                    FirstTry = False
-                else:
-                    logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
-                    # Keep the Number Of Rs Tried in the Simulation
-                    ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
-                for R in ArrayRs:
-                    p = Process(target=ProcessMain, args=("NonModified",GeoInfo,None,R,UCI,concurrency_manager))
-                    # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
-#                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
-                    processes.append(p)
-                    p.start()
-                # Every Time A Process Join
-                for p in processes:
-                    p.join()
-                    # If Error From Docker or Container
-                    if concurrency_manager.Docker_error.value:
-                        for p in processes:
-                            if p.is_alive():
-                                p.terminate()
-                    # If No Docker Errors
-                    else:
-                        # Error From GPU index
-                        if concurrency_manager.GPU_error_index.value >= 0: 
-                            # Extract The 
-                            if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                                for p in processes:
-                                    if p.is_alive():
-                                        p.terminate()
-                    
-                        # No Error From GPU
-                        else:
-                            # This Is The Only Case I Break The Loop
-                            # NOTE: No Docker Problem, No GPU Problem 
-                            break
-                # If No Error Occurred Free The Processes
-                if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                    break 
-
-
-#            barrier.wait()
-            logger.info(f"Finished the simulations not changed for {CityName}")
-            # Generate New Population
-            GeoInfo.GeneratePopulationAndSetUCIs()
-                    # Generate modified Fluxes
-            print(GeoInfo.UCIInterval2UCI)
-            for UCI_Interval in GeoInfo.UCIInterval2UCI.keys():
-                for UCIM in GeoInfo.UCIInterval2UCI[UCI_Interval]:
-                    if len(GeoInfo.ArrayRs) < cpu_count():
-                        N = len(GeoInfo.ArrayRs)
-                    else:
-                        N = cpu_count() - 2
-                    barrier = Barrier(N)
-                    processes = []
-                    from pandas import read_parquet
-                    from geopandas import GeoDataFrame
-                    UCI1 = float(UCIM)
-                    # New Population
-                    GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{round(UCIM,3)}.parquet'))
-                    GridNew[["geometry","centroidx","centroidy"]] = GeoInfo.grid[["geometry","centroidx","centroidy"]]
-                    GridNew = GeoDataFrame(GridNew)
-                    # New Fluxes
-                    Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)
-                    # New UCI
-#                    UCI1 = GeoInfo.RoutineVectorFieldAndPotentialModified(GridNew,Modified_Fluxes)
-                    # Check that UCI is in a valid interval
-                    concurrency_manager = ConcurrencyManager(N,GeoInfo.save_dir_local)
-                    log_to_stderr()
-                    FirstTry = True
-                    for R in GeoInfo.ArrayRs:
-                        ProcessMain("Modified",
-                                    GeoInfo,
-                                    Modified_Fluxes,
-                                    R,
-                                    UCI1,
-                                    Number_Realizations_OD_Ensemble,
-                                    None)
-                    # Analyze the Output
-#                    City2Config,Rs,UCIs = InitConfigPolycentrismAnalysis(CityName)  
-                    PCTA = Polycentrism2TrafficAnalyzer(City2Config[CityName],GeoInfo.ArrayRs,[UCI1])  
-                    PCTA.CompleteAnalysis()
-                        
-                    while(False):
-                        # Reset The Processes
-                        processes = []
-    #                            concurrency_manager.Reset()
-                        if FirstTry:
-                            ArrayRs = GeoInfo.ArrayRs
-                            FirstTry = False
-                            logger.info("FirstTry: {}".format(FirstTry))
-                        else:
-                            logger.info("Somehow Error: Rmax = {}".format(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value))
-                            # Keep the Number Of Rs Tried in the Simulation
-                            ArrayRs = RedefineRsWhenError(concurrency_manager.R_errors[concurrency_manager.GPU_error_index.value].value,GeoInfo.Step,len(GeoInfo.ArrayRs))
-                        for R in ArrayRs:
-                            p = Process(target=ProcessMain, args=("Modified",GeoInfo,Modified_Fluxes,R,UCI1,concurrency_manager))
-                            # NOTE: error_flag and R error are shared to find the Array for which we have no crash of the simulation
-        #                    p = Process(target=ProcessLauncherNonModified, args=(shared_dict,queue,barrier,lock,GeoInfo, UCI, R,error_flag,R_error))
-                            processes.append(p)
-                            p.start()
-                        # Every Time A Process Join
-                        for p in processes:
-                            p.join()
-                            # If Error From Docker or Container
-                            if concurrency_manager.Docker_error.value:
-                                for p in processes:
-                                    if p.is_alive():
-                                        p.terminate()
-                            # If No Docker Errors
-                            else:
-                                # Error From GPU index
-                                if concurrency_manager.GPU_error_index.value >= 0: 
-                                    # Extract The 
-                                    if concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                                        for p in processes:
-                                            if p.is_alive():
-                                                p.terminate()
-                                # No Error From GPU
-                                else:
-                                    # This Is The Only Case I Break The Loop
-                                    # NOTE: No Docker Problem, No GPU Problem 
-                                    break
-                        if not concurrency_manager.Docker_error.value and not concurrency_manager.GPU_errors[concurrency_manager.GPU_error_index.value].value:
-                            break 
-        
+    for CityName in NameCities:
+        Main(CityName,
+        TRAFFIC_DIR,
+        dir_base_output_simulation_analysis,
+        complete_path_info_simulations_df,
+        list_columns_df_info_simulations,
+        round_UCI = 3,
+        number_realizations_OD_ensemble = 4)

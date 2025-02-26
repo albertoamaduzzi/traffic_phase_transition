@@ -30,7 +30,7 @@ def CheckPlatform(verbose = False):
         print('Processor: ',platform.processor())
         print('architecture: ',platform.architecture())
 
-def ModifyConfigIni(CityName,start,end,R,UCI,verbose = False):
+def ModifyConfigIni(CityName,start,end,R,str_UCI,verbose = False):
     '''
         Input:
             CityName: str -> in ['BOS','LAX','SFO','RIO','LIS']
@@ -42,7 +42,7 @@ def ModifyConfigIni(CityName,start,end,R,UCI,verbose = False):
             Write the configuration file that must be given in input to the LivingCity program
             NOTE: Do not change position in folder: ../LPSim/
     '''
-    logger.info("Input File: {0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv".format(CityName,start,end,R,round(UCI,3)))
+    logger.info("Input File: {0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv".format(CityName,start,end,R,str_UCI))
     file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,round(UCI,3))
     with open(os.path.join(TRAFFIC_DIR,'command_line_options.ini'),'w') as file:
         file.write(file_txt)
@@ -290,7 +290,7 @@ def CheckODDemandFile(
     return InputDocker
 
 
-def PrepareConfigIni(GeoInfo,start,end,R,UCI1):
+def PrepareConfigIni(GeoInfo,start,end,R,str_UCI):
     """
         Move nodes.csv
         Move edges.csv
@@ -301,26 +301,24 @@ def PrepareConfigIni(GeoInfo,start,end,R,UCI1):
     try:
         CopyCartoGraphy("edges.csv",GeoInfo.city)                       # Copy Cartography
         CopyCartoGraphy("nodes.csv",GeoInfo.city)                       # Copy Cartography
-        ModifyConfigIni(GeoInfo.city,start,end,R,round(UCI1,3), True)   # Modify Config.ini 
+        ModifyConfigIni(GeoInfo.city,start,end,R,str_UCI, True)   # Modify Config.ini 
     except Exception as e:
         logger.info(f"Error ModifyConfigIni: {e}")
 
 
 
-def LaunchSimulations(case,
-                GeoInfo,
-                Modified_Fluxes,
+def LaunchSimulation(GeoInfo,
                 R,
-                UCI1,
-                Number_Realizations_OD_Ensemble,
-                update_dict_df,
-                concurrent_manager):
+                str_UCI,
+                Name_parameters_output,
+                update_dict_df):
     """
         @param case: str -> 'NonModified' or 'Modified'
         @param GeoInfo: GeometricalSettingsSpatialPartition object
         @param Modified_Fluxes: pd.DataFrame
         @param R: float
         @param UCI1: float
+        @description:
 
     """
     assert "complete_path_output_simulation_copied" in update_dict_df.keys(),f"KeyError: complete_path_output_simulation_copied not in update_dict_df"
@@ -334,9 +332,8 @@ def LaunchSimulations(case,
     start = GeoInfo.start
     end = start + 1
     # 2) NOTE: Prepare Config.ini
-    PrepareConfigIni(GeoInfo,start,end,R,UCI1)
-    logger.info(f"{R}, {round(UCI1,3)}")
-    logger.info(f"Launch Simulation {R}, {round(UCI1,3)}")
+    PrepareConfigIni(GeoInfo,start,end,R,str_UCI)
+    logger.info(f"{GeoInfo.city}: Launch Simulation {R}, {str_UCI}")
     # Check Docker: If Transport Error -> Stop (We now have that the Process Could Not Continue)
     try:
         process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
@@ -353,28 +350,29 @@ def LaunchSimulations(case,
         logger.info(f"Error check_transportation_error: {e}")
     # Check if the command was successful
     ErrorDocker = (process.returncode != 0)
-    # Check Errors in GPU
-    ErrorGPU = check_out_of_memory_error(stderr.decode())                
-    logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error GPU: {ErrorGPU}")
-    logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error Docker: {ErrorDocker}")
-    FailedSimulation = ErrorGPU or ErrorDocker
-    if not FailedSimulation:
+    #
+    ErrorGPU = check_out_of_memory_error(stderr.decode())                                                                                                                      # NOTE: Check Errors in GPU             
+    logger.info(f"{GeoInfo.city}: {R}, {str_UCI}, Error GPU: {ErrorGPU}")
+    logger.info(f"{GeoInfo.city}: {R}, {str_UCI}, Error Docker: {ErrorDocker}")
+    FailedSimulation = ErrorGPU or ErrorDocker                                                                                                                                  # NOTE: Condition Failure Run -> ErrorGPU or ErrorDocker
+    if not FailedSimulation:                                                                                                                                                    # NOTE: Move the output files just if the simulations is ended well -> as there is just one output dir taking away this would be a problem, risking to move output that are already there for some random reason and copy them into the analysis of another (R,UCI,city)
+        # 3) NOTE: Move the output files
         output_files = [
                         '0_indexPathInit{0}to24.csv'.format(start),
                         '0_people{0}to24.csv'.format(start),
                         '0_route{0}to24.csv'.format(start),
                         '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start)
                         ]
-        update_dict_df["dir_output_simulation_analysis"]
-        destination_dir_output_file = os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
-        os.makedirs(os.path.join(destination_dir_output_file), exist_ok=True)
-        # TODO: Modify the output_files to be saved in the correct directory
         for output_file in output_files:
-            source_file = os.path.join(LPSIM_DIR, output_file)
-            destination_file = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
-            destination_file_parquet = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file.replace('.csv', '.parquet')}")
-            RenameMoveOutput(source_file,destination_file,destination_file_parquet,GeoInfo.city,R,UCI1,True)
-            DeleteFile(InputDocker)                    
+            source_file = os.path.join(update_dict_df["dir_output_simulation_gpu"], output_file)                                                                                # NOTE: Pick the file from the dir_output_gpu 
+            #
+            destination_file = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file}")                                        # NOTE: Transfer it into the dir_analysis 
+            destination_file_parquet = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file.replace('.csv', '.parquet')}")    # NOTE: Rename the .parquet file 
+            
+            RenameMoveOutput(source_file,
+                             destination_file,
+                             destination_file_parquet)                                                                                                                          # NOTE: Rename and Move the output file
+            DeleteFile(update_dict_df["complete_path_od_file_input_simulation"])                                                                                                # NOTE: Delete the input file (od_demand file)
     return not FailedSimulation
 
 
@@ -507,10 +505,12 @@ def _ProcessMain(case,
                         source_file = os.path.join(LPSIM_DIR, output_file)
                         destination_file = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
                         destination_file_parquet = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file.replace('.csv', '.parquet')}")
-                        RenameMoveOutput(source_file,destination_file,destination_file_parquet,GeoInfo.city,R,UCI1,True)
+                        RenameMoveOutput(source_file,
+                                         destination_file,
+                                         destination_file_parquet)
                         DeleteFile(InputDocker)                    
                 return not FailedSimulation
-
+        # DEPRECATED xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             try:
                 os.chdir(os.getcwd())
