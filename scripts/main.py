@@ -53,10 +53,6 @@ from GravitationalFluxes import *                                               
 from Grid import *
 # H 
 from Hexagon import *
-if socket.gethostname()=='artemis.ist.berkeley.edu':
-    sys.path.append(os.path.join('/home/alberto/LPSim','traffic_phase_transition','scripts','ServerCommunication'))
-else:
-    sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','ServerCommunication'))
 from HostConnection import *
 # M
 from MainPolycentrism import *
@@ -150,16 +146,34 @@ def RedefineRsWhenError(Rmax,Step,NumberRs):
     assert np.all(ArrayRs > 0), f"All Rs must be positive. Rmax: {Rmax}, Step: {Step}, NumberRs: {NumberRs}"
     return ArrayRs
 
-def Init_Info_Simulations_Df(
-        complete_path_info_simulations_df,
-        list_columns_df_info_simulations
-        ):
+def Init_Info_Simulations_Df(complete_path_info_simulations_df, list_columns_df_info_simulations):
     if os.path.isfile(complete_path_info_simulations_df):
-        from polars import read_csv
-        return read_csv(complete_path_info_simulations_df)
+        return pl.read_csv(complete_path_info_simulations_df)
     else:
-        from polars import DataFrame
-        return DataFrame({k:[] for k in list_columns_df_info_simulations})
+        schema = {
+            "dir_output_simulation_analysis": pl.Utf8,
+            "complete_path_od_file_input_simulation": pl.Utf8,
+            "complete_path_output_simulation_copied": pl.Utf8,
+            "name_od_file_input_simulation": pl.Utf8,
+            "name": pl.Utf8,
+            "complete_path_graphml": pl.Utf8,
+            "city": pl.Utf8,
+            "UCI": pl.Float64,
+            "R": pl.Int64,
+            "iter": pl.Int64,
+            "str_UCI": pl.Utf8,
+            "dir_file_demand": pl.Utf8,
+            "dir_new_full_network": pl.Utf8,
+            "dir_output_simulation_gpu": pl.Utf8,
+            "number_realizations_OD_ensemble": pl.Int64,
+            "delta_t": pl.Int64,
+            "complete_path_unloading_curve_base": pl.Utf8,
+            "complete_path_unloading_curve_iter": pl.Utf8,
+            "complete_path_route_file": pl.Utf8,
+            "complete_path_people_file": pl.Utf8
+        }
+        return pl.DataFrame(schema=schema)
+
         
 def Update_Info_Simulations_Df(
         Df_Info_Simulations,
@@ -192,17 +206,17 @@ def Update_update_dict_df(update_dict_df,
                           dir_output_simulation_gpu = os.environ["LPSIM"],
                           number_realizations_OD_ensemble = 4,
                           delta_t = 10,
-                        
+                        name_od_file_input_simulation = None
                           ):
     """
         @param update_dict_df: dict -> Dictionary with the information about the simulation
 
     """
-    update_dict_df = defaultdict()
     # Main() Variables
     update_dict_df["dir_output_simulation_analysis"] = dir_output_simulation_analysis                       # NOTE: We copy simulator output here.
     update_dict_df["complete_path_od_file_input_simulation"] = complete_path_od_file_input_simulation       #
     update_dict_df["complete_path_output_simulation_copied"] = complete_path_output_simulation_copied       #
+    update_dict_df["name_od_file_input_simulation"] = name_od_file_input_simulation
     update_dict_df["name"] = NameCity                                                                       #
     update_dict_df["complete_path_graphml"] = complete_path_graphml                                                      #
     update_dict_df["city"] = NameCity
@@ -242,7 +256,7 @@ def Set_Paths_Simulation_Analysis_Beta(city,
     name_od_file_input_simulation = f"{city}_oddemand_{start}_{end}_{Name_parameters_output}.csv"                                     # NOTE: OD file name -> this is the one the simulation looks for as input: MUST be in ../new_full_netwtork/
     complete_path_od_file_input_simulation = os.path.join(dir_file_demand,name_od_file_input_simulation)
     #
-    dir_output_simulation_analysis = os.path.join(dir_output_simulation_analysis_base,str_UCI,str(R))                                                                      # NOTE: directory where I copy the output of the simulation
+    dir_output_simulation_analysis = os.path.join(dir_output_simulation_analysis_base,str_UCI)                                                                      # NOTE: directory where I copy the output of the simulation
     os.makedirs(os.path.join(dir_output_simulation_analysis), exist_ok=True)                                                                                        # NOTE: Create the directory if it does not exist
     name_people_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_people_file}"                                                                        # NOTE: name of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
     name_route_simulation_copied = f"{Name_parameters_output}_{suffix_parquet_route_file}"                                                                          # NOTE: name of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
@@ -258,10 +272,10 @@ def Set_Paths_Simulation_Analysis_Beta(city,
     name_unloading_curve_base = f"UnloadCurve_R_{R}_UCI_{str_UCI}.parquet"
     name_unloading_curve_iter = f"UnloadCurve_R_{R}_UCI_{str_UCI}_iter_{ensemble_realization}.parquet"
     complete_path_unloading_curve_base = os.path.join(dir_output_simulation_plots_unload,name_unloading_curve_base)
-    complete_path_unloading_curve_iter = os.path.join(dir_output_simulation_plots_unload,R,name_unloading_curve_iter)
+    complete_path_unloading_curve_iter = os.path.join(dir_output_simulation_plots_unload,str(R),name_unloading_curve_iter)
     complete_path_people_file = os.path.join(dir_output_simulation_analysis,name_people_simulation_copied)                                                                 # NOTE: complete path of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
     complete_path_route_file = os.path.join(dir_output_simulation_analysis,name_route_simulation_copied)                                                                 # NOTE: complete path of the file that will be checked to be sure the output of the simulation is already there and we do not need to recompute it
-    update_dict_df = Update_update_dict_df(update_dict_df,
+    update_dict_df = Update_update_dict_df(defaultdict(),
                           complete_path_od_file_input_simulation,
                           complete_path_output_simulation_copied,
                           city,
@@ -279,14 +293,15 @@ def Set_Paths_Simulation_Analysis_Beta(city,
                           dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
                           dir_output_simulation_gpu = os.environ["LPSIM"],
                           number_realizations_OD_ensemble = number_realizations_OD_ensemble,
-                          delta_t = 10)  
+                          delta_t = 10,
+                          name_od_file_input_simulation = name_od_file_input_simulation)  
     return update_dict_df            
 
 
 
 def Main(CityName,
          TRAFFIC_DIR,
-         dir_base_output_simulation_analysis,
+         dir_data_2,
          list_columns_df_info_simulations,
          complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv"),
          round_UCI = 3,
@@ -297,7 +312,7 @@ def Main(CityName,
             List of the columns of the DataFrame that contains the information about the simulations
     """
     # SCOPE CONSTANTS
-    dir_output_simulation_analysis_base = os.path.join(dir_base_output_simulation_analysis,CityName,"Output")               # NOTE: Where I copy the output of the simulation
+    dir_output_simulation_analysis_base = os.path.join(dir_data_2,CityName,"Output")               # NOTE: Where I copy the output of the simulation
     Df_Info_Simulations = Init_Info_Simulations_Df(complete_path_info_simulations_df,list_columns_df_info_simulations)      # NOTE: DataFrame with the information about the simulations
     # 1) NOTE: Create Geometry Object
     GeoInfo = GeometricalSettingsSpatialPartition(CityName,TRAFFIC_DIR)                                                     # NOTE: Create the object that contains all the information about the geometry of the city
@@ -313,6 +328,7 @@ def Main(CityName,
     # 6) NOTE: Launch Simulations Non Modified
     str_UCI = str(round(UCI,round_UCI))
     float_rounded_UCI = round(UCI,round_UCI)
+    GeoInfo.Reset_ArrayRs_Given_UCI(UCI)
     for R in GeoInfo.ArrayRs:
         for ensemble_realization in range(number_realizations_OD_ensemble):
             Name_parameters_output = f"R_{R}_UCI_{str_UCI}_realization_{ensemble_realization}"
@@ -378,6 +394,7 @@ def Main(CityName,
             UCI = float(UCIM)
             str_UCI = str(round(UCI,round_UCI))
             float_rounded_UCI = round(UCI,round_UCI)
+            GeoInfo.Reset_ArrayRs_Given_UCI(UCI)
             # 12) NOTE: Launch Simulations Modified
             for R in GeoInfo.ArrayRs:
                 for ensemble_realization in range(number_realizations_OD_ensemble):
@@ -444,13 +461,14 @@ if __name__ == '__main__':
     dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network')
     dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network')
     dir_output_simulation_gpu = os.environ["LPSIM"]
-    dir_base_output_simulation_analysis = "/data_2/alberto"
+    dir_data_2 = "/data_2/alberto"
     complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
     # NOTE: every time you change here, change also the corrispective update_dict_df
     list_columns_df_info_simulations = [# Main() Variables
                                         "dir_output_simulation_analysis",                   # NOTE: i.e. /data_2/alberto/CityName/Output
                                         "complete_path_od_file_input_simulation",           # NOTE: i.e. 
                                         "complete_path_output_simulation_copied",           # NOTE:                                                                    
+                                        "name_od_file_input_simulation",
                                         "name",                                             # NOTE:
                                         "complete_path_graphml",                            # NOTE:
                                         "city",                                             # NOTE:
@@ -475,8 +493,8 @@ if __name__ == '__main__':
     for CityName in NameCities:
         Main(CityName,
         TRAFFIC_DIR,
-        dir_base_output_simulation_analysis,
-        complete_path_info_simulations_df,
+        dir_data_2,
         list_columns_df_info_simulations,
+        complete_path_info_simulations_df,
         round_UCI = 3,
         number_realizations_OD_ensemble = 4)

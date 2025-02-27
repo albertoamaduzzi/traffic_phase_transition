@@ -788,6 +788,44 @@ class GeometricalSettingsSpatialPartition:
         SaveJsonDict(self.config_dir_local,self.city + '_geometric_info.json')        
         logger.info(f'New Rmax {self.Rmax}, New number of simulations {self.number_simulation_per_UCI}')
 
+    def Reset_ArrayRs_Given_UCI(self,UCI):
+        """
+            Set Rmax divisible by the number of simulations per UCI
+        """
+        for i in range(len(UCI2CityName2RminRmax.keys())):
+            upper_uci_i = float(list(UCI2CityName2RminRmax.keys())[i])
+            upper_uci_i_1 = float(list(UCI2CityName2RminRmax.keys())[i+1]) 
+            if i == 0:
+                if UCI <= upper_uci_i:
+                    Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
+                    Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    break
+            elif i == len(UCI2CityName2RminRmax.keys())-1:
+                if UCI > upper_uci_i:
+                    Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
+                    Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    break
+            else:
+                if UCI > upper_uci_i and UCI <= upper_uci_i_1:
+                    Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
+                    Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    break
+        Delta = Rmax - Rmin
+        Rmax = Rmin + Delta + Delta%self.number_simulation_per_UCI
+        self.Step = int((Rmax - Rmin)/self.number_simulation_per_UCI)        
+        self.config["Rmax"] = Rmax
+#        if Delta%self.number_simulation_per_UCI == 0:
+#            self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI
+#            pass
+#        else:
+#            self.config["number_simulation_per_UCI"] = self.number_simulation_per_UCI + 1
+        self.ArrayRs = np.arange(Rmin,Rmax,self.Step,dtype=int)
+#        self.config["ArrayRs"] = list(self.ArrayRs)
+#        SaveJsonDict(self.config_dir_local,self.city + '_geometric_info.json')        
+        logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, Rmin {Rmin}, Rmax {Rmax}')
+
+
+
     def UpdateFiles2Upload(self,local_file,server_file):
         self.Files2Upload[local_file] = server_file
         logger.info('Files to Upload Updated: {}'.format(local_file))

@@ -30,7 +30,26 @@ def CheckPlatform(verbose = False):
         print('Processor: ',platform.processor())
         print('architecture: ',platform.architecture())
 
-def ModifyConfigIni(CityName,start,end,R,str_UCI,verbose = False):
+def ModifyConfigIni(start,name_od_file_input_simulation):
+    '''
+        Input:
+            CityName: str -> in ['BOS','LAX','SFO','RIO','LIS']
+            start: Start time analysis (default = 7) since we want to study traffic at its peak
+            end: End time analysis (default = 24) since we want all day
+            R: int -> People per second (Is the leading parameter to control how many people are inserted per unit time)
+            UCI: Measures the plycentricity of city
+        Description:
+            Write the configuration file that must be given in input to the LivingCity program
+            NOTE: Do not change position in folder: ../LPSim/
+    '''
+    logger.info(f"Input File: {name_od_file_input_simulation}")
+#    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,str_UCI)
+    file_txt = f"[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={start}\nEND_HR=24\nOD_DEMAND_FILENAME={name_od_file_input_simulation}\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n"
+    with open(os.path.join(TRAFFIC_DIR,'command_line_options.ini'),'w') as file:
+        file.write(file_txt)
+    file.close()
+#        print(file_txt)    
+def _ModifyConfigIni(CityName,start,end,R,str_UCI,verbose = False):
     '''
         Input:
             CityName: str -> in ['BOS','LAX','SFO','RIO','LIS']
@@ -43,11 +62,11 @@ def ModifyConfigIni(CityName,start,end,R,str_UCI,verbose = False):
             NOTE: Do not change position in folder: ../LPSim/
     '''
     logger.info("Input File: {0}_oddemand_{1}_{2}_R_{3}_UCI_{4}.csv".format(CityName,start,end,R,str_UCI))
-    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,round(UCI,3))
+#    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,str_UCI)
+    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={2}\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,end,name_od_file_input_simulation)
     with open(os.path.join(TRAFFIC_DIR,'command_line_options.ini'),'w') as file:
         file.write(file_txt)
     file.close()
-#        print(file_txt)    
 
 
 
@@ -290,20 +309,6 @@ def CheckODDemandFile(
     return InputDocker
 
 
-def PrepareConfigIni(GeoInfo,start,end,R,str_UCI):
-    """
-        Move nodes.csv
-        Move edges.csv
-        Modify Config.ini
-        NOTE: 
-            1) The function relies on the constant path of the LPSim directory
-    """
-    try:
-        CopyCartoGraphy("edges.csv",GeoInfo.city)                       # Copy Cartography
-        CopyCartoGraphy("nodes.csv",GeoInfo.city)                       # Copy Cartography
-        ModifyConfigIni(GeoInfo.city,start,end,R,str_UCI, True)   # Modify Config.ini 
-    except Exception as e:
-        logger.info(f"Error ModifyConfigIni: {e}")
 
 
 
@@ -323,6 +328,7 @@ def LaunchSimulation(GeoInfo,
     """
     assert "complete_path_output_simulation_copied" in update_dict_df.keys(),f"KeyError: complete_path_output_simulation_copied not in update_dict_df"
     assert "complete_path_od_file_input_simulation" in update_dict_df.keys(),f"KeyError: complete_path_od_file_input_simulation not in update_dict_df"
+    assert "name_od_file_input_simulation" in update_dict_df.keys(),f"KeyError: name_od_file_input_simulation not in update_dict_df"
     # 1) NOTE: SET CONSTANTS LAUNCH 1 SIMULATION
     os.environ['PATH'] += os.pathsep + '/usr/bin/'
     container_name = "xuanjiang1998/lpsim:v1"
@@ -332,7 +338,12 @@ def LaunchSimulation(GeoInfo,
     start = GeoInfo.start
     end = start + 1
     # 2) NOTE: Prepare Config.ini
-    PrepareConfigIni(GeoInfo,start,end,R,str_UCI)
+    try:
+        CopyCartoGraphy("edges.csv",GeoInfo.city)                       # Copy Cartography
+        CopyCartoGraphy("nodes.csv",GeoInfo.city)                       # Copy Cartography
+        ModifyConfigIni(start,update_dict_df["name_od_file_input_simulation"])   # Modify Config.ini 
+    except Exception as e:
+        logger.info(f"Error ModifyConfigIni: {e}")
     logger.info(f"{GeoInfo.city}: Launch Simulation {R}, {str_UCI}")
     # Check Docker: If Transport Error -> Stop (We now have that the Process Could Not Continue)
     try:
@@ -369,9 +380,9 @@ def LaunchSimulation(GeoInfo,
             destination_file = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file}")                                        # NOTE: Transfer it into the dir_analysis 
             destination_file_parquet = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file.replace('.csv', '.parquet')}")    # NOTE: Rename the .parquet file 
             
-            RenameMoveOutput(source_file,
-                             destination_file,
-                             destination_file_parquet)                                                                                                                          # NOTE: Rename and Move the output file
+            RenameMoveOutput(source_file = source_file,
+                             destination_file = destination_file,
+                             destination_file_parquet = destination_file_parquet)                                                                                                                          # NOTE: Rename and Move the output file
             DeleteFile(update_dict_df["complete_path_od_file_input_simulation"])                                                                                                # NOTE: Delete the input file (od_demand file)
     return not FailedSimulation
 
@@ -379,284 +390,6 @@ def LaunchSimulation(GeoInfo,
 
 
 
-def _ProcessMain(case,
-                GeoInfo,
-                Modified_Fluxes,
-                R,
-                UCI1,
-                Number_Realizations_OD_Ensemble,
-                concurrent_manager):
-    """
-        @param case: str -> 'NonModified' or 'Modified'
-        @param GeoInfo: GeometricalSettingsSpatialPartition object
-        @param Modified_Fluxes: pd.DataFrame
-        @param R: float
-        @param UCI1: float
-        ---- SYNCRONIZATION ----
-        @param shared_dict: Manager.dict()
-        @param queue: Queue
-        @param barrier: Barrier
-        @param lock: Lock
-        @param error_flag: Value
-        @param R_error: Value
-    """
-    # SET INVARIANT COMMAND FOR DOCKER -> LAUNCH 1 SIMULATION
-    os.environ['PATH'] += os.pathsep + '/usr/bin/'
-    container_name = "xuanjiang1998/lpsim:v1"
-    PWD = os.environ["LPSIM"]
-    env = os.environ.copy()
-    docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']
-
-    ##### FILE NAMES TO CONTROL WETHER TO RUN SIMULATION OR SAVE TIME #####  /home/alberto/LPSim/LivingCity/berkeley_2018/boston/Output
-    dir_new_full_network = os.path.join(GeoInfo.berkeley_2018,'new_full_network')
-    saving_dir = os.path.join(GeoInfo.berkeley_2018,GeoInfo.city,'Output',str(round(UCI1,3)))
-    output_file = '0_people{0}to24.csv'.format(GeoInfo.start)
-    output_file_parquet = output_file.replace('.csv','.parquet')
-    check_file = f"R_{R}_UCI_{round(UCI1,3)}_{output_file_parquet}"
-    if GeoInfo.city == "BOS":
-        DataDir = f"/data_2/alberto/{GeoInfo.city}/Output/{str(round(UCI1,3))}"#os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
-        destination_file = os.path.join(DataDir, check_file)
-    else:
-        DataDir = f"/data_2/alberto/{GeoInfo.city}/Output/{str(round(UCI1,3))}"#os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
-        destination_file = os.path.join(DataDir, check_file)
-#        destination_file = os.path.join(saving_dir, check_file)
-    # COMPUTING FOR EACH R, UCI, CITY -> 4 realizations  
-    for iteration in range(Number_Realizations_OD_Ensemble):
-        if iteration == 0:
-            Name_parameters_output = f"R_{R}_UCI_{round(UCI1,3)}"
-            InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"
-        else:
-            Name_parameters_output = f"R_{R}_UCI_{round(UCI1,3)}_iter_{iteration}"
-            InputFile = f"{GeoInfo.city}_oddemand_{GeoInfo.start}_{GeoInfo.start + 1}_{Name_parameters_output}.csv"
-        # BRANCH VARIABLES
-        InputDocker = os.path.join(dir_new_full_network,InputFile)
-        ComputedDockerInput = os.path.isfile(InputDocker) # Input Exists: True -> SKIP COMPUTATION OD
-        ComputedOutput = os.path.isfile(destination_file) or os.path.isfile(os.path.join(saving_dir, f"{Name_parameters_output}_{output_file_parquet}"))# Output Exists: True -> NOT LAUNCH DOCKER: SuccessSimulation = True
-        # Compute The Docker Only If I Do Not Have Already Computed It and The OutputFile does not Exist
-        # Not Parallel Case
-        if concurrent_manager is None:
-            if ComputedOutput:
-                logger.info(f"Simulation {check_file} already exists.")
-                SuccessSimulation = True
-                return SuccessSimulation
-            else:
-                # Check InputDocker (DO NOT REPEAT IT!)
-                if not ComputedDockerInput:
-                    # Not Modified Mobility
-                    if case == 'NonModified':
-                        logger.info(f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}")
-                        InputDocker = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI1,R)
-                    # Modified Mobility
-                    else:
-                        logger.info(f"ID-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}")
-                        if not ComputedDockerInput:
-                            InputDocker = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-                else:
-                    logger.info(f"InputDocker {InputDocker} already exists.")
-                # Launch Docker Process
-                start = GeoInfo.start
-                end = start + 1
-                # Keep Launching Docker
-                try:
-                    # Copy Cartography
-                    CopyCartoGraphy("edges.csv",GeoInfo.city)
-                    CopyCartoGraphy("nodes.csv",GeoInfo.city)
-                    # Modify Config.ini 
-                    ModifyConfigIni(GeoInfo.city,start,end,R,round(UCI1,3), True)
-    #                concurrent_manager.LogMessage(Messages)
-                except Exception as e:
-                    logger.info(f"Error ModifyConfigIni: {e}")
-                # TransportError, BrockenPipe: 0,0 -> 1 (Continue)  
-                logger.info(f"{R}, {round(UCI1,3)}")
-                logger.info(f"Launch Simulation {R}, {round(UCI1,3)}")
-                # Check Docker: If Transport Error -> Stop (We now have that the Process Could Not Continue)
-                try:
-                    process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-                except Exception as e:
-                    logger.info(f"Error check_transportation_error: {e}")
-                    TransportError = True
-                try:
-                    stdout, stderr = process.communicate()
-                    BrockenPipe = CheckBrockenPipeError(stderr.decode())
-                except Exception as e:
-                    logger.info(f"Error process.communicate: {e}")
-                try:
-                    TransportError = check_transportation_error(stderr.decode())
-                except Exception as e:
-                    logger.info(f"Error check_transportation_error: {e}")
-                    TransportError = True
-                # Check if the command was successful
-                ErrorDocker = (process.returncode != 0)
-                # Check Errors in GPU
-                ErrorGPU = check_out_of_memory_error(stderr.decode())                
-                logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error GPU: {ErrorGPU}")
-                logger.info(f"{R}, {round(UCI1,3)}, {GeoInfo.city} Error Docker: {ErrorDocker}")
-                FailedSimulation = ErrorGPU or ErrorDocker
-                if not FailedSimulation:
-                    output_files = [
-                                    '0_indexPathInit{0}to24.csv'.format(start),
-                                    '0_people{0}to24.csv'.format(start),
-                                    '0_route{0}to24.csv'.format(start),
-                                    '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start)
-                                    ]
-                    destination_dir_output_file = os.path.join("data_2","alberto",GeoInfo.city,"Output",str(round(UCI1,3)))
-                    os.makedirs(os.path.join(destination_dir_output_file), exist_ok=True)
-                    for output_file in output_files:
-                        source_file = os.path.join(LPSIM_DIR, output_file)
-                        destination_file = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file}")
-                        destination_file_parquet = os.path.join(destination_dir_output_file, f"R_{R}_UCI_{round(UCI1,3)}_{output_file.replace('.csv', '.parquet')}")
-                        RenameMoveOutput(source_file,
-                                         destination_file,
-                                         destination_file_parquet)
-                        DeleteFile(InputDocker)                    
-                return not FailedSimulation
-        # DEPRECATED xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        else:
-            try:
-                os.chdir(os.getcwd())
-                ### ENVIRONMENT VARIABLES ###
-                ##### PID ##### 
-                pid = os.getpid()
-                #### INIT SHARED DICT #####
-                concurrent_manager.InitSharedDict(pid,case,R,UCI1,GeoInfo.city,f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Init Dict")
-            #    Messages = [f"InputDocker: {InputDocker} {os.path.isfile(InputDocker)}",f"OutputFile: {destination_file} {os.path.isfile(destination_file)}"]
-            #    concurrent_manager.LogMessage(Messages)
-                # Check If The Simulation is Already There (DO NOT REPEAT IT!)
-                if ComputedOutput:
-                    Messages = [f"Simulation {check_file} already exists."]
-                    concurrent_manager.LogMessage(Messages)
-                    SuccessSimulation = True
-                    return SuccessSimulation
-                # The Simulation Output is Not There
-                else:
-                    # Check InputDocker (DO NOT REPEAT IT!)
-                    if not ComputedDockerInput:
-                        # Not Modified Mobility
-                        if case == 'NonModified':
-                            Messages = [f"ID-Non-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}"]
-                            concurrent_manager.LogMessage(Messages)
-                            InputDocker = GeoInfo.ComputeDf4SimNotChangedMorphology(UCI1,R)
-                        # Modified Mobility
-                        else:
-                            Messages = [f"ID-Mod R: {R}, {GeoInfo.city}, UCI: {round(UCI1,3)}"]
-                            concurrent_manager.LogMessage(Messages)
-                            if not ComputedDockerInput:
-                                InputDocker = GeoInfo.ComputeDf4SimChangedMorphology(UCI1,R,Modified_Fluxes)
-                    else:
-                        Messages = [f"InputDocker {InputDocker} already exists."]
-                        concurrent_manager.LogMessage(Messages)
-                    # Launch Docker Process
-                    start = GeoInfo.start
-                    end = start + 1
-                    # Keep Launching Docker
-                    while(True):
-                        # NOTE: This Will Be False 
-                        concurrent_manager.AcquireLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Check GPU Availability")
-                        try:
-                            gpu_id = check_first_gpu_available()
-                        except Exception as e:
-                            concurrent_manager.LogMessage([f"Error check_first_gpu_available: {e}"])
-                            gpu_id = -1
-                        concurrent_manager.ReleaseLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Available: {gpu_id}")
-                        GpuAvailable = gpu_id==0            
-                        # Block All The Processes Until The GPU is Available (When Simulation Is Returned)
-                        # Tell That You Are Occupying The GPU
-                        try:
-                            concurrent_manager.UpdateSharedDict(pid = pid,key = 'GPU_occupied',value = True,Message = f"{R}, {round(UCI1,3)}: Update ShareDic GPU {gpu_id} Occupied: True")
-                        except Exception as e:
-                            concurrent_manager.LogMessage([f"Error UpdateSharedDict: {e}"])
-
-                        if GpuAvailable:
-                            # Change The Configuration File Just One GPU at A Time
-                            try:
-                                concurrent_manager.AcquireLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Acquire Config_ini Lock")
-                                # Copy Cartography
-                                CopyCartoGraphy("edges.csv",GeoInfo.city)
-                                CopyCartoGraphy("nodes.csv",GeoInfo.city)
-                                # Modify Config.ini 
-                                ModifyConfigIni(GeoInfo.city,start,end,R,round(UCI1,3), True)
-                                concurrent_manager.LogMessage(Messages)
-                            except Exception as e:
-                                concurrent_manager.LogMessage([f"Error ModifyConfigIni: {e}"])
-                            # TransportError, BrockenPipe: 0,0 -> 1 (Continue)  
-                            Messages = [f"pid {pid}: {R}, {round(UCI1,3)} Free GPU {gpu_id}",f"Launch Simulation {R}, {round(UCI1,3)} in GPU {gpu_id}"]
-                            concurrent_manager.LogMessage(Messages)
-                            # Check Docker: If Transport Error -> Stop (We now have that the Process Could Not Continue)
-                            try:
-                                process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-                            except Exception as e:
-                                concurrent_manager.LogMessage([f"Error check_transportation_error: {e}"])
-                                concurrent_manager.ModifyVariablesByNames(name_variable = "RError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = False,GPUError = False,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
-        #                                concurrent_manager.UpdateRError(gpu_id,R,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
-                                TransportError = True
-                                break
-                            try:
-                                stdout, stderr = process.communicate()
-                                BrockenPipe = CheckBrockenPipeError(stderr.decode())
-                            except Exception as e:
-                                concurrent_manager.LogMessage([f"Error process.communicate: {e}"])
-                                try:
-                                    concurrent_manager.ModifyVariablesByNames(name_variable = "RError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = ErrorDocker,GPUError = False,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value: {concurrent_manager.RError.value}")
-                                except Exception as e:
-                                    concurrent_manager.LogMessage([f"Error ModifyVariablesByNames: {e}"])
-        #                                concurrent_manager.UpdateRError(gpu_id,R,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
-                                TransportError = True
-                                break
-                            try:
-                                TransportError = check_transportation_error(stderr.decode())
-                            except Exception as e:
-                                concurrent_manager.LogMessage([f"Error check_transportation_error: {e}"])
-                                TransportError = True
-                                break
-        #                    concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
-                            # Check if the command was successful
-                            ErrorDocker = (process.returncode != 0)
-                            # Check Errors in GPU
-                            concurrent_manager.LogMessage([f"Decode/Encode Message: {R}, {round(UCI1,3)}",stdout.decode(),stderr.decode(),f"Error Docker: {ErrorDocker}"])
-                            concurrent_manager.AcquireLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Check GPU Errors")
-                            ErrorGPU = check_out_of_memory_error(stderr.decode())                
-                            concurrent_manager.ReleaseLockByName("GPULock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Release Check GPU Errors")                
-                            concurrent_manager.LogMessage([f"{R}, {round(UCI1,3)},, {GeoInfo.city} Error GPU: {ErrorGPU}"])
-                            # Save The Shared Dict With Information About The Process 
-                            concurrent_manager.UpdateSharedDict(pid = pid, key = 'GPU_error',value = ErrorGPU,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update GPU Error: {ErrorGPU}")           
-                            concurrent_manager.UpdateSharedDict(pid = pid, key = 'docker_error',value = ErrorDocker,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update Docker Error: {ErrorDocker}")
-                            FailedSimulation = ErrorGPU or ErrorDocker
-                            concurrent_manager.UpdateSharedDict(pid = pid, key = 'failed_simulation',value = FailedSimulation,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city}: Update Failed Simulation: {FailedSimulation}")
-                            # NOTE: We are in a lock, so we do not give a shit about other processes                
-                            concurrent_manager.ModifyVariablesByNames(name_variable = "GPUError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = False,GPUError = ErrorGPU,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} ErrorGPU.value = {ErrorGPU}")
-        #                    concurrent_manager.UpdateGPUError(gpu_id, ErrorGPU,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} ErrorGPU.value = {ErrorGPU}")
-                            concurrent_manager.ModifyVariablesByNames(name_variable = "RError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = False,GPUError = False,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
-        #                    concurrent_manager.UpdateRError(gpu_id,R,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} RError.value")
-                            concurrent_manager.ModifyVariablesByNames(name_variable = "DockerError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = ErrorDocker,GPUError = False,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} Docker_error.value")
-        #                    concurrent_manager.UpdateDockerError(ErrorDocker,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} Docker_error.value")
-                            concurrent_manager.LogMessage([f"Shared: GPU Error, {concurrent_manager.GPU_errors[gpu_id].value}, R: {concurrent_manager.R_errors[gpu_id].value}, Docker: {concurrent_manager.Docker_error.value}"])
-                            # If Failed Simulation GPUErrorIndex
-                            if FailedSimulation:
-                                concurrent_manager.ModifyVariablesByNames(name_variable = "DockerError",pid = None,case = None,R = R,UCI1 = UCI1,city = GeoInfo.city,gpu_id = gpu_id,DockerError = ErrorDocker,GPUError = False,FirstTry = False,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} GPUError_index.value: {concurrent_manager.GPU_error_index.value}")
-                                concurrent_manager.UpdateGPUErrorIndex(gpu_id,Message = f"{R}, {round(UCI1,3)}, {GeoInfo.city} GPUError_index.value: {concurrent_manager.GPU_error_index.value}")                
-                            else:
-                                pass
-            #               concurrent_manager.AcquireLockByName("GPULock",Message = f"{R}, {round(UCI1,3)} Free Memory")
-            #                free_gpu_memory(gpu_id)
-            #                concurrent_manager.ReleaseLockByName("GPULock",Message = f"{R}, {round(UCI1,3)} Free Memory")
-                            # OutputFile Is There, we can move it
-                            
-                            if not FailedSimulation:
-                                output_files = [
-                                                '0_indexPathInit{0}to24.csv'.format(start),
-                                                '0_people{0}to24.csv'.format(start),
-                                                '0_route{0}to24.csv'.format(start),
-                                                '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start)
-                                                ]
-                                for output_file in output_files:
-                                    RenameMoveOutput(output_file,GeoInfo.city,R,UCI1,True)
-                                    DeleteFile(InputDocker)
-                            concurrent_manager.ReleaseLockByName("ConfigIniLock", gpu_id = None,Message = f"{R}, {round(UCI1,3)}: Ended Simulation: Release Config_ini Lock")
-                            
-                            return not FailedSimulation
-            except Exception as e:
-                concurrent_manager.LogMessage([f"Error: {e}"])
-                return False
 
 #def LaunchProgram(config):
 #    subprocess.run(['your_program_executable', config_file])
