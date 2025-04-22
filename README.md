@@ -39,7 +39,10 @@ In this step is computed `UCI`.
 ## simulation
 `LaunchSimulation`: launches the simulation given `grid` with fixed population, `ODs`. Each simulation is characterized by the triplet (`city`,`UCI`,`R`,`iter`). The `iteration_number` is the enemble number that we want to explore. Essentially, each iter corresponds to a different realization of the OD in terms of the nodes where people are generated 
 ## Analysis DP
-
+`TrajectoryAnalysis`:   
+- Controls the `UCI`s available for each city and for the Rs available.
+- For each simulation launches `OutputStats.CompleteAnalysis`
+- Produces the paper Output  
 ## Population/Origin-Destination/Grid
 `python3 ./scripts/GeometrySphere/ComputeGeometryMain.py`   
 The script reads the shape file of the region of interest with the relative Origin-Destinations file (.fma) (see `Input` Section).
@@ -104,6 +107,12 @@ Columns:
 - "population": float, Number of people living in the grid obtained as a intersection with the hexagons obtained from Facebook
 - "with_roads": bool, Value that tells wether the map has roads in that grid
 - "geometry":Polygon   
+
+## Simulation
+
+
+## Analysis DP
+
 
 ## Useful Commands
 #### Check memory occupied on disk from home

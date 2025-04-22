@@ -6,7 +6,7 @@
 import os
 # Base dir: NOTE: contains both: - LIVINGCITY
 #                                - TRAFFIC_DIR
-LPSIM_DIR = os.environ["LPSIM"]
+LPSIM_DIR = os.environ["LPSim"]
 # LivingCity dir: NOTE:
 #    - The directories of this section are those used for the simulator
 LIVINGCITY_DIR = os.path.join(LPSIM_DIR,"LivingCity")

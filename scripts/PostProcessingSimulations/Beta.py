@@ -3,16 +3,21 @@ import matplotlib.pyplot as plt
 import logging
 import numpy as np
 from collections import defaultdict
+import os
+from matplotlib.ticker import ScalarFormatter
 logger = logging.getLogger(__name__)
 
 def ComputeTime2FitBeta(RangeFit,t_vect,R2NtNtFit,UCI2CriticalParams,Rs,UCI,City):
     """
         Description:
             - Compute the time2fitbeta for a given UCI
-    """
+        NOTE: We are avoiding to consider the R that contains 0 at t0 > t_critical. 
+            We are assuming that 0s are appearing just in low time where the transition is not yet complete
+                """
     logger.info(f"{City}: Computing Time2FitBeta for UCI = {UCI}")
     Time2FitBeta = defaultdict()#{t0:{"y_fit_pl":[],"ErrorPL":[],"A_pl":[],"Beta":[]} for t0 in RangeFit}
-    for t0 in RangeFit:
+    # 
+    for t0 in RangeFit:                             # NOTE: Checking just big values of t0
         NRsGivent0 = []
         FRcR = []
         t = t_vect[t0]
@@ -21,6 +26,7 @@ def ComputeTime2FitBeta(RangeFit,t_vect,R2NtNtFit,UCI2CriticalParams,Rs,UCI,City
             # Avoid those casesfor which I have R but no simulation is computed
             if "n" in R2NtNtFit[R].keys():
                 # Check PowerLaw fixed t0, between NRsGivent0 and (R^2 - Rc^2)/Rc^2
+#                if R2NtNtFit[R]["n"][t0] > 0:
                 NRsGivent0.append(R2NtNtFit[R]["n"][t0])
                 FRcR.append((R**2 - UCI2CriticalParams[round(UCI,3)]["Rc"]**2)/UCI2CriticalParams[round(UCI,3)]["Rc"]**2)
             if np.shape(NRsGivent0) != np.shape(FRcR):  
@@ -38,6 +44,26 @@ def ComputeTime2FitBeta(RangeFit,t_vect,R2NtNtFit,UCI2CriticalParams,Rs,UCI,City
 
     return Time2FitBeta
 
+def PlotTime2FitBetaError(Time2FitBeta,t_vect,t_star,City,UCI,PlotDir):
+    """
+        Description:
+            - Plot the Error of the Power Law Fit
+    """
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    Betas = [Time2FitBeta[t0]["Beta"] for t0 in Time2FitBeta.keys()]
+    Errors = [Time2FitBeta[t0]["ErrorPL"] for t0 in Time2FitBeta.keys()]
+    time_ = [t_vect[t0] for t0 in list(Time2FitBeta.keys())]
+    ax.scatter(time_,Errors,marker = "o",label = f"error")
+    ax.scatter(time_,Betas,marker = "*",label = r"$\beta$")
+    int_t_star = int(t_star)
+    ax.vlines(x = t_vect[int_t_star],ymin = 0,ymax = 0.05,color = "red",linestyles = "dashed")
+    ax2 = ax.twinx()
+    ax2.spines['left'].set_position(('outward', 60))
+    ax2.set_xlabel("t (h)")
+    ax2.set_ylabel("error")
+    ax2.set_title(f"{City}, UCI: {UCI}")
+    plt.savefig(os.path.join(PlotDir,f'{City}_{UCI}_ErrorBeta.png'))
+    plt.close(fig)
 def ChooseBestBeta(Time2FitBeta,t_vect):
     """
         Description:
@@ -61,14 +87,13 @@ def PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,t1,City,t_vect,UCI,PlotDir):
         Description:
 
     """   
-    import os
     logger.info(f"{City}:Plotting Best Beta")
     fig,ax = plt.subplots(figsize = (10,10))
     for t0 in Time2FitBeta.keys():
         if t1 == t0:
             ax.scatter(Time2FitBeta[t0]["epsilon"],Time2FitBeta[t0]["n(R,epsilon)"],marker ='+',label = f"t = {round(BestT,3)}")
             ax.plot(Time2FitBeta[t0]["epsilon"],Time2FitBeta[t0]["n(R,epsilon)_fit"], label = "")
-            ax.text(0.1,0.001,r"$\beta$ = " + f"{round(Time2FitBeta[t0]['Beta'],3)}")
+            ax.text(min(Time2FitBeta[t0]["epsilon"]) + 0.1,min(Time2FitBeta[t0]["n(R,epsilon)_fit"]) + 0.0001,r"$\beta$ = " + f"{round(Time2FitBeta[t0]['Beta'],3)}")
         else:
             if t0 > t1 - 3 and t0 < t1 + 3:
                 ax.plot(Time2FitBeta[t0]["epsilon"],Time2FitBeta[t0]["n(R,epsilon)"],label = f"t = {round(t_vect[t0],3)}")
@@ -80,6 +105,10 @@ def PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,t1,City,t_vect,UCI,PlotDir):
     ax.set_ylim(10^(-4),3*10^(-1))
     ax.set_ylabel(r"$\beta$")
     ax.legend()
+    ax.xaxis.set_major_formatter(ScalarFormatter())
+    ax.xaxis.get_major_formatter().set_scientific(False)
+    ax.xaxis.get_major_formatter().set_useOffset(False)
+
 #    plt.title(f"Best Beta: {BestBeta} and Best A: {BestA} at t = {BestT}")
     plt.savefig(os.path.join(PlotDir,f'{City}_BestBeta_{UCI}.png'))
     plt.close(fig)

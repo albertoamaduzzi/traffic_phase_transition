@@ -165,6 +165,79 @@ def EstimateD0minus1(Tij_dist_fit_gravity):
     return d0minus1_av
 
 
+@timing_decorator
+def ComparePlExpoDf(DfUnload,maxfev = 10000):
+    """
+        @Describe:
+            - Compare the powerlaw and the exponential fit
+        NOTE:
+            1. Consider Time in terms of hours after the unloading period starts.
+            2. Consider the fraction of people in the network
+            3. Consider the interval for which the number of people is not 0, 
+               otherwhise the log is not defined in the y-axis that is always logged for a linear fit.
+        @Input:
+            - DfUnload: polars.DataFrame
+            Columns:
+                - FractionPeople: np.array (Fraction of people in the network)
+                - Time_hours: np.array (Time in hours from t_start_hour)
+                - Time_hours_shifted: np.array (Time in hours after the unloading period starts) 
+                - IsPeople: np.array
+                - IsUnload: np.array
+                - NumberPeople: np.array (Number of people, not fraction)
+                - NumberPeopleFit: np.array (Number of people fitted)
+                - Time: np.array (Time in seconds)
+                - y_fit_exp: np.array (Fitted exponential)
+                - y_fit_pl: np.array (Fitted powerlaw)
+                - log_y: np.array (log of the fraction of people)
+                - log_x: np.array (log of the time in hours)
+                - DiffNumberPeople: np.array (Difference in the number of people)
+        @Output:
+            - DfUnload: polars.DataFrame
+
+    """
+    import polars as pl
+    DfUnload = DfUnload.with_columns(pl.col("FractionPeople").log().alias("log_y"),
+                                     pl.col("Time_hours_shifted").log().alias("log_x"))
+    y_load = DfUnload.filter(pl.col("IsUnload") == False)["FractionPeople"].to_numpy()
+    DfUnload4Fit = DfUnload.filter(pl.col("IsPeople") == True,
+                                   pl.col("IsUnload") == True)
+    DfUnloadWithout0End = DfUnload4Fit.filter(pl.col("IsPeople") == True)
+    # Declare the input fit
+    log_x = DfUnload4Fit["log_x"].to_numpy()
+    log_y = DfUnload4Fit["log_y"].to_numpy()
+    x_fit = DfUnload4Fit["Time_hours_shifted"].to_numpy()
+    x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()
+    fit_pl = curve_fit(linear, xdata = log_x,
+                     ydata = log_y,
+                     maxfev = maxfev)
+
+    fit_exp = curve_fit(linear,
+                        xdata = x_fit,
+                        ydata = log_y,
+                        maxfev = maxfev)
+    # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
+    A_pl,alpha_pl = np.exp(fit_pl[0][1]), fit_pl[0][0]
+    A0,alpha_exp = np.exp(fit_exp[0][1]), fit_exp[0][0]
+    # Compute the fitted curve with all the times
+    y_fit_exp = exponential(x_without_load,A0,alpha_exp)
+    y_fit_pl = powerlaw(x_without_load,A_pl,alpha_pl)
+    y_fit_exp = np.concatenate([y_load,y_fit_exp],axis = 0)
+    y_fit_pl = np.concatenate([y_load,y_fit_pl],axis = 0)
+    #Return DfUnload
+    DfUnload = DfUnload.with_columns(pl.Series(name = "y_fit_exp",values = y_fit_exp),
+                                     pl.Series(name = "y_fit_pl",values = y_fit_pl))
+    # Compare the two fits NOTE: Scale for the number of samples since the 
+    y_fit_exp = DfUnload.filter(pl.col("IsPeople") == True,
+                                pl.col("IsUnload") == True)["y_fit_exp"].to_numpy()
+    y_fit_pl = DfUnload.filter(pl.col("IsPeople") == True,
+                                 pl.col("IsUnload") == True)["y_fit_pl"].to_numpy()
+    y = DfUnload.filter(pl.col("IsPeople") == True,
+                                 pl.col("IsUnload") == True)["FractionPeople"].to_numpy()
+    ErrorExp = np.sqrt(np.sum((y_fit_exp-y)**2)/len(y))
+    ErrorPL = np.sqrt(np.sum((y_fit_pl-y)**2)/len(y))
+    return DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl
+
+
 
 @timing_decorator
 def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-1),maxfev = 10000):

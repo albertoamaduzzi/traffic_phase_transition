@@ -1,6 +1,9 @@
 import polars as pl
 import numpy as np
 from EfficiencyAnalysis import *
+import logging
+logger = logging.getLogger(__name__)
+
 ### GENERIC PREPROCESSING FUNCTIONS
 
 def DropColumnsDfIfThere(Df,columns):
@@ -49,8 +52,12 @@ def FilterDfPeopleControlGroup(t0,t1,DfPeople,StrTimeDeparture,StrLastTimeSimula
 #          &  # Corrected condition
 #        (int(t1) < pl.col(StrLastTimeSimulated))
     )
-    DfPeopleInNetAtTimet = DfPeople.filter(condition)
-    return DfPeopleInNetAtTimet
+    if DfPeople is not None:
+        DfPeopleInNetAtTimet = DfPeople.filter(condition)
+        return DfPeopleInNetAtTimet
+    else:
+        logger.error("Warning: DfPeople is None -> may cause  error if iter_2DfPeople is computed")
+        return None
 
 def FilterDfPeopleStilInNet(t_start_interval,t_end_interval,StrLastTimeSimulated,DfPeople):
     """
@@ -67,9 +74,12 @@ def FilterDfPeopleStilInNet(t_start_interval,t_end_interval,StrLastTimeSimulated
         (pl.col(StrLastTimeSimulated) >= int(t_start_interval)) &
         (pl.col(StrLastTimeSimulated) < int(t_end_interval))
     )
-    DfPeopleStillInNet = DfPeople.filter(condition)
-    return DfPeopleStillInNet
-
+    if DfPeople is not None:
+        DfPeopleStillInNet = DfPeople.filter(condition)
+        return DfPeopleStillInNet
+    else:
+        logger.error("Warning: DfPeople is None -> may cause  error if iter_2DfPeople is computed")
+        return None
 def ApplyPeople2Time(personId,People2Time,i):
     return People2Time[personId][i]
 
@@ -99,43 +109,48 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         - time_leaving_road: Time of Leaving the Road (in seconds)
         - time_entering_road: Time of Entering the Road (in seconds)
     """
-    Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_limit_kmh"))
-    # Inport Properties Of People into Routes
-    DfRoute = DfRoute.join(DfPeople, on="p", how="left")
-    # Extract ],[ from string and replace with empty string"" 
-    DfRoute = DfRoute.with_columns(pl.col("route").str.replace("]", "",literal = True).str.replace("[", "",literal = True).alias("no_brackets"))
-    # Transform to list of strings
-    DfRoute = DfRoute.with_columns(no_coma = pl.col("no_brackets").str.split(","))
-    # Cast 2 int
-    DfRoute = DfRoute.explode("no_coma")
-    DfRoute = DfRoute.filter(pl.col("no_coma") != "")
-    DfRoute = DfRoute.with_columns(route_list = pl.col("no_coma").cast(pl.Int64))
-    #DfRoute = DfRoute.groupby("p",mantain_order = True).agg(pl.col("route_list").agg_groups().alias("route_list"))
-    DfRoute = DfRoute.drop(["route","no_brackets","no_coma"])
-    DfRoute = DfRoute.with_columns(pl.col("route_list").alias("route"))
-    DfRoute = DfRoute.drop("route_list")
-    DfRoute = DfRoute.with_columns((pl.col("avg_v(mph)")*1.6).alias("avg_v(km/h)"))
-    DfRoute = DfRoute.drop(["distance_right","a","b","T","gas","co","path_length_cpu","path_length_gpu","avg_v(mph)"]) # "init_intersection","end_intersection"
-    DfRoute = DfRoute.filter(pl.col("num_steps") != 0)    
-    DfRoute = DfRoute.with_columns(pl.when(not isinstance(pl.col("avg_v(km/h)"),pl.Float64)).then(pl.col("distance")/(pl.col("last_time_simulated")- pl.col("time_departure"))*3.6).alias("avg_v(km/h)"))
-    DfRoute = DfRoute.filter(pl.col("avg_v(km/h)") <150)
-    DfRoute = DfRoute.join(Edges, left_on='route', right_on='uniqueid', how='inner')
-    DfRoute = DfRoute.drop(["osmid_u","osmid_v","speed_mph","active","num_steps","lanes"])
-    # Convert m to km
-    DfRoute = DfRoute.with_columns((pl.col("length")/1000).alias("length_km"),
-                                (pl.col("distance")/1000).alias("distance_km"),
-                                (pl.col("avg_v(km/h)")/3.6).alias("avg_v(m/s)")) 
-    DfRoute = DfRoute.with_columns(
-        (pl.col("length")/pl.col("avg_v(m/s)")).alias("time_interval_in_road"))
-    DfRoute = DfRoute.with_columns(
-        (pl.cum_sum("time_interval_in_road").over("p")).alias("cumulative_time_spent_in_road")
-    )
-    DfRoute = DfRoute.with_columns((pl.col("time_departure") + pl.col("cumulative_time_spent_in_road")).alias("time_leaving_road"))
-    DfRoute = DfRoute.with_columns(
-        (pl.col("time_leaving_road") - pl.col("time_interval_in_road")).alias("time_entering_road")
-    )    
-    DfRoute = DfRoute.drop(["time_interval_in_road","cumulative_time_spent_in_road"])
-    if "speed_mph" in DfRoute.columns:
-        DfRoute = DfRoute.drop("speed_mph")
-    return DfRoute
+    # NOTE: This line has been added to support the case where the DfRoute is not available and all the data are sent to savio
+    if DfRoute is None:
+        logger.error("DfRoute is None: may cause error if iter_2DfRoute is computed")
+        return None
+    else:
+        Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_limit_kmh"))
+        # Inport Properties Of People into Routes
+        DfRoute = DfRoute.join(DfPeople, on="p", how="left")
+        # Extract ],[ from string and replace with empty string"" 
+        DfRoute = DfRoute.with_columns(pl.col("route").str.replace("]", "",literal = True).str.replace("[", "",literal = True).alias("no_brackets"))
+        # Transform to list of strings
+        DfRoute = DfRoute.with_columns(no_coma = pl.col("no_brackets").str.split(","))
+        # Cast 2 int
+        DfRoute = DfRoute.explode("no_coma")
+        DfRoute = DfRoute.filter(pl.col("no_coma") != "")
+        DfRoute = DfRoute.with_columns(route_list = pl.col("no_coma").cast(pl.Int64))
+        #DfRoute = DfRoute.groupby("p",mantain_order = True).agg(pl.col("route_list").agg_groups().alias("route_list"))
+        DfRoute = DfRoute.drop(["route","no_brackets","no_coma"])
+        DfRoute = DfRoute.with_columns(pl.col("route_list").alias("route"))
+        DfRoute = DfRoute.drop("route_list")
+        DfRoute = DfRoute.with_columns((pl.col("avg_v(mph)")*1.6).alias("avg_v(km/h)"))
+        DfRoute = DfRoute.drop(["distance_right","a","b","T","gas","co","path_length_cpu","path_length_gpu","avg_v(mph)"]) # "init_intersection","end_intersection"
+        DfRoute = DfRoute.filter(pl.col("num_steps") != 0)    
+        DfRoute = DfRoute.with_columns(pl.when(not isinstance(pl.col("avg_v(km/h)"),pl.Float64)).then(pl.col("distance")/(pl.col("last_time_simulated")- pl.col("time_departure"))*3.6).alias("avg_v(km/h)"))
+        DfRoute = DfRoute.filter(pl.col("avg_v(km/h)") <150)
+        DfRoute = DfRoute.join(Edges, left_on='route', right_on='uniqueid', how='inner')
+        DfRoute = DfRoute.drop(["osmid_u","osmid_v","speed_mph","active","num_steps","lanes"])
+        # Convert m to km
+        DfRoute = DfRoute.with_columns((pl.col("length")/1000).alias("length_km"),
+                                    (pl.col("distance")/1000).alias("distance_km"),
+                                    (pl.col("avg_v(km/h)")/3.6).alias("avg_v(m/s)")) 
+        DfRoute = DfRoute.with_columns(
+            (pl.col("length")/pl.col("avg_v(m/s)")).alias("time_interval_in_road"))
+        DfRoute = DfRoute.with_columns(
+            (pl.cum_sum("time_interval_in_road").over("p")).alias("cumulative_time_spent_in_road")
+        )
+        DfRoute = DfRoute.with_columns((pl.col("time_departure") + pl.col("cumulative_time_spent_in_road")).alias("time_leaving_road"))
+        DfRoute = DfRoute.with_columns(
+            (pl.col("time_leaving_road") - pl.col("time_interval_in_road")).alias("time_entering_road")
+        )    
+        DfRoute = DfRoute.drop(["time_interval_in_road","cumulative_time_spent_in_road"])
+        if "speed_mph" in DfRoute.columns:
+            DfRoute = DfRoute.drop("speed_mph")
+        return DfRoute
 

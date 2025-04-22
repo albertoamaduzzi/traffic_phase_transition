@@ -25,24 +25,69 @@ from OutputStats import *
 from PlotsPercolation import *
 import json
 from Beta import *
+import sys
+sys.path.append(os.path.join(os.environ["TRAFFIC_DIR"],"scripts","GeometrySphere"))
+from ODfromfma import UCI2CityName2RminRmax
 BASE_PATH = os.path.join(os.environ["LPSim"],'LivingCity/berkeley_2018/BOS/Output/')
 
 
-def convert_ndarray(obj):
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, dict):
-        return {k: convert_ndarray(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_ndarray(i) for i in obj]
+def convert_ndarray(d):
+    """
+    Recursively convert numpy arrays to lists and numpy int64 to int in a dictionary.
+    """
+    if isinstance(d, dict):
+        return {convert_ndarray(k): convert_ndarray(v) for k, v in d.items()}
+    elif isinstance(d, list):
+        return [convert_ndarray(i) for i in d]
+    elif isinstance(d, np.ndarray):
+        return d.tolist()
+    elif isinstance(d, np.int64):
+        return int(d)
     else:
-        return obj
+        return d
+
+
+def ChooseKeyFromUCI2CityName2RminRmax(UCI,UCI2CityName2RminRmax):
+    """
+        @UCI: float -> UCI
+        @CityName: str -> City Name
+        @UCI2CityName2RminRmax: dict -> {UCI:{CityName:{Rmin:Rmax}}}
+        @description: Choose the key from the dictionary
+    """
+    UCI_keys = list(UCI2CityName2RminRmax.keys())
+    last_key = UCI_keys[-1]
+    first_key = UCI_keys[0]
+    for i in range(len(UCI_keys)-1):
+        UCI_key = UCI_keys[i]
+        if UCI_key != last_key and UCI_key != first_key:
+            if UCI >= UCI_key and UCI < UCI_keys[i+1]:
+                return UCI_key
+        elif UCI_key == first_key:
+            if UCI < UCI_key:
+                return UCI_key
+        else:
+            if UCI >= UCI_key:
+                return UCI_key
+    
+def Cut_Rs_from_ODfromfma(Rs,UCI,CityName,UCI2CityName2RminRmax):
+    """
+        @Rs: list -> List of Rs
+        @UCI: float -> UCI
+        @CityName: str -> City Name
+        @UCI2CityName2RminRmax: dict -> {UCI:{CityName:{Rmin:Rmax}}}
+        @description: Cut the Rs that are not present in the ODfromfma
+    """
+    UCI_key = ChooseKeyFromUCI2CityName2RminRmax(UCI,UCI2CityName2RminRmax)
+    Rmin = UCI2CityName2RminRmax[UCI_key][CityName][0]
+    Rmax = UCI2CityName2RminRmax[UCI_key][CityName][1]
+    Rs = [R for R in Rs if R >= Rmin and R <= Rmax]
+    return Rs
 
 class Polycentrism2TrafficAnalyzer:
     def __init__(self,Df_City2Config,Rs,UCIs):
         assert isinstance(Df_City2Config, pl.DataFrame), f"Df_City2Config must be a polars DataFrame, instead {type(Df_City2Config)}"
-        assert isinstance(Rs,list), f"Rs must be a list, instead {type(Rs)}"
-        assert isinstance(UCIs,list), f"UCIs must be a list, instead {type(UCIs)}"
+        assert isinstance(Rs,list) or isinstance(Rs,tuple) or isinstance(Rs,np.ndarray), f"Rs must be a list, instead {type(Rs)}"
+        assert isinstance(UCIs,list) or isinstance(UCIs,tuple) or isinstance(UCIs,np.ndarray), f"UCIs must be a list, instead {type(UCIs)}"
         assert len(Rs) > 0, f"Rs must be a list of length > 0, instead {len(Rs)}"
         assert len(UCIs) > 0, f"UCIs must be a list of length > 0, instead {len(UCIs)}"
         assert "name" in Df_City2Config.columns, f"Df_City2Config must contain a column 'name', instead {Df_City2Config.columns}"
@@ -53,7 +98,7 @@ class Polycentrism2TrafficAnalyzer:
         # Unique variables
         self.Name = Df_City2Config['name'].unique().to_numpy()[0]
         self.delta_t = Df_City2Config['delta_t'].unique().to_numpy()[0]
-        self.BaseDir = Df_City2Config['dir_output_simulation_analysis'].unique().to_numpy()[0]
+        self.BaseDir = os.path.dirname(Df_City2Config['dir_output_simulation_analysis'].unique().to_numpy()[0])
         self.GraphmlFile = Df_City2Config['complete_path_graphml'].unique().to_numpy()[0]
         self.R2UCI2OutputStats = defaultdict()
         # Phase Transition
@@ -107,86 +152,191 @@ class Polycentrism2TrafficAnalyzer:
         """
 
         # Treat each UCI independently
-        for UCI in self.UCIs:    
+        logger.info(f"Working on: {self.BaseDir}")
+        self.Rs = [int(R) for R in self.Rs]
+        self.UCI2R2InfoTraffic = {round(UCI,3):{R: defaultdict() for R in self.Rs} for UCI in self.UCIs}                        # NOTE: Information about the traffic 
+        self.UCI2AlphaBeta = {round(UCI,3):{"alpha":[],"beta":[]} for UCI in self.UCIs}                                         # NOTE: information about the transition. (figure 5 paper marta)
+        for UCI in self.UCIs:  
+            # Initialize the final comparison dictionary  
+            if os.path.exists(os.path.join(os.environ["TRAFFIC_DIR"],"data","info_DP_simulations.json")):
+                with open(os.path.join(os.environ["TRAFFIC_DIR"],"data","info_DP_simulations.json"), 'r') as f:
+                    self.City2UCI2ImportantFeaturesForComparisonCities = json.load(f)
+                # Make sure that the City has been already studied otherwhise initialize the dictionary with default values
+                if self.Name not in self.City2UCI2ImportantFeaturesForComparisonCities.keys():
+                    self.City2UCI2ImportantFeaturesForComparisonCities[self.Name] = {str(round(UCI,3)):{"Rc":None,                                           # Plot fig 5c/5a
+                                                                            "Tauc":None,                                         # Plot fig 5c/5a
+                                                                            "index_Rc":None,                                    # Plot fig 5c/5a
+                                                                            "Taus":[],                                          # Plot fig 5c
+                                                                            "Rs":[],                                            # Plot fig 5c
+                                                                            "alpha":None,                                       # Plot fig 5b
+                                                                            "beta":None,                                        # Plot fig 5b
+                                                                            "n(R)":[]                                           # Plot fig 5a
+                                                                            } for UCI in self.UCIs
+                                                                        }
+                
+                # If the city is already there then leave it as the update will be fine.
+                else:
+                    if str(round(UCI,3)) not in self.City2UCI2ImportantFeaturesForComparisonCities[self.Name].keys():
+                        self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))] = {"Rc":None,                                           # Plot fig 5c/5a
+                                                                            "Tauc":None,                                         # Plot fig 5c/5a
+                                                                            "index_Rc":None,                                    # Plot fig 5c/5a
+                                                                            "Taus":[],                                          # Plot fig 5c
+                                                                            "Rs":[],                                            # Plot fig 5c
+                                                                            "alpha":None,                                       # Plot fig 5b
+                                                                            "beta":None,                                        # Plot fig 5b
+                                                                            "n(R)":[]                                           # Plot fig 5a
+                                                                            }
+                    else:
+                        pass
+            else:
+                self.City2UCI2ImportantFeaturesForComparisonCities = {self.Name:{
+                                                                            str(round(UCI,3)):
+                                                                                {"Rc":None,                                           # Plot fig 5c/5a
+                                                                            "Tauc":None,                                         # Plot fig 5c/5a
+                                                                                "index_Rc":None,                                    # Plot fig 5c/5a
+                                                                                "Taus":[],                                          # Plot fig 5c
+                                                                                "Rs":[],                                            # Plot fig 5c
+                                                                                "alpha":None,                                       # Plot fig 5b
+                                                                                "beta":None,                                        # Plot fig 5b
+                                                                                "n(R)":[]                                           # Plot fig 5a
+                                                                                } for UCI in self.UCIs
+                                                                            }
+                                                                        }                        # NOTE: Information about the transition to export for plots. (figure 5 paper marta)
+
+            UCI_plot_dir = os.path.join(self.BaseDir,str(UCI),"Plots")
+            print(f"Before filter UCI: {UCI}, len(Df_config): {len(self.Df_config)}")
+            Df_config_UCI = self.Df_config.filter(pl.col("UCI") == UCI)
+            print(f"UCI: {UCI}, len(Df_config): {len(Df_config_UCI)}")
             self.R2UCI2OutputStats[UCI] = defaultdict()
             FoundRc = False
-            R2NtNtFit = {R:defaultdict() for R in sorted(self.Rs)}
-            logger.info(f"{self.BaseDir}")
+            # NOTE: Put a cut on R according to some considerations or not
+            Rs = self.Rs
+#            Rs = Cut_Rs_from_ODfromfma(self.Rs,UCI,self.Name,UCI2CityName2RminRmax)
+            R2NtNtFit = {R:defaultdict() for R in sorted(Rs)}
+            fig,ax = plt.subplots(1,1,figsize = (10,10))
             # Compute The Gamma Beta Tau for each UCI for which I did not compute it already
 #            if not os.path.exists(os.path.join(self.BaseDir,f'{self.Name}_{round(UCI,3)}_GammaTau.parquet')):
-            for R in sorted(self.Rs):
-                logger.info(f"{self.Name}: Start: UCI: {UCI} and R: {R}")
-                if os.path.isfile(os.path.join(self.BaseDir,str(round(UCI,3)),f"R_{R}_UCI_{round(UCI,3)}_0_people7to24.parquet")):
+            for R in sorted(Rs):
+#                print(Df_config_UCI["R"].to_numpy())
+#                print(f"UCIs in DfConfig: {Df_config_UCI['UCI'].unique().to_numpy()}")
+                Df_config_UCI_R = Df_config_UCI.filter(pl.col("R") == int(R),
+                                                  )
+#                print(f"R: {R}, UCI: {UCI}, len(Df_config_UCI_R): {len(Df_config_UCI_R)}")
+                if len(Df_config_UCI_R) != 0:
                     # Make The Analysis For The sinle Couple Of UCI and R
                     OS = OutputStats(R,
-                                     UCI,
-                                     self.config,
-                                     self.GeoJsonEdges,
-                                     self.Nodes,
-                                     self.Edges)
+                                    UCI,
+                                    Df_config_UCI_R,
+                                    self.GeoJsonEdges,
+                                    self.Nodes,
+                                    self.Edges)
                     logger.info(f"{self.Name}: Completed Single Analysis: UCI: {UCI} and R: {R}")
                     OS.CompleteAnalysis()
                     # NOTE: To look for the best Beta
                     self.DfUnload = OS.DfUnload
                     self.InfoTraffic = OS.InfoTraffic
+                    ax.plot(self.DfUnload["Time_hours_shifted"],self.DfUnload["FractionPeople"],label = f"R: {R}")
+                    ax.set_xlabel("Time (h)")
+                    ax.set_ylabel("Fraction of People")
+                    ax.set_xscale("log")
+                    ax.set_yscale("log")
+                    ax.legend()
+                    self.UCI2R2InfoTraffic[round(UCI,3)][R] = self.InfoTraffic
                     # Evidence for Traffic Changing R
-                    self.Taus[round(UCI,3)].append(float(OS.InfoTraffic["Tau"]))
-                    self.Gammas[round(UCI,3)].append(float(OS.InfoTraffic["Gamma"]))
+                    self.Taus[round(UCI,3)].append(float(self.InfoTraffic["Tau"]))
+                    self.Gammas[round(UCI,3)].append(float(self.InfoTraffic["Gamma"]))
                     self.UsedRs[round(UCI,3)].append(R)
                     # NOTE: Each of these is a list, take the smaller to 
-                    if OS.InfoTraffic["IsJam"]:
+                    if self.InfoTraffic["IsJam"]:
                         self.Rcs[round(UCI,3)].append(R)
-                        self.Alphas[round(UCI,3)].append(OS.InfoTraffic["alpha_pl"])
+                        self.Alphas[round(UCI,3)].append(self.InfoTraffic["alpha_pl"])
                         if not FoundRc:
                             FoundRc = True
                             self.UCI2CriticalParams[round(UCI,3)] = {'Rc':int(R),
-                                                                    'Alpha':float(OS.InfoTraffic["alpha_pl"]),
-                                                                    "Tauc":int(OS.InfoTraffic["Tau"]),
-                                                                    "Gammac":float(OS.InfoTraffic["Gamma"]),
+                                                                    'Alpha':float(self.InfoTraffic["alpha_pl"]),
+                                                                    "Tauc":float(self.InfoTraffic["Tau"]),
+                                                                    "Gammac":float(self.InfoTraffic["Gamma"]),
                                                                     }
-                            logger.info(f"{self.Name}: Found Rc: {R} for UCI: {UCI}, alpha: {OS.InfoTraffic['alpha_pl']}, tauc: {OS.InfoTraffic['Tau']}, gammac: {OS.InfoTraffic['Gamma']}")
-                            with open(os.path.join(self.BaseDir,"Plots",f"CriticalParams_UCI_{round(UCI,3)}.json"),'w') as f:
+                            logger.info(f"{self.Name}: Found Rc: {R} for UCI: {UCI}, alpha: {self.InfoTraffic['alpha_pl']}, tauc: {self.InfoTraffic['Tau']}, gammac: {self.InfoTraffic['Gamma']}")
+                            with open(os.path.join(UCI_plot_dir,f"CriticalParams_UCI_{round(UCI,3)}.json"),'w') as f:
                                 json.dump(self.UCI2CriticalParams,f,indent = 4)
                     # OS.Time2nt contains both n,n_fit, for different times.
                     # We need to find the t that best gives a fit to beta.
-                    R2NtNtFit[R]["n"] = OS.DfUnload["FractionPeople"].to_numpy()
-#                        R2NtNtFit[R]["t"] = OS.InfoTraffic["Time_hours_shifted"].to_numpy()
+                    R2NtNtFit[R]["n"] = self.DfUnload["FractionPeople"].to_numpy()[:-1]
+    #                        R2NtNtFit[R]["t"] = OS.InfoTraffic["Time_hours_shifted"].to_numpy()
                     if self.t_vect is None:
-                        self.t_vect = OS.DfUnload["Time_hours_shifted"].to_numpy()
+                        self.t_vect = self.DfUnload["Time_hours_shifted"].to_numpy()[:-1]
                     if OS.InfoTraffic["IsJam"]:
-                        y_fit = OS.DfUnload["y_fit_pl"].to_numpy()
+                        y_fit = self.DfUnload["y_fit_pl"].to_numpy()
                     else:
-                        y_fit = OS.DfUnload["y_fit_exp"].to_numpy()
-                    R2NtNtFit[R]["n_fit"] = y_fit
+                        y_fit = self.DfUnload["y_fit_exp"].to_numpy()
+                    R2NtNtFit[R]["n_fit"] = y_fit[:-1]
                     del OS
+                # Do not make computations for Rs that are not present 
+                # NOTE: There are different Rs for different UCIs and are not present in all the UCIs
+                else:
+                    logger.info(f"R: {R} not present in UCI: {UCI}")
+                    pass
+            plt.savefig(os.path.join(self.BaseDir,f"SmoothedFractionPeople_UCI_{round(UCI,3)}.png"))
+            plt.close(fig)
+            # NOTE: Initialize the Aggregated analysis of a given UCI
+            logger.info(f"{self.Name}: Start Aggregated Analysis: UCI: {UCI}")
             self.R2NtNtFit = R2NtNtFit
 #                R2NtNtFit_converted = {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in R2NtNtFit.items()}
             R2NtNtFit_converted = convert_ndarray(R2NtNtFit)
-            with open(os.path.join(self.BaseDir,"Plots",f"R2NtNtFit_UCI_{round(UCI,3)}.json"),'w') as f:
+            with open(os.path.join(UCI_plot_dir,f"R2NtNtFit_UCI_{round(UCI,3)}.json"),'w') as f:
                 json.dump(R2NtNtFit_converted,f,indent = 4)
-            PlotGammaTau(self.Taus[round(UCI,3)],self.Gammas[round(UCI,3)],self.Name,UCI,os.path.join(self.BaseDir,"Plots"))
-            # Compute Beta, such that the fit for an increasing powerlaw is top
-            self.RangeFit = range(10,len(self.DfUnload["Time_hours_shifted"]))
+            # Compute Beta, such that the fit for an increasing powerlaw is top (starting from 6:30 h) -> long lasting curve is this
+            self.RangeFit = range(39,len(self.t_vect))
             if FoundRc:
-                Time2FitBeta = ComputeTime2FitBeta(self.RangeFit,self.t_vect,self.R2NtNtFit,self.UCI2CriticalParams,self.Rs,UCI,self.Name)
-                with open(os.path.join(self.BaseDir,"Plots",f"Time2FitBeta_UCI_{round(UCI,3)}.json"),'w') as f:
+                IndexRc = IndexRc = [i for i, R in enumerate(self.UsedRs[round(UCI,3)]) if R == self.UCI2CriticalParams[round(UCI,3)]["Rc"]][0]
+                print("IndexRc: ",IndexRc)
+                PlotGammaTau(self.Taus[round(UCI,3)],self.Gammas[round(UCI,3)],IndexRc,self.Name,UCI,UCI_plot_dir)
+                # NOTE: we are considering the curve up until the last hour, since it goes to 0
+                # NOTE: It must not depend on the moment in which the transition occurs
+                Time2FitBeta = ComputeTime2FitBeta(self.RangeFit,self.t_vect,self.R2NtNtFit,self.UCI2CriticalParams,Rs,UCI,self.Name)
+                with open(os.path.join(UCI_plot_dir,f"Time2FitBeta_UCI_{round(UCI,3)}.json"),'w') as f:
                     json.dump(convert_ndarray(Time2FitBeta),f,indent = 4)
-                BestBeta,BestA,BestT,t1 = ChooseBestBeta(Time2FitBeta,self.t_vect)
-                PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,t1,self.Name,self.t_vect,UCI,os.path.join(self.BaseDir,"Plots"))
-                self.UCI2PhaseTransition[round(UCI,3)] = {"Beta":BestBeta,"best_A_fit_Beta":BestA,"time_best_fit":BestT,"int_time_best_fit":t1}            
+                # NOTE: independent on the choice of 
+                try:
+                    BestBeta,BestA,BestT,int_t_star = ChooseBestBeta(Time2FitBeta,self.t_vect)
+                    # NOTE: Plot the best beta
+                    PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,int_t_star,self.Name,self.t_vect,UCI,UCI_plot_dir)
+                    # NOTE: Plot error of the fit (evolving in time)
+                    PlotTime2FitBetaError(Time2FitBeta,self.t_vect,int_t_star,self.Name,UCI,UCI_plot_dir)
+                    self.UCI2PhaseTransition[round(UCI,3)] = {"Beta":BestBeta,"best_A_fit_Beta":BestA,"time_best_fit":BestT,"int_time_best_fit":int_t_star}     
+                    try:
+                        PlotFig5A5B(self.UsedRs[round(UCI,3)],                                          # NOTE: Rs
+                                    self.UCI2CriticalParams[round(UCI,3)]["Rc"],                        # NOTE: Rc
+                                    self.R2NtNtFit,                                                     # NOTE: N(R), by choosing the int_t_star position of the vector associated to R
+                                    int_t_star,                                                         # NOTE: t*, time at which the best transition occurs.
+                                    BestBeta,                                                           # NOTE: Best Beta, is the coefficient for the increase of the N(R) at time t*    
+                                    self.Name,
+                                    UCI,
+                                    UCI_plot_dir
+                                )       
+                    except Exception as e:
+                        print(e)
+                except Exception as e:
+                    print(e)
+                # NOTE: Plot figure 4
                 Rc = self.UCI2CriticalParams[round(UCI,3)]["Rc"]
                 alpha = self.UCI2CriticalParams[round(UCI,3)]["Alpha"]
-                R2Epsilon = {R:(R**2 - Rc**2)/Rc**2 for R in sorted(self.Rs)}
+                R2Epsilon = {R:(R**2 - Rc**2)/Rc**2 for R in sorted(Rs)}
                 PlotFigure4(R2NtNtFit,
                             R2Epsilon,
                             alpha,
                             self.t_vect,
-                            self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
+                            int_t_star,
                             UCI,
                             Rc,
                             self.Name,
                             BestT,
-                            os.path.join(self.BaseDir,"Plots"))
+                            20,
+                            100,
+                            200,
+                            UCI_plot_dir)
+                # Plot R/Rc vs Tau/Tauc
                 PlotRRcTauTauc(self.Taus[round(UCI,3)],
                             self.UCI2CriticalParams[round(UCI,3)]["Tauc"],
                             self.UsedRs[round(UCI,3)],
@@ -194,9 +344,9 @@ class Polycentrism2TrafficAnalyzer:
                             alpha,
                             self.Name,
                             UCI,
-                            os.path.join(self.BaseDir,"Plots")
+                            UCI_plot_dir
                             )
-                uci2beta_path = os.path.join(self.BaseDir,"Plots","uci2beta.json")
+                uci2beta_path = os.path.join(UCI_plot_dir,"uci2beta.json")
                 if os.path.exists(uci2beta_path):
                     with open(uci2beta_path, 'r') as f:
                         existing_data = json.load(f)
@@ -208,6 +358,17 @@ class Polycentrism2TrafficAnalyzer:
                 # Save the updated data back to the JSON file
                 with open(uci2beta_path, 'w') as f:
                     json.dump(existing_data, f, indent=4)
+                
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Rc"] = self.UCI2CriticalParams[round(UCI,3)]["Rc"]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Tauc"] = self.UCI2CriticalParams[round(UCI,3)]["Tauc"]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["index_Rc"] = IndexRc
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Taus"] = self.Taus[round(UCI,3)]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Rs"] = self.UsedRs[round(UCI,3)]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["alpha"] = self.UCI2CriticalParams[round(UCI,3)]["Alpha"]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["beta"] = self.UCI2PhaseTransition[round(UCI,3)]["Beta"]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["n(R)"] = [self.R2NtNtFit[R]["n"] for R in self.UsedRs[round(UCI,3)]]
+        with open(os.path.join(os.environ["TRAFFIC_DIR"],"data","info_DP_simulations.json"), 'w') as f:
+            json.dump(convert_ndarray(self.City2UCI2ImportantFeaturesForComparisonCities), f, indent=4)
                 # Extract The informations for the analysis to be Global.
                 # In this way I do not loose Informations but the process is very power consuming
 #                self.R2UCI2OutputStats[UCI][R] =  OS
@@ -246,7 +407,7 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     BaseConfig = os.path.join(os.environ["TRAFFIC_DIR"],"config")
     list_cities = os.listdir(os.path.join(os.environ["TRAFFIC_DIR"],'data','carto'))
-    list_cities = ["BOS","SFO","RIO"]
+    list_cities = ["SFO"]#["BOS","SFO","RIO"]
     ListPeopleFile = []
     ListRoutesFile = []
     complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
@@ -264,13 +425,12 @@ if __name__ == "__main__":
         """
 
 #        City2Config,Rs,UCIs = InitConfigPolycentrismAnalysis(City)  
-        Df_Info_Simulations = pl.read_parquet(complete_path_info_simulations_df)
+        Df_Info_Simulations = pl.read_csv(complete_path_info_simulations_df)
         Rs = Df_Info_Simulations.filter(pl.col("city") == City)["R"].unique().to_numpy()
         UCIs = Df_Info_Simulations.filter(pl.col("city") == City)["UCI"].unique().to_numpy()
-        R = Rs[0]
-
-        Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == City,
-                                                pl.col("R") == R)
+        print("Rs\n",Rs)
+        print("UCIs\n",UCIs)
+        Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == City)
         # 10) NOTE: Analyze the Output
         PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,Rs,UCIs)  
         PCTA.CompleteAnalysis()

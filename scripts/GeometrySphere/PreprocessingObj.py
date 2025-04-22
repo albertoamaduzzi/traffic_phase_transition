@@ -792,24 +792,43 @@ class GeometricalSettingsSpatialPartition:
         """
             Set Rmax divisible by the number of simulations per UCI
         """
+        UCI = float(UCI)
         for i in range(len(UCI2CityName2RminRmax.keys())):
             upper_uci_i = float(list(UCI2CityName2RminRmax.keys())[i])
-            upper_uci_i_1 = float(list(UCI2CityName2RminRmax.keys())[i+1]) 
+            logger.info(f'{self.city}: i: {i}, upper_uci_i: {upper_uci_i}, Rmin: {UCI2CityName2RminRmax[upper_uci_i][self.city][0]}, Rmax: {UCI2CityName2RminRmax[upper_uci_i][self.city][1]}')
+            # do not initialize when the index does not exist
+            if i != len(UCI2CityName2RminRmax.keys())-1:
+                upper_uci_i_1 = float(list(UCI2CityName2RminRmax.keys())[i+1]) 
+            # if the interval is in [0,0.2]
             if i == 0:
+                logger.info(f"branch 1: UCI {UCI}, upper_uci_i {upper_uci_i}, upper_uci_i_1 {upper_uci_i_1}, is True? {UCI >= upper_uci_i and UCI <= upper_uci_i_1}")
                 if UCI <= upper_uci_i:
                     Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
                     Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, in interval: [{0},{upper_uci_i}] Rmin {UCI2CityName2RminRmax[upper_uci_i][self.city][0]}, Rmax {UCI2CityName2RminRmax[upper_uci_i][self.city][1]}')
                     break
+                elif UCI >= upper_uci_i and UCI <= upper_uci_i_1:
+                    Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
+                    Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, in interval: [{upper_uci_i},{upper_uci_i_1}] Rmin {UCI2CityName2RminRmax[upper_uci_i][self.city][0]}, Rmax {UCI2CityName2RminRmax[upper_uci_i][self.city][1]}')
+                    break
+            # if the interval is in [0.8,1]
             elif i == len(UCI2CityName2RminRmax.keys())-1:
+                logger.info(f"branch 2: UCI {UCI}, upper_uci_i {upper_uci_i}, upper_uci_i_1 {upper_uci_i_1}, is True? {UCI > upper_uci_i}")
                 if UCI > upper_uci_i:
                     Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
                     Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, in interval: [{upper_uci_i},{upper_uci_i_1}] Rmin {UCI2CityName2RminRmax[upper_uci_i][self.city][0]}, Rmax {UCI2CityName2RminRmax[upper_uci_i][self.city][1]}')
                     break
+            # if the interval is in [0.2,0.8]
             else:
+                logger.info(f"branch 3: UCI {UCI}, upper_uci_i {upper_uci_i}, upper_uci_i_1 {upper_uci_i_1}, is True? {UCI > upper_uci_i and UCI <= upper_uci_i_1}")
                 if UCI > upper_uci_i and UCI <= upper_uci_i_1:
                     Rmin = UCI2CityName2RminRmax[upper_uci_i][self.city][0]
                     Rmax = UCI2CityName2RminRmax[upper_uci_i][self.city][1]
+                    logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, in interval: [{upper_uci_i},{upper_uci_i_1}] Rmin {UCI2CityName2RminRmax[upper_uci_i][self.city][0]}, Rmax {UCI2CityName2RminRmax[upper_uci_i][self.city][1]}')
                     break
+        logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}')
         Delta = Rmax - Rmin
         Rmax = Rmin + Delta + Delta%self.number_simulation_per_UCI
         self.Step = int((Rmax - Rmin)/self.number_simulation_per_UCI)        
@@ -822,7 +841,7 @@ class GeometricalSettingsSpatialPartition:
         self.ArrayRs = np.arange(Rmin,Rmax,self.Step,dtype=int)
 #        self.config["ArrayRs"] = list(self.ArrayRs)
 #        SaveJsonDict(self.config_dir_local,self.city + '_geometric_info.json')        
-        logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, Rmin {Rmin}, Rmax {Rmax}')
+#        logger.info(f'{self.city}: new ArrayRs for UCI: {UCI}, Rmin {Rmin}, Rmax {Rmax}')
 
 
 

@@ -176,9 +176,44 @@ def EstimateD0minus1(Tij_dist_fit_gravity):
 
 
 
-@timing_decorator
-def ComparePlExpoDf(DfUnload,maxfev = 10000):
+from scipy.interpolate import interp1d
+
+def smooth_function_with_zeros(y):
     """
+    Smooth a noisy function by replacing zeros before the last non-zero value
+    and maintaining zeros after the last zero.
+    
+    @params y: np.array - The input array with noisy values and zeros
+    @return: np.array - The smoothed array
+    """
+    # Find the indices of non-zero values
+    non_zero_indices = np.nonzero(y)[0]
+    
+    if len(non_zero_indices) == 0:
+        # If there are no non-zero values, return the original array
+        return y
+    
+    # Find the index of the last non-zero value
+    last_non_zero_index = non_zero_indices[-1]
+    
+    # Replace zeros before the last non-zero value using interpolation
+    x = np.arange(len(y))
+    y_interp = y.copy()
+    interp_func = interp1d(x[non_zero_indices], y[non_zero_indices], kind='linear', fill_value="extrapolate")
+    y_interp[:last_non_zero_index + 1] = interp_func(x[:last_non_zero_index + 1])
+    
+    # Maintain zeros after the last zero
+    y_interp[last_non_zero_index + 1:] = 0
+    
+    return y_interp
+
+
+
+@timing_decorator
+def ComparePlExpoDf(DfUnload,init_index_interval_fit = 0,minimum_time_with_people = 7,maxfev = 10000):
+    """
+        @params:
+            - minimum_time_with_people: float -> Minimum time with people in the network (Before this time I add some error to the powerlaw.)
         @Describe:
             - Compare the powerlaw and the exponential fit
         NOTE:
@@ -207,9 +242,20 @@ def ComparePlExpoDf(DfUnload,maxfev = 10000):
 
     """
     import polars as pl
+    from scipy.ndimage import gaussian_filter1d
+    # Apply the Savitzky-Golay filter
+#    y_load = savgol_filter(y_load, 7, 3)
+    # Smoothing
+    fraction_people = DfUnload["FractionPeople"].to_numpy()
+    smoothed_fraction_people = smooth_function_with_zeros(fraction_people)
+    smoothed_fraction_people = gaussian_filter1d(smoothed_fraction_people, 2)
+    DfUnload = DfUnload.with_columns(pl.Series(name="FractionPeople", values=smoothed_fraction_people))    
+    # 
     DfUnload = DfUnload.with_columns(pl.col("FractionPeople").log().alias("log_y"),
                                      pl.col("Time_hours_shifted").log().alias("log_x"))
+    
     y_load = DfUnload.filter(pl.col("IsUnload") == False)["FractionPeople"].to_numpy()
+
     DfUnload4Fit = DfUnload.filter(pl.col("IsPeople") == True,
                                    pl.col("IsUnload") == True)
     DfUnloadWithout0End = DfUnload4Fit.filter(pl.col("IsPeople") == True)
@@ -218,13 +264,24 @@ def ComparePlExpoDf(DfUnload,maxfev = 10000):
     log_y = DfUnload4Fit["log_y"].to_numpy()
     x_fit = DfUnload4Fit["Time_hours_shifted"].to_numpy()
     x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()
-    fit_pl = curve_fit(linear, xdata = log_x,
-                     ydata = log_y,
+
+    # Interval 2 Fit
+    cut_init_log_x = log_x[init_index_interval_fit:]
+    cut_init_log_y = log_y[init_index_interval_fit:]
+    # Fit on the log-log scale POWERLAW
+    cut_init_x_fit = x_fit[init_index_interval_fit:]
+    if len(cut_init_log_x) < 4 or len(cut_init_log_y) < 4:
+        cut_init_log_x = log_x
+        cut_init_log_y = log_y
+        cut_init_x_fit = x_fit
+
+    fit_pl = curve_fit(linear, xdata = cut_init_log_x,
+                     ydata = cut_init_log_y,
                      maxfev = maxfev)
 
     fit_exp = curve_fit(linear,
-                        xdata = x_fit,
-                        ydata = log_y,
+                        xdata = cut_init_x_fit,
+                        ydata = cut_init_log_y,
                         maxfev = maxfev)
     # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
     A_pl,alpha_pl = np.exp(fit_pl[0][1]), fit_pl[0][0]
@@ -244,8 +301,14 @@ def ComparePlExpoDf(DfUnload,maxfev = 10000):
                                  pl.col("IsUnload") == True)["y_fit_pl"].to_numpy()
     y = DfUnload.filter(pl.col("IsPeople") == True,
                                  pl.col("IsUnload") == True)["FractionPeople"].to_numpy()
+    # Adding the requirement that the powerlaw can be considered for just those curves that have people after more than 7 hours
+    # I have seen that in case of UCI = 0.564 in SFO finds some powerlaw that is not correct
     ErrorExp = np.sqrt(np.sum((y_fit_exp-y)**2)/len(y))
-    ErrorPL = np.sqrt(np.sum((y_fit_pl-y)**2)/len(y))
+    if len(DfUnload.filter(pl.col("IsPeople") == True,
+                          pl.col("Time_hours_shifted") > minimum_time_with_people))!=0:        
+        ErrorPL = np.sqrt(np.sum((y_fit_pl-y)**2)/len(y))
+    else:
+        ErrorPL = 1000000
     return DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl
 
 @timing_decorator

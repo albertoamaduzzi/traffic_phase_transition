@@ -428,8 +428,8 @@ def PlotRoutineOD(grid,Tij,gdf_polygons,PotentialDataFrame,VectorField,dir_grid,
     PotentialContour(grid,PotentialDataFrame,gdf_polygons,dir_grid,UCI)
 #    PotentialSurface(grid,PotentialDataFrame,dir_grid,UCI)
     PlotRotorDistribution(grid,PotentialDataFrame,dir_grid,UCI)
-    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, UCI,0.1)
     PlotHarmonicComponentDistribution(grid,PotentialDataFrame,dir_grid,UCI)
+    PlotLorenzCurve(cumulative,Fstar,result_indices,dir_grid, UCI,0.1)
     PlotMass(grid,gdf_polygons,dir_grid,UCI)
 
 def PlotDepTime(Df, CityName, PlotDir):

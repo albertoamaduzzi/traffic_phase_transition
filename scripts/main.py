@@ -86,6 +86,40 @@ logger = logging.getLogger(__name__)
 
 StateAlgorithm = InitWholeProcessStateFunctions()
 
+
+import matplotlib as mpl
+def setup_mpl():
+    mpl.rc('font', size=20)
+    mpl.rcParams['legend.fontsize'] = 'small'
+    mpl.rcParams['xtick.labelsize'] = 12
+    mpl.rcParams['ytick.labelsize'] = 12
+    mpl.rcParams['font.family']='DejaVu Math TeX Gyre'#'Helvetica 45 Light'
+    mpl.rcParams['xtick.major.pad']='18'
+    mpl.rcParams['ytick.major.pad']='18'
+    mpl.rcParams['lines.linewidth'] = 2
+    mpl.rcParams['xtick.major.width'] = 2
+    mpl.rcParams['ytick.major.width'] = 2
+    mpl.rcParams['xtick.minor.width'] = 2
+    mpl.rcParams['ytick.minor.width'] = 2
+    mpl.rcParams['xtick.major.size'] = 6
+    mpl.rcParams['ytick.major.size'] = 6
+    mpl.rcParams['xtick.minor.size'] = 3
+    mpl.rcParams['ytick.minor.size'] = 3
+    mpl.rcParams['axes.linewidth'] = 2
+    mpl.rcParams['ytick.direction'] = 'in'
+    mpl.rcParams['xtick.direction'] = 'in'
+    mpl.rcParams['xtick.top']=True
+    mpl.rcParams['ytick.right']=True
+    mpl.rcParams['mathtext.default']='regular'
+    mpl.rcParams['xtick.major.pad']='4'
+    mpl.rcParams['ytick.major.pad']='4'
+    mpl.rcParams['axes.labelpad']= 2
+    mpl.rcParams['axes.labelsize'] = 20  # Set the font size of the axis labels
+    alpha = 0.6
+    to_rgba = mpl.colors.ColorConverter().to_rgba
+
+
+
 def configure_logger(log_file):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -183,8 +217,16 @@ def Update_Info_Simulations_Df(
         that are run for the 4-plet (city,R,UCI,iter)
     """
     assert False not in [col in Df_Info_Simulations.columns for col in updating_dict.keys()], "Some columns are not in the DataFrame."
-    from polars import DataFrame,concat
-    return concat([Df_Info_Simulations, DataFrame(updating_dict)]) 
+    # Convert updating_dict to DataFrame
+    new_data = pl.DataFrame(updating_dict)
+    
+    # Ensure column types are compatible
+    for col in new_data.columns:
+        if col in Df_Info_Simulations.columns:
+            new_data = new_data.with_columns(new_data[col].cast(Df_Info_Simulations[col].dtype))
+    
+    # Concatenate DataFrames
+    return pl.concat([Df_Info_Simulations, new_data])
         
 
 def Update_update_dict_df(update_dict_df,
@@ -203,7 +245,7 @@ def Update_update_dict_df(update_dict_df,
                           complete_path_unloading_curve_iter,
                           dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
                           dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
-                          dir_output_simulation_gpu = os.environ["LPSIM"],
+                          dir_output_simulation_gpu = os.environ["LPSim"],
                           number_realizations_OD_ensemble = 4,
                           delta_t = 10,
                         name_od_file_input_simulation = None
@@ -291,7 +333,7 @@ def Set_Paths_Simulation_Analysis_Beta(city,
                           complete_path_unloading_curve_iter,
                           dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
                           dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network'),
-                          dir_output_simulation_gpu = os.environ["LPSIM"],
+                          dir_output_simulation_gpu = os.environ["LPSim"],
                           number_realizations_OD_ensemble = number_realizations_OD_ensemble,
                           delta_t = 10,
                           name_od_file_input_simulation = name_od_file_input_simulation)  
@@ -343,9 +385,9 @@ def Main(CityName,
                                        GeoInfo.start + 1,
                                        dir_output_simulation_analysis_base,
                                        number_realizations_OD_ensemble)            
-            #
-            is_success_simulation  = os.path.isfile(update_dict_df["complete_path_output_simulation_copied"])                                                                                 # NOTE: 1) Check if the computation is already done, aovid to recompute it
-            is_computed_od_simulation_input = os.path.isfile(update_dict_df["complete_path_od_file_input_simulation"])                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
+            # Simulate just if the file are not already simulated: NOTE: the simulation happens iff it is in Df_Info_Simulations
+            is_success_simulation  = update_dict_df["complete_path_output_simulation_copied"] in Df_Info_Simulations["complete_path_output_simulation_copied"].to_list()                                                                             # NOTE: 1) Check if the computation is already done, aovid to recompute it
+            is_computed_od_simulation_input = update_dict_df["complete_path_od_file_input_simulation"] in Df_Info_Simulations["complete_path_output_simulation_copied"].to_list()                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
             #
             if not is_success_simulation:                                                                                                                                   # NOTE: Checking 1) 
                 if not is_computed_od_simulation_input:                                                                                                                     # NOTE: Checking 2) 
@@ -364,20 +406,23 @@ def Main(CityName,
                                 Name_parameters_output,
                                 update_dict_df)
 
+                # 9) NOTE: Update the DataFrame of Simulations
+                logger.info(f"Updating the DataFrame of Simulations")
+                Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                                update_dict_df)
+                Df_Info_Simulations.write_csv(complete_path_info_simulations_df)                                                                 # NOTE: Write the DataFrame to the csv file        
+
             else:
                 pass
-            # 9) NOTE: Update the DataFrame of Simulations
-            Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                            update_dict_df)
-            Df_Info_Simulations.write_csv(complete_path_info_simulations_df)                                                                 # NOTE: Write the DataFrame to the csv file        
+
     Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
                                             pl.col("R") == R,
-                                            pl.col("UCI") == UCI)
+                                            pl.col("UCI") == float_rounded_UCI)
     # 10) NOTE: Analyze the Output
-    PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,
-                                        GeoInfo.ArrayRs,
-                                        [UCI])  
-    PCTA.CompleteAnalysis()
+#    PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,
+#                                        GeoInfo.ArrayRs,
+#                                        [float_rounded_UCI])  
+#    PCTA.CompleteAnalysis()
     logger.info(f"Finished the simulations not changed for {CityName}")
     # 11) NOTE: Generate New Population 
     GeoInfo.GeneratePopulationAndSetUCIs()                                                                      # Compute New Grid
@@ -386,15 +431,15 @@ def Main(CityName,
             from pandas import read_parquet
             from geopandas import GeoDataFrame
             # New Population
-            GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{str_UCI}.parquet'))        # New Grid (read)
-            GridNew[["geometry","centroidx","centroidy"]] = GeoInfo.grid[["geometry","centroidx","centroidy"]]  # New Grid (add centroid, geometry)
-            GridNew = GeoDataFrame(GridNew)                                                                     # New Grid
-            Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)                                               # New Fluxes
             #
             UCI = float(UCIM)
             str_UCI = str(round(UCI,round_UCI))
             float_rounded_UCI = round(UCI,round_UCI)
             GeoInfo.Reset_ArrayRs_Given_UCI(UCI)
+            GridNew = read_parquet(os.path.join(GeoInfo.save_dir_local,f'Grid_{str_UCI}.parquet'))        # New Grid (read)
+            GridNew[["geometry","centroidx","centroidy"]] = GeoInfo.grid[["geometry","centroidx","centroidy"]]  # New Grid (add centroid, geometry)
+            GridNew = GeoDataFrame(GridNew)                                                                     # New Grid
+            Modified_Fluxes = GeoInfo.ComputeTijFromGrid(GridNew)                                               # New Fluxes
             # 12) NOTE: Launch Simulations Modified
             for R in GeoInfo.ArrayRs:
                 for ensemble_realization in range(number_realizations_OD_ensemble):
@@ -412,9 +457,9 @@ def Main(CityName,
                                             dir_output_simulation_analysis_base,
                                             number_realizations_OD_ensemble)            
                     
-                    #
-                    is_success_simulation  = os.path.isfile(update_dict_df["complete_path_output_simulation_copied"])                                                                                 # NOTE: 1) Check if the computation is already done, aovid to recompute it
-                    is_computed_od_simulation_input = os.path.isfile(update_dict_df["complete_path_od_file_input_simulation"])                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
+                    # Simulate just if the file are not already simulated: NOTE: the simulation happens iff it is in Df_Info_Simulations
+                    is_success_simulation  = update_dict_df["complete_path_output_simulation_copied"] in Df_Info_Simulations["complete_path_output_simulation_copied"].to_list()                                                                             # NOTE: 1) Check if the computation is already done, aovid to recompute it
+                    is_computed_od_simulation_input = update_dict_df["complete_path_od_file_input_simulation"] in Df_Info_Simulations["complete_path_output_simulation_copied"].to_list()                                                                        # NOTE: 2) Check that the input OD file is already there and avoid to recompute it.
                     #
                     if not is_success_simulation:                                                       # Check if the simulation is already computed
                         if not is_computed_od_simulation_input:                                         # Check if the OD file is already computed
@@ -435,32 +480,34 @@ def Main(CityName,
                                         update_dict_df)
 
 
+                        # 15) NOTE: Update the DataFrame of Simulations
+                        Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                                        update_dict_df)  
+                        Df_Info_Simulations.write_csv(complete_path_info_simulations_df)      
+
                     else:
                         pass
                 
-                    # 15) NOTE: Update the DataFrame of Simulations
-                    Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                                    update_dict_df)  
-                    Df_Info_Simulations.write_csv(complete_path_info_simulations_df)      
             Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == CityName,
                                                     pl.col("R") == R,
-                                                    pl.col("UCI") == UCI)
+                                                    pl.col("UCI") == float_rounded_UCI)
             # 10) NOTE: Analyze the Output
-            PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,GeoInfo.ArrayRs,[UCI])  
-            PCTA.CompleteAnalysis()
+#            PCTA = Polycentrism2TrafficAnalyzer(Df_City2Config,GeoInfo.ArrayRs,[float_rounded_UCI])  
+#            PCTA.CompleteAnalysis()
 
 
 
     
 
 if __name__ == '__main__':
+    setup_mpl()
     # CONSTANTS
-    NameCities = ["SFO"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
+    NameCities = ["SFO","RIO","BOS"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
     container_name = "xuanjiang1998/lpsim:v1"    
     
     dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network')
     dir_new_full_network = os.path.join(BERKELEY_2018_DIR,'new_full_network')
-    dir_output_simulation_gpu = os.environ["LPSIM"]
+    dir_output_simulation_gpu = os.environ["LPSim"]
     dir_data_2 = "/data_2/alberto"
     complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
     # NOTE: every time you change here, change also the corrispective update_dict_df
@@ -497,4 +544,4 @@ if __name__ == '__main__':
         list_columns_df_info_simulations,
         complete_path_info_simulations_df,
         round_UCI = 3,
-        number_realizations_OD_ensemble = 4)
+        number_realizations_OD_ensemble = 8)

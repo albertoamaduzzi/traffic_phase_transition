@@ -332,7 +332,7 @@ def LaunchSimulation(GeoInfo,
     # 1) NOTE: SET CONSTANTS LAUNCH 1 SIMULATION
     os.environ['PATH'] += os.pathsep + '/usr/bin/'
     container_name = "xuanjiang1998/lpsim:v1"
-    PWD = os.environ["LPSIM"]
+    PWD = os.environ["LPSim"]
     env = os.environ.copy()
     docker_cmd = ['/usr/bin/docker', 'run', '-it', '--rm', '--gpus', 'all', '-v', f'{PWD}:/lpsim', '-w', '/lpsim', f'{container_name}', 'bash', '-c', './LivingCity/LivingCity']  
     start = GeoInfo.start
