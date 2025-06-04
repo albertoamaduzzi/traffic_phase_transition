@@ -109,10 +109,26 @@ Columns:
 - "geometry":Polygon   
 
 ## Simulation
-
+The simulation is orchestrated by `main.py` in the script folder.
 
 ## Analysis DP
+The directed percolation analysis is essentially handled by `/$TRAFFIC_DIR/scripts/PostProcessing/TrajectoryAnalysis.py,OutputStats.py`      
+### Inputs   
+1) `Df_Info_Simulations`: dataframe containing informations about the simulations computed for each city, UCI, R. This object is the one that allows you to keep track of all the directories of all the simulations done for each City,UCI,R. The input contains a lot of variables that are explained in the accurate description of the variables.
+### Inner Working
+The main consist of the function `CompleteAnalysis`   
+#### CompleteAnalysis
 
+
+
+
+# Important Parameters
+The parameters regarding `number of simulations` and `number of wanted UCIs` are stored in `Config.py` that is called by `GeometricalSpatialPartition` that calls: `GenerateConfigGeometricalSettingsSpatialPartition`.
+Change the parameters there.
+
+
+
+# Accurate description variables
 
 ## Useful Commands
 #### Check memory occupied on disk from home

@@ -30,7 +30,7 @@ def CheckPlatform(verbose = False):
         print('Processor: ',platform.processor())
         print('architecture: ',platform.architecture())
 
-def ModifyConfigIni(start,name_od_file_input_simulation):
+def ModifyConfigIni(start,name_od_file_input_simulation,shift_hour_beginning = 1):
     '''
         Input:
             CityName: str -> in ['BOS','LAX','SFO','RIO','LIS']
@@ -44,7 +44,7 @@ def ModifyConfigIni(start,name_od_file_input_simulation):
     '''
     logger.info(f"Input File: {name_od_file_input_simulation}")
 #    file_txt = '[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={0}\nEND_HR=24\nOD_DEMAND_FILENAME={1}_oddemand_{2}_{3}_R_{4}_UCI_{5}.csv\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n'.format(start,CityName,start,end,R,str_UCI)
-    file_txt = f"[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={start}\nEND_HR=24\nOD_DEMAND_FILENAME={name_od_file_input_simulation}\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n"
+    file_txt = f"[General]\nGUI=false\nUSE_CPU=false\nNETWORK_PATH=LivingCity/berkeley_2018/new_full_network/\nUSE_JOHNSON_ROUTING=false\nUSE_SP_ROUTING=true\nUSE_PREV_PATHS=false\nLIMIT_NUM_PEOPLE=256000\nADD_RANDOM_PEOPLE=false\nNUM_PASSES=1\nTIME_STEP=1\nSTART_HR={int(start)-shift_hour_beginning}\nEND_HR=24\nOD_DEMAND_FILENAME={name_od_file_input_simulation}\nSHOW_BENCHMARKS=false\nREROUTE_INCREMENT=0\nPARTITION_FILENAME=ciccio.txt\nNUM_GPUS=1\n"
     with open(os.path.join(TRAFFIC_DIR,'command_line_options.ini'),'w') as file:
         file.write(file_txt)
     file.close()
@@ -341,7 +341,8 @@ def LaunchSimulation(GeoInfo,
     try:
         CopyCartoGraphy("edges.csv",GeoInfo.city)                       # Copy Cartography
         CopyCartoGraphy("nodes.csv",GeoInfo.city)                       # Copy Cartography
-        ModifyConfigIni(start,update_dict_df["name_od_file_input_simulation"])   # Modify Config.ini 
+        shift_hour_beginning = 1
+        ModifyConfigIni(start,update_dict_df["name_od_file_input_simulation"],shift_hour_beginning)   # Modify Config.ini 
     except Exception as e:
         logger.info(f"Error ModifyConfigIni: {e}")
     logger.info(f"{GeoInfo.city}: Launch Simulation {R}, {str_UCI}")
@@ -369,16 +370,24 @@ def LaunchSimulation(GeoInfo,
     if not FailedSimulation:                                                                                                                                                    # NOTE: Move the output files just if the simulations is ended well -> as there is just one output dir taking away this would be a problem, risking to move output that are already there for some random reason and copy them into the analysis of another (R,UCI,city)
         # 3) NOTE: Move the output files
         output_files = [
+                        '0_indexPathInit{0}to24.csv'.format(start-shift_hour_beginning),
+                        '0_people{0}to24.csv'.format(start-shift_hour_beginning),
+                        '0_route{0}to24.csv'.format(start-shift_hour_beginning),
+                        '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start-shift_hour_beginning)
+                        ]
+        output_files_normal_start = [
                         '0_indexPathInit{0}to24.csv'.format(start),
                         '0_people{0}to24.csv'.format(start),
                         '0_route{0}to24.csv'.format(start),
                         '0_allPathsinEdgesCUDAFormat{0}to24.csv'.format(start)
-                        ]
-        for output_file in output_files:
+                        ] 
+        for i in range(len(output_files)):
+            output_file = output_files[i]
+            moved_output_file = output_files_normal_start[i]
             source_file = os.path.join(update_dict_df["dir_output_simulation_gpu"], output_file)                                                                                # NOTE: Pick the file from the dir_output_gpu 
             #
-            destination_file = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file}")                                        # NOTE: Transfer it into the dir_analysis 
-            destination_file_parquet = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{output_file.replace('.csv', '.parquet')}")    # NOTE: Rename the .parquet file 
+            destination_file = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{moved_output_file}")                                        # NOTE: Transfer it into the dir_analysis 
+            destination_file_parquet = os.path.join(update_dict_df["dir_output_simulation_analysis"], f"{Name_parameters_output}_{moved_output_file.replace('.csv', '.parquet')}")    # NOTE: Rename the .parquet file 
             
             RenameMoveOutput(source_file = source_file,
                              destination_file = destination_file,

@@ -2,7 +2,6 @@ try:
     import pymc3 as pm
     FoundPyMC3 = True
 except:
-    print('PyMC3 not installed')
     FoundPyMC3 = False
 from scipy.special import gamma
 from scipy.optimize import curve_fit,minimize
@@ -207,10 +206,133 @@ def smooth_function_with_zeros(y):
     
     return y_interp
 
+def zero_values_after_first_zero(array):
+    """
+    Zeros all values that appear after the first zero in the array.
+    
+    Parameters:
+    ----------
+    array : array_like
+        Input array (numpy array or list)
+        
+    Returns:
+    -------
+    numpy.ndarray
+        Modified array with all values after first zero set to zero
+        
+    Example:
+    --------
+    >>> zero_values_after_first_zero([1.2, 3.5, 0, 4.7, 0, 2.1])
+    array([1.2, 3.5, 0., 0., 0., 0.])
+    """
+    # Convert input to numpy array if it's not already
+    array = np.asarray(array)
+    
+    # Create a copy to avoid modifying the original
+    result = array.copy()
+    
+    # Find index of first zero
+    zero_indices = np.where(array == 0)[0]
+    
+    # If there's at least one zero in the array
+    if len(zero_indices) > 0:
+        first_zero_index = zero_indices[0]
+        # Set all values after (and including) the first zero to zero
+        result[first_zero_index:] = 0
+    
+    return result,first_zero_index
+
+import matplotlib.pyplot as plt
+import polars as pl
+from scipy.ndimage import gaussian_filter1d
+
+
+def plot_check_fit_interval(t,
+                            nt,
+                            n_exp,
+                            n_pl,
+                            t_cut,
+                            n_cut,
+                            init_time_hour_cut_for_fit,
+                            minimum_time_with_people,
+                            time_first_0,
+                            best_fit,
+                            t_last = 17):
+    plt.plot(t,nt)
+    plt.plot(t,n_exp, label='exp', color='orange', linestyle='--')
+    plt.plot(t,n_pl, label='pl', color='green', linestyle='--')
+    plt.scatter(t_cut,n_cut, label='cut', color='red', s=20,marker='*')
+    plt.xlabel("Time (hours)")
+    plt.ylabel("Fraction of People")
+    plt.axvspan(init_time_hour_cut_for_fit,minimum_time_with_people, alpha=0.2, color='green')
+    plt.axvspan(time_first_0, t_last, alpha=0.2, color='red', label='highlighted region')
+    plt.axvline(x=time_first_0, color='r', linestyle='--')
+    plt.axvline(x=init_time_hour_cut_for_fit, color='g', linestyle='--')
+    plt.axvline(x=minimum_time_with_people, color='g', linestyle='--')
+    plt.text(13, 0.05, best_fit, color='green', fontsize=10, ha='right')
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xlim(left=1, right=t_last)
+    plt.tight_layout()
+    if best_fit == 'exponential':
+        plt.savefig("/data_2/alberto/SFO/Output/fit_exemplification_0.png")
+    if best_fit == 'powerlaw':
+        plt.savefig("/data_2/alberto/SFO/Output/fit_exemplification_1.png")
+    plt.close()
+
+
+
+def filter_t_nt_for_fit(log_x,
+                        log_y,
+                        x_fit,
+                        y,
+                        init_time_hour_cut_for_fit,
+                        max_time_for_fit):
+    """
+        Cut the curve in the interval we consider [init_time_hour_cut_for_fit,max_time_for_fit]
+        Cut non-fittable values (inf, -inf, NaN)
+        NOTE: The curve we use for fit is just in the unloaded part
+
+    """
+    # Interval 2 Fit
+    mask_beginning_fit = x_fit > init_time_hour_cut_for_fit
+    cut_init_x_fit = x_fit[mask_beginning_fit]
+    cut_init_y = y[mask_beginning_fit]
+    cut_init_log_x = log_x[mask_beginning_fit]
+    cut_init_log_y = log_y[mask_beginning_fit]
+    # NOTE: cut the infs
+    mask_is_inf = ~np.isinf(cut_init_log_y)
+    cut_init_x_fit = cut_init_x_fit[mask_is_inf]
+    cut_init_y = cut_init_y[mask_is_inf]
+    cut_init_log_x = cut_init_log_x[mask_is_inf]
+    cut_init_log_y = cut_init_log_y[mask_is_inf]
+    # Remove negative infinity values
+    mask_is_neg_inf = ~np.isneginf(cut_init_log_y)
+    cut_init_x_fit = cut_init_x_fit[mask_is_neg_inf]
+    cut_init_y = cut_init_y[mask_is_neg_inf]
+    cut_init_log_x = cut_init_log_x[mask_is_neg_inf]
+    cut_init_log_y = cut_init_log_y[mask_is_neg_inf]        
+    # Remove NaN values
+    mask_is_nan = ~np.isnan(cut_init_log_y)
+    cut_init_x_fit = cut_init_x_fit[mask_is_nan]
+    cut_init_y = cut_init_y[mask_is_nan]
+    cut_init_log_x = cut_init_log_x[mask_is_nan]
+    cut_init_log_y = cut_init_log_y[mask_is_nan]
+    # Mask from above in time
+    mask_upper_bound_in_time = cut_init_x_fit < max_time_for_fit
+    cut_init_x_fit_masked_upper = cut_init_x_fit[mask_upper_bound_in_time]
+    cut_init_y_masked_upper = cut_init_y[mask_upper_bound_in_time]
+    cut_init_log_x_masked_upper = cut_init_log_x[mask_upper_bound_in_time]
+    cut_init_log_y_masked_upper = cut_init_log_y[mask_upper_bound_in_time]
+    return cut_init_log_x_masked_upper, cut_init_log_y_masked_upper, cut_init_x_fit_masked_upper, cut_init_y_masked_upper
 
 
 @timing_decorator
-def ComparePlExpoDf(DfUnload,init_index_interval_fit = 0,minimum_time_with_people = 7,maxfev = 10000):
+def ComparePlExpoDf(DfUnload,
+                    init_time_hour_cut_for_fit = 1,
+                    minimum_time_with_people = 7,
+                    max_time_for_fit = 7,          # NOTE: is the time upper bound that we consider for the fit.
+                    maxfev = 10000):
     """
         @params:
             - minimum_time_with_people: float -> Minimum time with people in the network (Before this time I add some error to the powerlaw.)
@@ -239,16 +361,28 @@ def ComparePlExpoDf(DfUnload,init_index_interval_fit = 0,minimum_time_with_peopl
                 - DiffNumberPeople: np.array (Difference in the number of people)
         @Output:
             - DfUnload: polars.DataFrame
-
+        @Describe:
+            - Drops the 0s after the first 0 in the drop is found. Avoid to consider queues on few nodes.
+            - Convert the time and number in log for log-log fit (pl) and x-log fit (exp).
+            - Compute the fit in the time interval [init_time_hour_cut_for_fit,max_time_for_fit]
+            NOTE: This last step is motivated by two facts: 
+                1) the initial drop in time is too fast
+                2) The best pl seems to be around 7 hours. After that there is noise due to queues in few nodes.
     """
-    import polars as pl
-    from scipy.ndimage import gaussian_filter1d
     # Apply the Savitzky-Golay filter
 #    y_load = savgol_filter(y_load, 7, 3)
     # Smoothing
+    # Declare the input fit
     fraction_people = DfUnload["FractionPeople"].to_numpy()
-    smoothed_fraction_people = smooth_function_with_zeros(fraction_people)
-    smoothed_fraction_people = gaussian_filter1d(smoothed_fraction_people, 2)
+    time_ = DfUnload["Time_hours_shifted"].to_numpy()
+    x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()
+#    smoothed_fraction_people = fraction_people
+    # NOTE: Try to eliminate the noise to avoid to get the transtion too early
+    smoothed_fraction_people,first_zero_index = zero_values_after_first_zero(fraction_people)
+    DfUnload = DfUnload.with_columns(pl.Series(name="FractionPeople", values=smoothed_fraction_people))    
+
+#    smoothed_fraction_people = smooth_function_with_zeros(fraction_people)
+#    smoothed_fraction_people = gaussian_filter1d(smoothed_fraction_people, 2)
     DfUnload = DfUnload.with_columns(pl.Series(name="FractionPeople", values=smoothed_fraction_people))    
     # 
     DfUnload = DfUnload.with_columns(pl.col("FractionPeople").log().alias("log_y"),
@@ -258,59 +392,103 @@ def ComparePlExpoDf(DfUnload,init_index_interval_fit = 0,minimum_time_with_peopl
 
     DfUnload4Fit = DfUnload.filter(pl.col("IsPeople") == True,
                                    pl.col("IsUnload") == True)
-    DfUnloadWithout0End = DfUnload4Fit.filter(pl.col("IsPeople") == True)
-    # Declare the input fit
     log_x = DfUnload4Fit["log_x"].to_numpy()
     log_y = DfUnload4Fit["log_y"].to_numpy()
+    y = DfUnload4Fit["FractionPeople"].to_numpy()
     x_fit = DfUnload4Fit["Time_hours_shifted"].to_numpy()
-    x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()
 
-    # Interval 2 Fit
-    cut_init_log_x = log_x[init_index_interval_fit:]
-    cut_init_log_y = log_y[init_index_interval_fit:]
-    # Fit on the log-log scale POWERLAW
-    cut_init_x_fit = x_fit[init_index_interval_fit:]
-    if len(cut_init_log_x) < 4 or len(cut_init_log_y) < 4:
-        cut_init_log_x = log_x
-        cut_init_log_y = log_y
-        cut_init_x_fit = x_fit
-
-    fit_pl = curve_fit(linear, xdata = cut_init_log_x,
-                     ydata = cut_init_log_y,
-                     maxfev = maxfev)
-
-    fit_exp = curve_fit(linear,
-                        xdata = cut_init_x_fit,
-                        ydata = cut_init_log_y,
-                        maxfev = maxfev)
-    # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
-    A_pl,alpha_pl = np.exp(fit_pl[0][1]), fit_pl[0][0]
-    A0,alpha_exp = np.exp(fit_exp[0][1]), fit_exp[0][0]
-    # Compute the fitted curve with all the times
-    y_fit_exp = exponential(x_without_load,A0,alpha_exp)
-    y_fit_pl = powerlaw(x_without_load,A_pl,alpha_pl)
-    y_fit_exp = np.concatenate([y_load,y_fit_exp],axis = 0)
-    y_fit_pl = np.concatenate([y_load,y_fit_pl],axis = 0)
-    #Return DfUnload
-    DfUnload = DfUnload.with_columns(pl.Series(name = "y_fit_exp",values = y_fit_exp),
-                                     pl.Series(name = "y_fit_pl",values = y_fit_pl))
-    # Compare the two fits NOTE: Scale for the number of samples since the 
-    y_fit_exp = DfUnload.filter(pl.col("IsPeople") == True,
-                                pl.col("IsUnload") == True)["y_fit_exp"].to_numpy()
-    y_fit_pl = DfUnload.filter(pl.col("IsPeople") == True,
-                                 pl.col("IsUnload") == True)["y_fit_pl"].to_numpy()
-    y = DfUnload.filter(pl.col("IsPeople") == True,
-                                 pl.col("IsUnload") == True)["FractionPeople"].to_numpy()
-    # Adding the requirement that the powerlaw can be considered for just those curves that have people after more than 7 hours
-    # I have seen that in case of UCI = 0.564 in SFO finds some powerlaw that is not correct
-    ErrorExp = np.sqrt(np.sum((y_fit_exp-y)**2)/len(y))
-    if len(DfUnload.filter(pl.col("IsPeople") == True,
-                          pl.col("Time_hours_shifted") > minimum_time_with_people))!=0:        
-        ErrorPL = np.sqrt(np.sum((y_fit_pl-y)**2)/len(y))
+    # NOTE: Control that we have enough time slots to fit the curve
+    if len(DfUnload4Fit) < 4:
+        is_fittable = False
     else:
-        ErrorPL = 1000000
-    return DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl
+        is_fittable = True
+    if is_fittable:
+        # NOTE: filter infs,nans and -infs, constrain [init_time_hour_cut_for_fit,max_time_for_fit]
+        cut_init_log_x_masked_upper, cut_init_log_y_masked_upper, cut_init_x_fit_masked_upper, cut_init_y_masked_upper = filter_t_nt_for_fit(log_x,
+                                                                                                                                            log_y,
+                                                                                                                                            x_fit,
+                                                                                                                                            y,
+                                                                                                                                            init_time_hour_cut_for_fit,
+                                                                                                                                            max_time_for_fit)
+        # NOTE: Task 0: Compute fit: (cut_init_log_x_masked_upper, cut_init_log_y_masked_upper) -> pl
+        #                            (cut_init_x_fit_masked_upper, cut_init_y_masked_upper) -> exp
+        
+        # NOTE: Check the cases that somehow have still 0s in y and so -inf in log
+        if len(cut_init_log_x_masked_upper) < 4:
+            is_fittable = False
+        else:
+            is_fittable = True
+        if is_fittable:
+            # NOTE: Compute the fit on the cutted section of the interval 
+            fit_pl = curve_fit(linear, xdata = cut_init_log_x_masked_upper,
+                            ydata = cut_init_log_y_masked_upper,
+                            maxfev = maxfev)
+            fit_exp = curve_fit(linear,
+                                xdata = cut_init_x_fit_masked_upper,
+                                ydata = cut_init_log_y_masked_upper,
+                                maxfev = maxfev)
+            # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
+            A_pl,alpha_pl = np.exp(fit_pl[0][1]), fit_pl[0][0]
+            A0,alpha_exp = np.exp(fit_exp[0][1]), fit_exp[0][0]
+            # NOTE: Compute the fitted curve needed to plot and update the DfUnload columns
+            y_fit_exp = exponential(x_without_load,A0,alpha_exp)
+            y_fit_pl = powerlaw(x_without_load,A_pl,alpha_pl)
+            y_fit_exp = np.concatenate([y_load,y_fit_exp],axis = 0)
+            y_fit_pl = np.concatenate([y_load,y_fit_pl],axis = 0)
+            time_first_0 = DfUnload["Time_hours_shifted"].to_numpy()[first_zero_index]            
+            # NOTE: Update DfUnload -> for return
+            DfUnload = DfUnload.with_columns(pl.Series(name = "y_fit_exp",values = y_fit_exp),
+                                            pl.Series(name = "y_fit_pl",values = y_fit_pl))
+            # NOTE: Compute Error Exp and Error PL
+            y_fit_exp_error = exponential(cut_init_x_fit_masked_upper,A0,alpha_exp)
+            ErrorExp = np.sqrt(np.sum((y_fit_exp_error-cut_init_y_masked_upper)**2)/len(y))
+            if len(DfUnload.filter(pl.col("IsPeople") == True,
+                                pl.col("Time_hours_shifted") > minimum_time_with_people))!=0:        
+                y_fit_pl_error = powerlaw(cut_init_x_fit_masked_upper,A_pl,alpha_pl)
+                ErrorPL = np.sqrt(np.sum((y_fit_pl_error-cut_init_y_masked_upper)**2)/len(y))
+                if ErrorPL < ErrorExp:
+                    best_fit = 'powerlaw'
+                else:
+                    best_fit = 'exponential'
+#                plot_check_fit_interval(time_,
+#                                        fraction_people,
+#                                        y_fit_exp,
+#                                        y_fit_pl,
+#                                        cut_init_x_fit_masked_upper, 
+#                                        cut_init_y_masked_upper,                                        
+#                                        init_time_hour_cut_for_fit,
+#                                        max_time_for_fit,
+#                                        time_first_0,
+#                                        best_fit,
+#                                        t_last = 17)
 
+            else:
+                ErrorPL = 1000000
+            return DfUnload,ErrorExp,A0,alpha_exp,ErrorPL,A_pl,alpha_pl
+        else:
+            x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()        
+            y_fit_exp = exponential(x_without_load,1,-100)
+            y_fit_exp = np.concatenate([y_load,y_fit_exp],axis = 0)
+            y_fit_pl = powerlaw(x_without_load,1,2)
+            y_fit_pl = np.concatenate([y_load,y_fit_pl],axis = 0)
+
+            DfUnload = DfUnload.with_columns(pl.Series(name = "y_fit_exp",values = y_fit_exp),
+                                            pl.Series(name = "y_fit_pl",values = y_fit_pl))
+
+            # NOTE: Handling the case where the roads are emptied faster then 1 hour. -> absolutely free flow
+            return DfUnload,0,1,10,10000,0,0        
+    else:
+        x_without_load = DfUnload.filter(pl.col("IsUnload") == True)["Time_hours_shifted"].to_numpy()        
+        y_fit_exp = exponential(x_without_load,1,-100)
+        y_fit_exp = np.concatenate([y_load,y_fit_exp],axis = 0)
+        y_fit_pl = powerlaw(x_without_load,1,2)
+        y_fit_pl = np.concatenate([y_load,y_fit_pl],axis = 0)
+
+        DfUnload = DfUnload.with_columns(pl.Series(name = "y_fit_exp",values = y_fit_exp),
+                                        pl.Series(name = "y_fit_pl",values = y_fit_pl))
+
+        # NOTE: Handling the case where the roads are emptied faster then 1 hour. -> absolutely free flow
+        return DfUnload,0,1,10,10000,0,0
 @timing_decorator
 def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-1),maxfev = 10000):
     '''
@@ -360,8 +538,8 @@ def ComparePlExpo(x,y,initial_guess_powerlaw = (1,-1), initial_guess_expo = (1,-
         raise ValueError(f'ComparePlExpo: x {x} and y {y} are empty')
 
 def FittingPowerlaw(x,y,initial_guess = (1,0.5),maxfev = 10000):
-    Z = np.sum(y)
-    y = y/Z
+#    Z = np.sum(y)
+#    y = y/Z
     x0 = np.array([x[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
     y0 = np.array([y[x_] for x_ in range(len(x)) if x[x_]>0 and y[x_]>0])
     # Fit on the log-log scale POWERLAW
@@ -371,13 +549,15 @@ def FittingPowerlaw(x,y,initial_guess = (1,0.5),maxfev = 10000):
         # Adjust The Initial Guess # alpha*x + log(A) 
     #    result_powerlaw = minimize(objective_function_linear, log_initial_guess_pl, args = (logx, logy))
     #    optimal_params_pl = result_powerlaw.x
-        print(f"len(x0) = {len(x0)} len(y0) = {len(y0)}, len(logx) = {len(logx)} len(logy) = {len(logy)}")
         fit = curve_fit(linear, xdata = logx, ydata = logy,maxfev = maxfev)
         # NOTE: A = exp(log(A)) -> log(A) = q   ---- alpha = index
         A_pl = np.exp(fit[0][1])
         alpha_pl = fit[0][0]
         y_fit_pl = powerlaw(x,A_pl,alpha_pl)
         y_fit_pl_err = powerlaw(x0,A_pl,alpha_pl)
+        # NOTE: This is done to show the error in the fit in a better way
+        y0 = y0/np.sum(y0)  # Normalize y0 to have the same scale as y_fit_pl
+        y_fit_pl_err = y_fit_pl_err/np.sum(y_fit_pl_err)  # Normalize y_fit_pl_err to have the same scale as y0
         ErrorPL = np.sqrt(np.sum((y_fit_pl_err-y0)**2)/len(y0))
         return y_fit_pl,ErrorPL,A_pl,alpha_pl
     else:

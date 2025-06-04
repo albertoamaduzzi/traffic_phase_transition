@@ -43,7 +43,7 @@ def GenerateConfigGeometricalSettingsSpatialPartition(city,
         'distribution_population_from_center': distribution_population_from_center,
         'Rmin': CityName2RminRmax[city][0],
         'Rmax': CityName2RminRmax[city][1],
-        "number_simulation_per_UCI": 20,
+        "number_simulation_per_UCI": 10,
         "NumberUCIs": 20
     }
     return config

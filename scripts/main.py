@@ -502,7 +502,7 @@ def Main(CityName,
 if __name__ == '__main__':
     setup_mpl()
     # CONSTANTS
-    NameCities = ["SFO","RIO","BOS"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
+    NameCities = ["BOS"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
     container_name = "xuanjiang1998/lpsim:v1"    
     
     dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network')

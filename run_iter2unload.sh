@@ -6,7 +6,7 @@
 #SBATCH --account=fc_humnet
 #
 # Partition:
-#SBATCH --partition=savio3
+#SBATCH --partition=savio3scree
 #
 # Request one node:
 #SBATCH --nodes=1

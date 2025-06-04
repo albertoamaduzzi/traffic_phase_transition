@@ -29,22 +29,8 @@ import sys
 sys.path.append(os.path.join(os.environ["TRAFFIC_DIR"],"scripts","GeometrySphere"))
 from ODfromfma import UCI2CityName2RminRmax
 BASE_PATH = os.path.join(os.environ["LPSim"],'LivingCity/berkeley_2018/BOS/Output/')
+from dictionaries_percolation_analysis import *
 
-
-def convert_ndarray(d):
-    """
-    Recursively convert numpy arrays to lists and numpy int64 to int in a dictionary.
-    """
-    if isinstance(d, dict):
-        return {convert_ndarray(k): convert_ndarray(v) for k, v in d.items()}
-    elif isinstance(d, list):
-        return [convert_ndarray(i) for i in d]
-    elif isinstance(d, np.ndarray):
-        return d.tolist()
-    elif isinstance(d, np.int64):
-        return int(d)
-    else:
-        return d
 
 
 def ChooseKeyFromUCI2CityName2RminRmax(UCI,UCI2CityName2RminRmax):
@@ -130,6 +116,13 @@ class Polycentrism2TrafficAnalyzer:
         self.UCI2PhaseTransition = {round(UCI,3):{"Beta":None,"best_A_fit_Beta":None,"time_best_fit":None,"int_time_best_fit":None} for UCI in UCIs}
         self.City2Color = {"BOS":"red","LIS":"blue","LAX":"green","SFO":"orange","RIO":"purple"}
         self.City2Marker = {"BOS":"o","LIS":"s","LAX":"^","SFO":"D","RIO":"P"}
+        # Look at how the error of the fit of n_R(t) changes in R
+        self.list_err_exp_nt_R = []
+        self.list_err_pl_nt_R = []
+        # Scalar informations contained for each R
+        self.list_column_scalar_info_for_each_R = ["R","gamma","tau","error_pl_nRt","error_exp_nRt","is_Rc"]                                             # NOTE: useful to plot things related to the R
+        self.dict_scalar_info_for_each_R = {key:[] for key in self.list_column_scalar_info_for_each_R} # NOTE: useful to plot things related to the R
+
     def CompleteAnalysis(self):
         """
             Description:
@@ -241,6 +234,10 @@ class Polycentrism2TrafficAnalyzer:
                     ax.set_xscale("log")
                     ax.set_yscale("log")
                     ax.legend()
+                    # Collect all the needed informations required for DP analysis
+                    self.list_err_exp_nt_R.append(OS.err_exp_nt_R)
+                    self.list_err_pl_nt_R.append(OS.err_pl_nt_R)
+                    #
                     self.UCI2R2InfoTraffic[round(UCI,3)][R] = self.InfoTraffic
                     # Evidence for Traffic Changing R
                     self.Taus[round(UCI,3)].append(float(self.InfoTraffic["Tau"]))
@@ -252,11 +249,7 @@ class Polycentrism2TrafficAnalyzer:
                         self.Alphas[round(UCI,3)].append(self.InfoTraffic["alpha_pl"])
                         if not FoundRc:
                             FoundRc = True
-                            self.UCI2CriticalParams[round(UCI,3)] = {'Rc':int(R),
-                                                                    'Alpha':float(self.InfoTraffic["alpha_pl"]),
-                                                                    "Tauc":float(self.InfoTraffic["Tau"]),
-                                                                    "Gammac":float(self.InfoTraffic["Gamma"]),
-                                                                    }
+                            self.UCI2CriticalParams[round(UCI,3)] = compute_UCI2CriticalParams(R,self.InfoTraffic)
                             logger.info(f"{self.Name}: Found Rc: {R} for UCI: {UCI}, alpha: {self.InfoTraffic['alpha_pl']}, tauc: {self.InfoTraffic['Tau']}, gammac: {self.InfoTraffic['Gamma']}")
                             with open(os.path.join(UCI_plot_dir,f"CriticalParams_UCI_{round(UCI,3)}.json"),'w') as f:
                                 json.dump(self.UCI2CriticalParams,f,indent = 4)
@@ -271,6 +264,12 @@ class Polycentrism2TrafficAnalyzer:
                     else:
                         y_fit = self.DfUnload["y_fit_exp"].to_numpy()
                     R2NtNtFit[R]["n_fit"] = y_fit[:-1]
+                    self.dict_scalar_info_for_each_R["R"].append(R)
+                    self.dict_scalar_info_for_each_R["gamma"].append(float(self.InfoTraffic["Gamma"]))
+                    self.dict_scalar_info_for_each_R["tau"].append(float(self.InfoTraffic["Tau"]))
+                    self.dict_scalar_info_for_each_R["error_pl_nRt"].append(float(OS.err_pl_nt_R))
+                    self.dict_scalar_info_for_each_R["error_exp_nRt"].append(float(OS.err_exp_nt_R))
+                    self.dict_scalar_info_for_each_R["is_Rc"].append(True if FoundRc else False)
                     del OS
                 # Do not make computations for Rs that are not present 
                 # NOTE: There are different Rs for different UCIs and are not present in all the UCIs
@@ -286,11 +285,12 @@ class Polycentrism2TrafficAnalyzer:
             R2NtNtFit_converted = convert_ndarray(R2NtNtFit)
             with open(os.path.join(UCI_plot_dir,f"R2NtNtFit_UCI_{round(UCI,3)}.json"),'w') as f:
                 json.dump(R2NtNtFit_converted,f,indent = 4)
+            
+#            plot_error_fit_expo_powerlaw(self.UsedRs[round(UCI,3)],self.list_err_exp_nt_R,self.list_err_pl_nt_R,UCI_plot_dir)
             # Compute Beta, such that the fit for an increasing powerlaw is top (starting from 6:30 h) -> long lasting curve is this
             self.RangeFit = range(39,len(self.t_vect))
             if FoundRc:
-                IndexRc = IndexRc = [i for i, R in enumerate(self.UsedRs[round(UCI,3)]) if R == self.UCI2CriticalParams[round(UCI,3)]["Rc"]][0]
-                print("IndexRc: ",IndexRc)
+                IndexRc = [i for i, R in enumerate(self.UsedRs[round(UCI,3)]) if R == self.UCI2CriticalParams[round(UCI,3)]["Rc"]][0]
                 PlotGammaTau(self.Taus[round(UCI,3)],self.Gammas[round(UCI,3)],IndexRc,self.Name,UCI,UCI_plot_dir)
                 # NOTE: we are considering the curve up until the last hour, since it goes to 0
                 # NOTE: It must not depend on the moment in which the transition occurs
@@ -299,9 +299,9 @@ class Polycentrism2TrafficAnalyzer:
                     json.dump(convert_ndarray(Time2FitBeta),f,indent = 4)
                 # NOTE: independent on the choice of 
                 try:
-                    BestBeta,BestA,BestT,int_t_star = ChooseBestBeta(Time2FitBeta,self.t_vect)
+                    BestBeta,BestA,BestT,int_t_star,is_found_beta = ChooseBestBeta(Time2FitBeta,self.t_vect)
                     # NOTE: Plot the best beta
-                    PlotBestBeta(Time2FitBeta,BestBeta,BestA,BestT,int_t_star,self.Name,self.t_vect,UCI,UCI_plot_dir)
+                    PlotBestBeta(Time2FitBeta,BestT,int_t_star,self.Name,self.t_vect,UCI,UCI_plot_dir)
                     # NOTE: Plot error of the fit (evolving in time)
                     PlotTime2FitBetaError(Time2FitBeta,self.t_vect,int_t_star,self.Name,UCI,UCI_plot_dir)
                     self.UCI2PhaseTransition[round(UCI,3)] = {"Beta":BestBeta,"best_A_fit_Beta":BestA,"time_best_fit":BestT,"int_time_best_fit":int_t_star}     
@@ -327,7 +327,6 @@ class Polycentrism2TrafficAnalyzer:
                             R2Epsilon,
                             alpha,
                             self.t_vect,
-                            int_t_star,
                             UCI,
                             Rc,
                             self.Name,
@@ -363,6 +362,7 @@ class Polycentrism2TrafficAnalyzer:
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Tauc"] = self.UCI2CriticalParams[round(UCI,3)]["Tauc"]
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["index_Rc"] = IndexRc
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Taus"] = self.Taus[round(UCI,3)]
+                self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Gammas"] = self.Gammas[round(UCI,3)]
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["Rs"] = self.UsedRs[round(UCI,3)]
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["alpha"] = self.UCI2CriticalParams[round(UCI,3)]["Alpha"]
                 self.City2UCI2ImportantFeaturesForComparisonCities[self.Name][str(round(UCI,3))]["beta"] = self.UCI2PhaseTransition[round(UCI,3)]["Beta"]
@@ -373,7 +373,7 @@ class Polycentrism2TrafficAnalyzer:
                 # In this way I do not loose Informations but the process is very power consuming
 #                self.R2UCI2OutputStats[UCI][R] =  OS
 
-
+        pl.DataFrame(self.dict_scalar_info_for_each_R).write_parquet(os.path.join(UCI_plot_dir,f"ScalarInfo_UCI_{round(UCI,3)}.parquet"))
         pass
 
 
@@ -393,8 +393,6 @@ class Polycentrism2TrafficAnalyzer:
         self.GeoJsonEdges = CleanGeojson(self.GeoJsonEdges)
 
 
-    def ChooseBestBeta(self):
-        pass
 
 
 
@@ -407,7 +405,7 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     BaseConfig = os.path.join(os.environ["TRAFFIC_DIR"],"config")
     list_cities = os.listdir(os.path.join(os.environ["TRAFFIC_DIR"],'data','carto'))
-    list_cities = ["SFO"]#["BOS","SFO","RIO"]
+    list_cities = ["RIO","SFO"]#["BOS","SFO","RIO"]
     ListPeopleFile = []
     ListRoutesFile = []
     complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")

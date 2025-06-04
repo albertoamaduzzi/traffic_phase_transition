@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import logging
 import shutil
+from polars import read_parquet, read_csv, Utf8,col
 
 logger = logging.getLogger(__name__)
 # CONSTANT DIRECTORIES
@@ -89,3 +90,75 @@ def Csv2Parquet(file_csv,file_parquet,case):
         DeleteFile(file_csv)
     else:
         logger.info(f"Csv2Parquet: File {file_csv} does not exist")
+
+
+    # ------ POSTPROCESSING -> read Routes and People info per simulation --------- #
+def GetRouteInfo(iter_2_DfRoute,
+                 RouteFiles,
+                 city,
+                 iter_2_is_available_locally_DfRoute,
+                 iters):
+    """
+        @params iter_2_DfRoute: Iterator of DataFrame with the route
+        @params RouteFiles: List of files to read
+        @params city: City name
+        @params iter_2_is_available_locally_DfRoute: Iterator of DataFrame with the route
+        @params iters: Iterator of DataFrame with the route
+        @description: Get the route information from the files
+        @return: iter_2_DfRoute: Iterator of DataFrame with the route
+        @return: iter_2_is_available_locally_DfRoute: Iterator of DataFrame with the route
+        @return: ReadRouteInfoBool: Boolean to check if the route information was read
+    """
+    count_route_file = 0
+    for RouteFile in RouteFiles:
+        iter_ = iters[count_route_file]
+        if IsFile(RouteFile):
+            if ".parquet" in RouteFile:
+                iter_2_DfRoute[iter_] = read_parquet(RouteFile)
+            elif ".csv" in RouteFile:
+                iter_2_DfRoute[iter_] = read_csv(RouteFile,separator = ':')
+                if iter_2_DfRoute[iter_].schema["route"] == Utf8:
+                    pass
+            iter_2_is_available_locally_DfRoute[iter_] = True
+            ReadRouteInfoBool = True
+            logger.info(f"{city}: GetRouteInfo: {RouteFile} was read -> updated iter_2_DfRoute")
+        else:
+            logger.error(f"{city}: GetRouteInfo: {RouteFile} was not read -> updated iter_2_DfRoute")
+            iter_2_DfRoute[iter_] = None
+            iter_2_is_available_locally_DfRoute[iter_] = False
+        count_route_file += 1
+    return iter_2_DfRoute, iter_2_is_available_locally_DfRoute, ReadRouteInfoBool
+
+def GetPeopleInfo(iter_2_DfPeople,
+                  iter_2_is_available_locally_DfPeople,
+                  PeopleFiles,
+                  iters,
+                  city,
+                  t_start_control_group):
+    """
+        @params iter_2_DfPeople: Iterator of DataFrame with the people
+        @params iter_2_is_available_locally_DfPeople: Iterator of DataFrame with the people
+        @params PeopleFiles: List of files to read
+        @params iters: Iterator of DataFrame with the people
+        @params city: City name
+        @description: Get the people information from the files
+        @return: iter_2_DfPeople: Iterator of DataFrame with the people
+        @return: iter_2_is_available_locally_DfPeople: Iterator of DataFrame with the people
+    """
+    count_people_file = 0
+    for PeopleFile in PeopleFiles:
+        iter_ = iters[count_people_file]
+        if IsFile(PeopleFile):
+            if ".parquet" in PeopleFile:
+                iter_2_DfPeople[iter_] = read_parquet(PeopleFile)
+            elif ".csv" in PeopleFile:
+                iter_2_DfPeople[iter_] = read_csv(PeopleFile)
+            logger.info(f"{city}: GetPeopleInfo: {PeopleFile} was read, updated iter_2_DfPeople")
+            iter_2_DfPeople[iter_] = iter_2_DfPeople[iter_].filter(col("time_departure") >= t_start_control_group)
+            iter_2_is_available_locally_DfPeople[iter_] = True
+        else:
+            logger.error(f"{city}: GetPeopleInfo: {PeopleFile} was not read, updated iter_2_DfPeople")
+            iter_2_DfPeople[iter_] = None
+            iter_2_is_available_locally_DfPeople[iter_] = False
+        count_people_file += 1
+    return iter_2_DfPeople, iter_2_is_available_locally_DfPeople

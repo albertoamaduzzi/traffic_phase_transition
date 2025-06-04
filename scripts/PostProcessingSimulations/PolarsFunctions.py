@@ -117,6 +117,7 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         Edges.with_columns((pl.col("speed_mph")*1.6).alias("speed_limit_kmh"))
         # Inport Properties Of People into Routes
         DfRoute = DfRoute.join(DfPeople, on="p", how="left")
+        logger.info(f"size route after join: {len(DfRoute)}")
         # Extract ],[ from string and replace with empty string"" 
         DfRoute = DfRoute.with_columns(pl.col("route").str.replace("]", "",literal = True).str.replace("[", "",literal = True).alias("no_brackets"))
         # Transform to list of strings
@@ -125,6 +126,7 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         DfRoute = DfRoute.explode("no_coma")
         DfRoute = DfRoute.filter(pl.col("no_coma") != "")
         DfRoute = DfRoute.with_columns(route_list = pl.col("no_coma").cast(pl.Int64))
+        logger.info(f"size route after explode: {len(DfRoute)}")
         #DfRoute = DfRoute.groupby("p",mantain_order = True).agg(pl.col("route_list").agg_groups().alias("route_list"))
         DfRoute = DfRoute.drop(["route","no_brackets","no_coma"])
         DfRoute = DfRoute.with_columns(pl.col("route_list").alias("route"))
@@ -134,6 +136,7 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         DfRoute = DfRoute.filter(pl.col("num_steps") != 0)    
         DfRoute = DfRoute.with_columns(pl.when(not isinstance(pl.col("avg_v(km/h)"),pl.Float64)).then(pl.col("distance")/(pl.col("last_time_simulated")- pl.col("time_departure"))*3.6).alias("avg_v(km/h)"))
         DfRoute = DfRoute.filter(pl.col("avg_v(km/h)") <150)
+        logger.info(f"size route after filter: {len(DfRoute)}")
         DfRoute = DfRoute.join(Edges, left_on='route', right_on='uniqueid', how='inner')
         DfRoute = DfRoute.drop(["osmid_u","osmid_v","speed_mph","active","num_steps","lanes"])
         # Convert m to km
@@ -145,10 +148,12 @@ def EmbdedTrajectoriesInRoadsAndTime(DfRoute,DfPeople,Edges):
         DfRoute = DfRoute.with_columns(
             (pl.cum_sum("time_interval_in_road").over("p")).alias("cumulative_time_spent_in_road")
         )
+        logger.info(f"size route after cum_sum: {len(DfRoute)}")
         DfRoute = DfRoute.with_columns((pl.col("time_departure") + pl.col("cumulative_time_spent_in_road")).alias("time_leaving_road"))
         DfRoute = DfRoute.with_columns(
             (pl.col("time_leaving_road") - pl.col("time_interval_in_road")).alias("time_entering_road")
         )    
+        logger.info(f"size route after time_leaving_road: {len(DfRoute)}")
         DfRoute = DfRoute.drop(["time_interval_in_road","cumulative_time_spent_in_road"])
         if "speed_mph" in DfRoute.columns:
             DfRoute = DfRoute.drop("speed_mph")

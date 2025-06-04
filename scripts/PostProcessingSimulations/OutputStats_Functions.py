@@ -26,14 +26,27 @@ def ComputeSingleUnloadCurve(Interval2NumberPeopleInNet,
     """
 
     """
+    if len(IntTimeArray) != len(HourTimeArray):
+        mask = np.array(IntTimeArray) >= t_start_control_group
+        IntTimeArray = IntTimeArray[mask]
+    keys_Interval2NumberPeopleInNet = list(Interval2NumberPeopleInNet.keys())
+#    print("len(hourTimeArray)",len(HourTimeArray)," len(IntTimeArray)",len(IntTimeArray)," len(Interval2NumberPeopleInNet)",len(Interval2NumberPeopleInNet))
+#    print("HourTimeArray[t]",HourTimeArray)
+#    print("Interval2NumberPeopleInNet.keys()",Interval2NumberPeopleInNet.keys())
+#    print("IntTimeArray",IntTimeArray)
+
     for t in range(len(Interval2NumberPeopleInNet.keys())-1):
         # DataFrame Filtered With People in the Network at time t in the time interval t,t+1
-        DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(IntTimeArray[t],IntTimeArray[t+1],"last_time_simulated",DfControlGroup)
+        DfPeopleInNetAtTimet = FilterDfPeopleStilInNet(IntTimeArray[t],
+                                                       IntTimeArray[t+1],
+                                                       "last_time_simulated",
+                                                       DfControlGroup)
         # Number Of People in the Network at time t
-        Interval2NumberPeopleInNet[HourTimeArray[t]] += len(DfPeopleInNetAtTimet) 
+
+        Interval2NumberPeopleInNet[keys_Interval2NumberPeopleInNet[t]] += len(DfPeopleInNetAtTimet) 
     data = {
         "Time": list(IntTimeArray[:-1]),
-        "Time_Str": list(Interval2NumberPeopleInNet.keys()),
+        "Time_Str": list(HourTimeArray[:-1]),
         "NumberPeople": list(Interval2NumberPeopleInNet.values())
     }
     DfUnload = pl.DataFrame(data)
@@ -60,6 +73,11 @@ def ComputeAverageUnloadCurve(iter_2_DfUnload,
     """
         @params iter_2_DfUnload: Iterator of DataFrame with the unload curve
         @description: Compute the average unload curve
+        if 1:
+            - The unload curve is not precomputed, then it is computed from the iter_2_DfUnload, 
+            NOTE: this happens for the cases for which I had
+                previously computed the unload curve with the ensemble that was smaller. 
+                So it allows to unify the case where I have already computed DfUnload and the one which I compute it with all iter_2_DfUnolad.
         @return: Average unload curve
     """
     t_start_control_group  = t_end_control_group - 3600
@@ -71,11 +89,17 @@ def ComputeAverageUnloadCurve(iter_2_DfUnload,
         logger.info(f"Having Unload Curve from {complete_path_unloading_curve_base}")        
         list_DfUnload = [DfUnloadPrecomputed.with_columns(pl.col("Time").cast(pl.Int64),
                                                           pl.col("DiffNumberPeople").cast(pl.Int64))]
+        # Compute the average with the unloading curve of iter i if available
         for i in iter_2_DfUnload.keys():
             if iter_2_is_available_locally_DfUnload[i]:
                 list_DfUnload.append(iter_2_DfUnload[i].with_columns(pl.col("Time").cast(pl.Int64),
                                                           pl.col("DiffNumberPeople").cast(pl.Int64)).select(columns_2_consider))
                 logger.info(f"Loaded {i} Unload Curve, shape: {iter_2_DfUnload[i].shape}")
+            # If not available locally, then I do not load it 
+            # NOTE:the case for which I have not computed the Unload curve in that 
+            # iter is not taken into account, it avoids to add something that does not exist. It may occur when I have computed the iter 
+            # in some PC and I did not move locally the files. So I just ignore them even though I know I computed them since they
+            # are written in info_simulations.csv  
             else:
                 logger.info(f"Not loaded {i} Unload Curve")
         if len(list_DfUnload) == 1:
@@ -89,6 +113,7 @@ def ComputeAverageUnloadCurve(iter_2_DfUnload,
                 pl.col("FractionPeople").mean().alias("FractionPeople"),
                 pl.col("DiffNumberPeople").mean().alias("DiffNumberPeople"),
             )
+#            print("aggregated DfUnload\n",DfUnload)
             # rebuild time
             DfUnload = DfUnload.with_columns(
                 ((pl.col("Time_hours_shifted") + t_start_hour) * 3600).alias("Time"),
@@ -115,12 +140,14 @@ def ComputeAverageUnloadCurve(iter_2_DfUnload,
             pl.col("FractionPeople").mean().alias("FractionPeople"),
             pl.col("DiffNumberPeople").mean().alias("DiffNumberPeople"),
         )
+        print("aggregated DfUnload\n",DfUnload)
         # rebuild time
         DfUnload = DfUnload.with_columns(
             ((pl.col("Time_hours_shifted") + t_start_hour) * 3600).alias("Time"),
             (pl.col("Time_hours_shifted") + t_start_hour).alias("Time_hours"),
             (pl.col("FractionPeople") > 0).alias("IsPeople"),
         )
+
         DfUnload = DfUnload.with_columns((pl.col("Time") >= t_end_control_group).alias("IsUnload"))
         DfUnload = DfUnload.sort("Time_hours_shifted")
     return DfUnload
@@ -171,6 +198,16 @@ def FillInfoTraffic(ErrorExp, ErrorPL, A0, A_pl, alpha_exp, alpha_pl,city):
         @params city: Name of the city
         @description: Fill the InfoTraffic dictionary with the results of the fits
         @return: InfoTraffic dictionary
+        Keys are defined for the triplet (City,UCI,R): 
+            - ErrorExp: Error of the exponential fit 
+            - ErrorPL: Error of the power law fit
+            - A_exp: Amplitude of the exponential fit
+            - A_pl: Amplitude of the power law fit
+            - alpha_exp: Exponent of the exponential fit
+            - alpha_pl: Exponent of the power law fit
+            - best_fit: Best fit (Exponential or PowerLaw)
+            - IsJam: True if the network is jammed, False otherwise
+            - Tau: Time constant of the exponential fit
     """
     InfoTraffic = defaultdict()
     InfoTraffic["ErrorExp"] = ErrorExp
@@ -190,3 +227,23 @@ def FillInfoTraffic(ErrorExp, ErrorPL, A0, A_pl, alpha_exp, alpha_pl,city):
         InfoTraffic["Tau"] = - 1/InfoTraffic["alpha_exp"]
         logger.info(f"{city} Network is jammed with alpha = {alpha_pl} and Tau = None")
     return InfoTraffic
+
+def Modify_InfoTraffic_Tau_IfAlreadyJammed(InfoTraffic,found_jam, DfUnload,t0 = 0.5):
+    """
+        @params InfoTraffic: InfoTraffic dictionary
+        @params found_jam: Boolean indicating if the jam is already found
+        @params DfUnload: DataFrame with the unload curve
+    """
+    if found_jam:
+        found_jam = True
+        # Pick the nt0 after 30 mins after 8
+        index_nt0 = np.where(DfUnload["Time_hours_shifted"].to_numpy() >= t0)[0][0]
+#        nt0 = max(DfUnload["FractionPeople"].to_numpy())
+        nt0 = DfUnload["FractionPeople"].to_numpy()[index_nt0]
+        IndexTau = np.where(DfUnload["FractionPeople"].to_numpy()[index_nt0:] <= nt0*np.exp(-1))[0][0]
+        Tau = DfUnload["Time_hours_shifted"].to_numpy()[IndexTau]
+        InfoTraffic["Tau"] = Tau
+        print(f"Jam found: index_nt0 {index_nt0}, t0: {DfUnload["Time_hours_shifted"].to_numpy()[index_nt0]}, nt0 {nt0}, IndexTau {IndexTau}, Tau = {Tau}")
+        return InfoTraffic, found_jam
+    else:
+        return InfoTraffic, found_jam
