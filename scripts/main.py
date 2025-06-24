@@ -400,17 +400,17 @@ def Main(CityName,
                 else:
                     pass
                 # 8) NOTE: Launch the Simulation
-                LaunchSimulation(GeoInfo,
-                                R,
-                                str_UCI,
-                                Name_parameters_output,
-                                update_dict_df)
-
-                # 9) NOTE: Update the DataFrame of Simulations
-                logger.info(f"Updating the DataFrame of Simulations")
-                Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                                update_dict_df)
-                Df_Info_Simulations.write_csv(complete_path_info_simulations_df)                                                                 # NOTE: Write the DataFrame to the csv file        
+                SuccessSimulation = LaunchSimulation(GeoInfo,
+                                                    R,
+                                                    str_UCI,
+                                                    Name_parameters_output,
+                                                    update_dict_df)
+                if SuccessSimulation:
+                    # 9) NOTE: Update the DataFrame of Simulations
+                    logger.info(f"Updating the DataFrame of Simulations")
+                    Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                                    update_dict_df)
+                    Df_Info_Simulations.write_csv(complete_path_info_simulations_df)                                                                 # NOTE: Write the DataFrame to the csv file        
 
             else:
                 pass
@@ -473,17 +473,17 @@ def Main(CityName,
                             pass
 
                         # 14) NOTE: Launch the Simulation
-                        LaunchSimulation(GeoInfo,
-                                        R,
-                                        str_UCI,
-                                        Name_parameters_output,
-                                        update_dict_df)
+                        Success_Simulation = LaunchSimulation(GeoInfo,
+                                                                R,
+                                                                str_UCI,
+                                                                Name_parameters_output,
+                                                                update_dict_df)
 
-
-                        # 15) NOTE: Update the DataFrame of Simulations
-                        Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
-                                                                        update_dict_df)  
-                        Df_Info_Simulations.write_csv(complete_path_info_simulations_df)      
+                        if Success_Simulation:  
+                            # 15) NOTE: Update the DataFrame of Simulations
+                            Df_Info_Simulations = Update_Info_Simulations_Df(Df_Info_Simulations,
+                                                                        update_dict_df)
+                            Df_Info_Simulations.write_csv(complete_path_info_simulations_df)      
 
                     else:
                         pass
@@ -502,7 +502,7 @@ def Main(CityName,
 if __name__ == '__main__':
     setup_mpl()
     # CONSTANTS
-    NameCities = ["BOS"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
+    NameCities = ["SFO"]#["RIO","SFO","LAX","LIS","BOS"] # ["LAX"]
     container_name = "xuanjiang1998/lpsim:v1"    
     
     dir_file_demand = os.path.join(BERKELEY_2018_DIR,'new_full_network')

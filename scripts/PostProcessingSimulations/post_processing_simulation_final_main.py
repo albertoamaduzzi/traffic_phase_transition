@@ -168,12 +168,11 @@ for City in list_cities:
                         print("nR_fit: ",nR_fit)
                         ax_nr =     single_plot_nr(RsOverRc,
                                                     nRs,
-                                                    nR_fit,
-                                                    epsilon_fit,
-                                                    nR_region_fit,
+                                                    epsilons,
                                                     City,
                                                     ax_nr,
                                                     color,
+                                                    beta_ = beta,
                                                     UCI = UCI,                                                # NOTE: UCI -> UCI of the city
                                                     )
                         ax_inset = single_plot_inset_nR(ax_inset,
@@ -353,12 +352,11 @@ for City in list_cities:
                     print("nR_fit: ",nR_fit)
                     ax_nr =     single_plot_nr(RsOverRc,
                                             nRs,
-                                            nR_fit,
-                                            epsilon_fit,
-                                            nR_region_fit,
+                                            epsilons,
                                             City,
                                             ax_nr,
                                             color,
+                                            beta_ = beta,
                                             UCI = UCI,                                                # NOTE: UCI -> UCI of the city
                                             )
                     ax_inset = single_plot_beta_fit(Time2FitBeta,

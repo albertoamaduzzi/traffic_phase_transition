@@ -154,7 +154,7 @@ def ChooseBestBeta(Time2FitBeta,t_vect):
     for t0 in Time2FitBeta.keys():
         print(f"t0: {t0}, t_vect[t0]: {t_vect[t0]}, Beta: {Time2FitBeta[t0]['Beta']}, ErrorPL: {Time2FitBeta[t0]['ErrorPL']}, MinError: {MinError}, t1: {t1}")
         if Time2FitBeta[t0]["ErrorPL"] < MinError:
-            if Time2FitBeta[t0]["Beta"]>0:
+            if Time2FitBeta[t0]["Beta"]> 0.03:
                 MinError = Time2FitBeta[t0]["ErrorPL"]
                 BestBeta = Time2FitBeta[t0]["Beta"]
                 BestA = Time2FitBeta[t0]["A_pl"]

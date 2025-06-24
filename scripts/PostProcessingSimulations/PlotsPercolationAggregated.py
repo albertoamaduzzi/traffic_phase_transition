@@ -98,6 +98,44 @@ def single_plot_nt_aggregated_single_city(vec_nt,                   # NOTE: vect
 
 
 from numpy import logical_and,abs
+
+def prepend_initial_values_if_needed(x, y, init_time_hour_cut_for_fit, normalized_first_value_wanted):
+    """
+    Check if the smallest value of x is bigger than init_time_hour_cut_for_fit.
+    If so, prepend the initial values to x and y vectors.
+    
+    Args:
+        x (array-like): Input x vector
+        y (array-like): Input y vector  
+        init_time_hour_cut_for_fit (float): Value to prepend to x if min(x) > this value
+        normalized_first_value_wanted (float): Value to prepend to y
+        
+    Returns:
+        tuple: (x_new, y_new) with potentially prepended values
+    """
+    import numpy as np
+    
+    # Convert to numpy arrays if they aren't already
+    x = np.array(x)
+    y = np.array(y)
+    
+    # Check if the smallest value of x is bigger than init_time_hour_cut_for_fit
+    if len(x) > 0 and np.min(x) > init_time_hour_cut_for_fit:
+        # Prepend the initial values
+        x_new = np.concatenate(([init_time_hour_cut_for_fit], x))
+        y_new = np.concatenate(([normalized_first_value_wanted], y))
+        print(f"Prepended values: min(x) = {np.min(x)} > {init_time_hour_cut_for_fit}")
+    else:
+        # No need to prepend, return original arrays
+        x_new = x
+        y_new = y
+        if len(x) > 0:
+            print(f"No prepending needed: min(x) = {np.min(x)} <= {init_time_hour_cut_for_fit}")
+        else:
+            print("Empty array, no prepending performed")
+    
+    return x_new, y_new
+
 def single_plot_nt_alpha_aggregated_single_city(vec_nt,
                                                 vec_t, 
                                                 epsilon, 
@@ -119,7 +157,8 @@ def single_plot_nt_alpha_aggregated_single_city(vec_nt,
     vec_nt, vec_fit_nt, vec_t = equalize_vectors(vec_nt, vec_fit_nt, vec_t)
     if is_savgol:
         vec_nt = apply_safe_savgol_filter(vec_nt, savgol_window)
-    upper_limit_time = max_time_for_fit + 2
+    upper_limit_time = (max_time_for_fit)
+#    upper_limit_time = max_time_for_fit + 1
     # avoid 0s
     mask_bigger_t0 = vec_t > init_time_hour_cut_for_fit 
     mask_smaller_t_fit = vec_t < upper_limit_time
@@ -128,21 +167,26 @@ def single_plot_nt_alpha_aggregated_single_city(vec_nt,
     vec_nt = vec_nt[mask_fit]
     vec_fit_nt = vec_fit_nt[mask_fit]    
     # Calculate scaled values
-    tminust0epsilon = vec_t#*epsilon
+    tminust0epsilon = vec_t*epsilon
+#    tminust0epsilon = vec_t#*epsilon
     nttalpha = vec_nt*vec_t**(abs(alpha))
     print("vec_t in ntalpha",vec_t)
-    print("vec_nt in ntalpha",vec_nt)
-    print(f"nntalpha: {nttalpha}")
+#    print("vec_nt in ntalpha",vec_nt)
+#    print(f"nntalpha: {nttalpha}")
     max_nttalpha = nttalpha[0]
+#    normalized_first_value_wanted = max_nttalpha
     normalized_first_value_wanted = 0.01
     nttalpha = array(nttalpha) / max_nttalpha * normalized_first_value_wanted
+    tminust0epsilon, nttalpha = prepend_initial_values_if_needed(tminust0epsilon, nttalpha, init_time_hour_cut_for_fit, normalized_first_value_wanted)
+    upper_limit_time = 30#max(10,tminust0epsilon[-2])
     if len(nttalpha) == 0:
         print(f"Warning: No data to plot for R = {R} in city {city}.")
         return ax
     else:        
         # Plot logic - unchanged from your original code
         if is_alpha:
-            ax.plot(tminust0epsilon, nttalpha, label=rf'Rc = {R} veh/$\Delta$t', color='black')
+#            ax.plot(tminust0epsilon, nttalpha, label=rf'Rc = {R} veh/$\Delta$t', color='black')
+            ax.hlines(y=normalized_first_value_wanted, xmin=init_time_hour_cut_for_fit, xmax=upper_limit_time, color='black',label=rf'$R_c$ = {R} veh/$\Delta$t')
             if is_label:            
                 ax.plot(tminust0epsilon, nttalpha, linestyle='--', 
                        label=rf'R = {R} veh/$\Delta$t', color=City_2_Color[city],)
@@ -152,10 +196,11 @@ def single_plot_nt_alpha_aggregated_single_city(vec_nt,
                        label=rf'R = {R} veh/$\Delta$t')
         
         # Only set these the first time or they'll reset with each call
-        ax.set_xlabel(r'$(t-t_0)$', fontsize=15) #\epsilon
+        ax.set_xlabel(r'$(t-t_0)\epsilon$', fontsize=15) #\epsilon
         ax.set_ylabel(r'$n(t)t^{\alpha} [h]$', fontsize=15)
         ax.set_xscale('log')
         ax.set_yscale('log')
+#        ax.set_xlim(init_time_hour_cut_for_fit, upper_limit_time)
         ax.set_xlim(init_time_hour_cut_for_fit, upper_limit_time)
         # Format axes display
         ax.xaxis.set_major_formatter(ScalarFormatter())
@@ -372,12 +417,11 @@ def finalize_inset(ax_main, ax_inset):
 
 def single_plot_nr(Rs_over_Rc,
                    nR,
-                   nRfit,
-                   epsilon_fit,
-                   nR_region_fit,
+                   epsilons,
                    City, 
                    ax, 
                    color,
+                   beta_ = None,
                    UCI=None):
     """Plot the n(R) vs R/R_c relation with an inset"""
     from numpy import array
@@ -391,9 +435,10 @@ def single_plot_nr(Rs_over_Rc,
     ax.scatter(Rs_over_Rc, nR, color=color)
     
     # Create mask for region Rs_over_Rc >= 1
-    mask_above_1 = Rs_over_Rc >= 1.0
+    mask_above_1 = Rs_over_Rc > 1.0
     
     # Get data points for Rs_over_Rc >= 1
+    epsilons_above_1 = array(epsilons)[mask_above_1]
     Rs_above_1 = Rs_over_Rc[mask_above_1]
     nR_above_1 = nR[mask_above_1]
     
@@ -411,7 +456,9 @@ def single_plot_nr(Rs_over_Rc,
             A = np.exp(log_A)  # Amplitude
             
             # Create fit line
+#            Rs_fit = np.linspace(min(Rs_above_1), max(Rs_above_1), 50)
             Rs_fit = np.linspace(min(Rs_above_1), max(Rs_above_1), 50)
+            
             nR_fit = A * Rs_fit**beta
             
             # Plot the power law fit
@@ -424,7 +471,8 @@ def single_plot_nr(Rs_over_Rc,
             print(f"Error fitting power law for Rs_over_Rc >= 1 region for {City}, UCI {UCI}: {e}")
     else:
         print(f"Not enough points (only {len(Rs_above_1)}) for power law fit in Rs_over_Rc >= 1 region for {City}, UCI {UCI}")
-    
+    if beta_ is not None:
+        ax.text(1.5, max(nR)/2, r"$\beta$ = " + f"{round(beta_,3)}", fontsize=12)
     # Vertical line at Rc
     ax.vlines(x=1, ymin=0, ymax=max(nR), linestyles='--', color='black')
     ax.set_xlabel(r'$R/R_c$', fontsize=15)
@@ -516,7 +564,8 @@ def single_plot_beta_fit(Time2FitBeta,
         if int_t_star == t0:
             ax.scatter(Time2FitBeta[t0]["epsilon"],Time2FitBeta[t0]["n(R,epsilon)"],marker ='+',label = f"t = {round(t_star,3)}")
             ax.plot(Time2FitBeta[t0]["epsilon"],Time2FitBeta[t0]["n(R,epsilon)_fit"], label = "")
-            ax.text(min(Time2FitBeta[t0]["epsilon"]) + 0.1,min(Time2FitBeta[t0]["n(R,epsilon)_fit"]) + 0.0001,r"$\beta$ = " + f"{round(Time2FitBeta[t0]['Beta'],3)}")
+            # ...existing code...
+            ax.text(min(Time2FitBeta[t0]["epsilon"])*1.1, min(Time2FitBeta[t0]["n(R,epsilon)_fit"])*1.1, r"$\beta$ = " + f"{Time2FitBeta[t0]['Beta']}")
         else:
             is_below = t0 < int_t_star and t0 > int_t_star - 3
             is_above = t0 > int_t_star and t0 < int_t_star + 3
@@ -619,110 +668,5 @@ def single_plot_alpha_beta_UCI(UCI_2_CriticalParams,
     ax.set_ylim(0)
     ax.legend(loc = "upper right")
     return ax
-
-# ---------- PIPELINE ALL PLOTS ---------- #
-                                                                #[plt_nt,plt_nt_alpha,plt_nr,plt_gamma_tau,plt_error_pl_beta]
-def pipeline_Plot_DP_single_R(is_phase_transition_found,
-                              ax_nt,                            # plot_nt
-                              t_star,                           # plt_nt,            ,      ,             ,plt_error_pl_beta
-                              vec_nt,                           # plt_nt,plt_nt_alpha
-                              vec_t,                            # plt_nt,plt_nt_alpha
-                              is_alpha,                         # plt_nt,plt_nt_alpha
-                              alpha,                            # plt_nt,plt_nt_alpha
-                              R,                                # plt_nt,plt_nt_alpha
-                              is_label,                         # plt_nt,plt_nt_alpha
-                              vec_nt_fit,                       # plt_nt,plt_nt_alpha
-                              ax_nt_scaled,                     #       ,plt_nt_alpha
-                              epsilon,                          #       ,plt_nt_alpha
-                              is_found_beta,                    #       ,plt_nt_alpha,plt_nr
-                              ax_nr,                            #       ,            ,plt_nr
-                              ax_inset_nr,                      #       ,            ,plt_nr       
-                              Rs_interval,                      #       ,            ,plt_nr
-                              R2NtNtFit,                        #       ,            ,plt_nr
-                              Time2FitBeta,                     #       ,            ,plt_nr
-                              int_t_star,                       #       ,            ,plt_nr
-                              BestBeta,                         #       ,            ,plt_nr
-                              Rc,                               #       ,            ,plt_nr
-                              ax_gamma_tau,                     #       ,            ,      ,plt_gamma_tau
-                              Taus,                             #       ,            ,      ,plt_gamma_tau
-                              Gammas,                           #       ,            ,      ,plt_gamma_tau
-                              Gammac,                           #       ,            ,      ,plt_gamma_tau
-                              Tauc,                             #       ,            ,      ,plt_gamma_tau
-                              IndexRc,                          #       ,            ,      ,plt_gamma_tau
-                              UCI,                              #       ,            ,      ,             ,plt_error_pl_beta
-                              City,                             # plt_nt,plt_nt_alpha,plt_nr,plt_gamma_tau,plt_error_pl_beta
-                              ):
-    # NOTE: Plot being aware of whether the phase transtion occured
-    if is_phase_transition_found:
-        print(f"{City}: Phase Trans - Plotting nt R: {R}, UCI: {UCI}")
-        ax_nt = single_plot_nt_aggregated_single_city(vec_nt,                  # NOTE: vector of  fraction of people in the road in time
-                                                    vec_t,                    # NOTE: vector of time -> TimeHourArray
-                                                    is_alpha,                 # NOTE: is_alpha -> boolean if the alpha needs to be plotted
-                                                    alpha,                    # NOTE: alpha -> power-law for the phase transition
-                                                    R,                        # NOTE: R -> value of the R parameter
-                                                    t_star,                   # NOTE: t_star -> time of best fit of beta 
-                                                    vec_nt_fit,               # NOTE: vector of fit for fraction of people in the road in time -> TimeHourArray
-                                                    is_label,                 # NOTE: is_label -> boolean if the label needs to be plotted
-                                                    City,                     # NOTE: city -> name of the city
-                                                    ax_nt,                    # NOTE: ax1 -> axis of the plot
-                                                    is_savgol = False,        # NOTE: is_savgol -> boolean if the savgol filter needs to be applied
-        )
-        # NOTE: Condition on the existence of epsilon
-        if is_found_beta:
-            print(f"{City}: Phase Trans - Plotting nt^alpha R: {R}, UCI: {UCI}")
-            ax_nt_scaled = single_plot_nt_alpha_aggregated_single_city(vec_nt,                   # NOTE: vector of  fraction of people in the road in time
-                                                    vec_t,                          # NOTE: vector of time -> TimeHourArray
-                                                    epsilon,                        # NOTE: epsilon -> value of the epsilon parameter
-                                                    is_alpha,                       # NOTE: is_alpha -> boolean if the alpha needs to be plotted
-                                                    alpha,                          # NOTE: alpha -> power-law for the phase transition
-                                                    R,                              # NOTE: R -> value of the R parameter
-                                                    vec_nt_fit,                     # NOTE: vector of fit for fraction of people in the road in time -> TimeHourArray
-                                                    is_label,                       # NOTE: is_label -> boolean if the label needs to be plotted
-                                                    City,                           # NOTE: city -> name of the city
-                                                    ax_nt_scaled,                   # NOTE: ax1 -> axis of the plot
-                                                    init_time_hour_cut_for_fit = init_time_hour_cut_for_fit, # NOTE: init_time_hour_cut_for_fit -> initial time for the fit  
-                                                    max_time_for_fit = 7,           # NOTE: max_time_for_fit -> maximum time for the fit                                                    
-                                                    is_savgol = False,              # NOTE: is_savgol -> boolean if the savgol filter needs to be applied
-                                                    savgol_window = 3,              # NOTE: savgol_window -> window for the savgol filter
-                                                    City_2_Marker = CITY2MARKER,    # NOTE: City_2_Marker -> dictionary of the city and the marker
-                                                    City_2_Color = CITY2COLOR,      # NOTE: City_2_Color -> dictionary of the city and the color
-            )
-            print(f"{City}: Phase Trans - Plotting n(R) R: {R}, UCI: {UCI}")            
-            ax_nr =     single_plot_nr(Rs_interval,                                          # NOTE: Rs
-                                                Rc,                                          # NOTE: Rc
-                                                R2NtNtFit,                                   # NOTE: N(R), by choosing the int_t_star position of the vector associated to R
-                                                Time2FitBeta,
-                                                int_t_star,                                                         # NOTE: t*, time at which the best transition occurs.
-                                                BestBeta,                                                           # NOTE: Best Beta, is the coefficient for the increase of the N(R) at time t*    
-                                                City,
-                                                ax_nr,
-                                                UCI = UCI,                                                # NOTE: UCI -> UCI of the city
-                                                )                    
-        print(f"{City}: Phase Trans - Plotting Gamma and Tau R: {R}, UCI: {UCI}")
-        # NOTE: Plot the Gamma and Tau
-        ax_gamma_tau = single_plot_gamma_tau(Taus,
-                                            Gammas,
-                                            Gammac,
-                                            Tauc,
-                                            IndexRc,
-                                            City,
-                                            UCI,
-                                            ax_gamma_tau)   
-        return ax_nt,ax_nt_scaled,ax_nr,ax_inset_nr,ax_gamma_tau
-    else:
-        print(f"{City}: Plotting Gamma and Tau R: {R}, UCI: {UCI}")
-        # NOTE: Plot the Gamma and Tau
-        ax_gamma_tau = single_plot_gamma_tau(Taus,
-                                            Gammas,
-                                            None,
-                                            None,
-                                            None,
-                                            City,
-                                            UCI,
-                                            ax_gamma_tau)  
-        return None,None,None,None,ax_gamma_tau   
-
-               
-
 
 # ---------- ALL CITIES PLOTS ---------- #    

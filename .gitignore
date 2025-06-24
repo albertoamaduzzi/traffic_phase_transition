@@ -15,3 +15,14 @@ data_2/*
 MemoryUsage/*
 main.log
 info_simulations.csv
+info_simulations_with_0.216.csv
+main.log
+*.csv
+*.json
+*.txt
+*.png
+*.pdf
+*.jpg
+*.jpeg
+*.gif
+*.svg

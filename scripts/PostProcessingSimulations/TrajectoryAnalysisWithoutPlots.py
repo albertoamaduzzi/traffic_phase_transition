@@ -6,7 +6,7 @@ import multiprocessing
 warnings.filterwarnings("ignore")
 BaseConfig = os.path.join(os.environ["TRAFFIC_DIR"],"config")
 list_cities = os.listdir(os.path.join(os.environ["TRAFFIC_DIR"],'data','carto'))
-list_cities = ["BOS"]#["BOS","SFO","RIO"]
+list_cities = ["SFO"]#["BOS","SFO","RIO"]
 ListPeopleFile = []
 ListRoutesFile = []
 complete_path_info_simulations_df = os.path.join(TRAFFIC_DIR,"info_simulations.csv")
@@ -28,6 +28,7 @@ def MainMultiprocessing(City):
     Rs = Df_Info_Simulations.filter(pl.col("city") == City)["R"].unique().to_numpy()
     UCIs = Df_Info_Simulations.filter(pl.col("city") == City)["UCI"].unique().to_numpy()
 #    UCIs = [UCI for UCI in UCIs if UCI > 0.9]
+    UCIs = [0.002,0.003]
     print("Rs\n",Rs)
     print("UCIs\n",UCIs)
     Df_City2Config = Df_Info_Simulations.filter(pl.col("city") == City)    
