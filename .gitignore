@@ -28,3 +28,27 @@ main.log
 *.svg
 */data_1/*
 */data_2/*
+
+# Additional large files to ignore
+data_2/
+MemoryUsage/
+cache/
+__pycache__/
+__pycache__old/
+.vscode/
+
+# Large binary files
+*.tif
+*.gpkg
+*.gz
+*.html
+
+# Generated configuration files
+*_geometric_info.json
+*.nf
+
+# System and IDE files
+.DS_Store
+*.swp
+*.swo
+*~
