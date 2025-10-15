@@ -32,7 +32,7 @@ def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
                                     GeometricalInfo.save_dir_local)
     GeometricalInfo.grid = GetGeometryPopulation(GeometricalInfo.gdf_hexagons,GeometricalInfo.grid,'grid',NameCity)
     GeometricalInfo.lattice = GetLattice(GeometricalInfo.grid,grid_size,GeometricalInfo.bounding_box,GeometricalInfo.save_dir_local)
-    plot_grid_tiling(GeometricalInfo.grid,GeometricalInfo.gdf_polygons,GeometricalInfo.save_dir_local,grid_size)
+#    plot_grid_tiling(GeometricalInfo.grid,GeometricalInfo.gdf_polygons,GeometricalInfo.save_dir_local,grid_size)
     GeometricalInfo.OD2grid,GeometricalInfo.grid2OD,GeometricalInfo.grid = Geometry2OD(gdf_geometry = GeometricalInfo.grid,
                                                                     GraphFromPhml = GeometricalInfo.GraphFromPhml,
                                                                     NameCity = GeometricalInfo.city,
@@ -55,7 +55,15 @@ def AllStepsGrid(GeometricalInfo,grid_size,NameCity):
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'grid2origindest.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'grid2origindest.json'))
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'origindest2grid.json'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'origindest2grid.json')) 
     GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'centroid_lattice.graphml'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'centroid_lattice.graphml'))
-    GeometricalInfo.UpdateFiles2Upload(os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.csv'),os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.csv'))
+    # Compressed Files
+    local_file_direction_matrix_csv = os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.csv')
+    server_file_direction_matrix_csv = os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.csv')
+    local_file_direction_matrix_parquet = os.path.join(GeometricalInfo.save_dir_local,'grid',str(grid_size),'direction_distance_matrix.parquet')
+    server_file_direction_matrix_parquet = os.path.join(GeometricalInfo.save_dir_server,'grid',str(grid_size),'direction_distance_matrix.parquet')
+    if os.path.exists(local_file_direction_matrix_csv):
+        GeometricalInfo.UpdateFiles2Upload(local_file_direction_matrix_csv,server_file_direction_matrix_csv)    
+    elif os.path.exists(local_file_direction_matrix_parquet):
+        GeometricalInfo.UpdateFiles2Upload(local_file_direction_matrix_parquet,server_file_direction_matrix_parquet)
     if not socket.gethostname()=='artemis.ist.berkeley.edu':
         MakeDir(GeometricalInfo.save_dir_server,'grid')
         MakeDir(os.path.join(GeometricalInfo.save_dir_server,'grid'),str(grid_size))

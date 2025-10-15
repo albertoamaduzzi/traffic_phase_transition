@@ -77,11 +77,13 @@ def SaveDirectionDistanceMatrix(save_dir_local,grid_size,df_direction_distance_m
         Save the direction matrix
     '''
     SetGridDir(save_dir_local,grid_size)
-    if not os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")):
-        logger.info('SAVING: {} '.format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")))
-        df_direction_distance_matrix.to_csv(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv"))
+    file_distance_matrix_csv = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.csv")
+    file_distance_matrix_parquet = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.parquet")
+    if not os.path.isfile(file_distance_matrix_csv) or not os.path.isfile(file_distance_matrix_parquet):
+        logger.info('SAVING: {} '.format(file_distance_matrix_parquet))
+        df_direction_distance_matrix.to_parquet(file_distance_matrix_parquet)
     else:
-        logger.info("Direction Matrix already exists in {}".format(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")))
+        logger.info("Direction Matrix already exists in {}".format(file_distance_matrix_parquet))
         pass
     return df_direction_distance_matrix
 
@@ -246,9 +248,28 @@ def ObtainDirectionMatrix(grid,save_dir_local,grid_size):
         return direction_distance_df
     
 def GetDirectionMatrix(save_dir_local,grid_size):
-    if os.path.isfile(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")):
-        logger.info(f"Uploading direction matrix from: {os.path.join(save_dir_local,'grid',str(round(grid_size,3)),'direction_distance_matrix.csv')} ...")
-        direction_distence_df = pd.read_csv(os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv"))   
+    '''    Input:
+        save_dir_local: str -> local directory to save the grid
+        grid_size: float -> size of the grid
+        Output:
+            direction_distance_df: DataFrame -> [i,j,dir_vector,distance]
+            IsComputed: bool -> True if the direction matrix is already computed, False otherwise
+    Description:
+        This function is used to obtain the direction matrix and the distance matrix of the grid.
+        The direction matrix is a dictionary that contains the direction vector between two points of the grid.
+        The distance matrix is a dictionary that contains the distance between two points of the grid.
+        The direction_distance_df is a DataFrame that contains the information of the direction matrix and the distance matrix.
+        The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
+    '''
+    file_distance_matrix_csv = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.csv")
+    file_distance_matrix_parquet = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.parquet")
+    if os.path.isfile(file_distance_matrix_csv): 
+        logger.info(f"Uploading direction matrix from: {file_distance_matrix_csv} ...")
+        direction_distence_df = pd.read_csv(file_distance_matrix_csv)   
+        return direction_distence_df,True
+    elif os.path.isfile(file_distance_matrix_parquet):
+        logger.info(f"Uploading direction matrix from: {file_distance_matrix_parquet} ...")
+        direction_distence_df = pd.read_parquet(file_distance_matrix_parquet)   
         return direction_distence_df,True
     else:
         return None,False

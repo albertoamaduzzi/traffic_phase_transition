@@ -19,6 +19,7 @@ The project defines a pipeline that evolves into three different phases.
 Set the base directory where the project is to be downloaded:
 ```
 bash export TRAFFIC_DIR=/path/to/ProjectBaseDir
+bash export LPSim=/path/to/LPSim
 ```
 
 
@@ -126,7 +127,15 @@ The main consist of the function `CompleteAnalysis`
 The parameters regarding `number of simulations` and `number of wanted UCIs` are stored in `Config.py` that is called by `GeometricalSpatialPartition` that calls: `GenerateConfigGeometricalSettingsSpatialPartition`.
 Change the parameters there.
 
-
+# Usage
+```
+cd /LPSim/traffic_phase_transition.py
+python3 ./main.py
+python3 ./TrajectoryAnalysisWithoutPlots.py
+```
+# Savio
+To move data from artemis to savio.
+ ./globusconnectpersonal -start
 
 # Accurate description variables
 

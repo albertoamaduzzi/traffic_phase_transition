@@ -114,7 +114,7 @@ from PolycentrismPlot import *
 from PolygonSettings import *
 from Potential import *
 from PreprocessingObj import *
-sys.path.append(os.path.join(mother_path,'PreProcessing'))
+sys.path.append(os.path.join(mother_path,'GeometrySphere'))
 from CreateCartoSimulator import *
 
 logger = logging.getLogger(__name__)

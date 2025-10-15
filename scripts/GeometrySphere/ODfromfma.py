@@ -86,19 +86,28 @@ def ObtainODMatrixGrid(save_dir_local,grid_size,grid):
     """
         Either Upload the OD grid or compute it
     """
-    if os.path.isfile(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')):
-        logger.info(f"Upload OD Grid from: {os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')}...")
-        return pd.read_csv(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv'))
+    file_ODgrid_csv = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')
+    file_ODgrid_parquet = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.parquet')
+    if os.path.isfile(file_ODgrid_csv):
+        logger.info(f"Upload OD Grid from: {file_ODgrid_csv}...")
+        return pd.read_csv(file_ODgrid_csv)
+    elif os.path.isfile(file_ODgrid_parquet):
+        logger.info(f"Upload OD Grid from: {file_ODgrid_parquet}...")
+        return pd.read_parquet(file_ODgrid_parquet)
     else:
-        logger.info(f"Computing OD Grid to save in: {os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')}...")
+        logger.info(f"Computing OD Grid to save in: {file_ODgrid_parquet}...")
         gridIdx2ij = {grid['index'][i]: (grid['i'].tolist()[i],grid['j'].tolist()[i]) for i in range(len(grid))}
         gridIdx2dest = GridIdx2OD(grid)
         return ODGrid(gridIdx2dest,gridIdx2ij)
         
 
 def GetODGrid(save_dir_local,grid_size):
-    if os.path.isfile(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')):
-        return pd.read_csv(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv'))
+    file_ODgrid_csv = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')
+    file_ODgrid_parquet = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.parquet')
+    if os.path.isfile(file_ODgrid_csv):
+        return pd.read_csv(file_ODgrid_csv)
+    elif os.path.isfile(file_ODgrid_parquet):
+        return pd.read_parquet(file_ODgrid_parquet)
     else:
         return None
 
@@ -114,10 +123,15 @@ def SaveOD(df,df1,save_dir_local,NameCity,start,end,R,grid_size):
             TRAFFIC_DIR/data/carto/{NameCity}/grid/{grid_size}/ODgrid.csv
             TRAFFIC_DIR/data/carto/{NameCity}/OD/{NameCity}_oddemand_{start}_{end}_R_{R}.csv
     '''
-    if not os.path.isfile(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')):
-        df.to_csv(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv'),sep=',',index=False)
+    file_ODgrid_csv = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv')
+    file_ODgrid_parquet = os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.parquet')
+    if not os.path.isfile(file_ODgrid_parquet):
+        df.to_parquet(file_ODgrid_parquet,engine='pyarrow',index=False)
+        logger.info(f"OD Grid saved in: {file_ODgrid_parquet}")
+    elif not os.path.isfile(file_ODgrid_csv):
+        df.to_csv(file_ODgrid_csv,sep=',',index=False)
     else:
-        df.to_csv(os.path.join(save_dir_local,'grid',str(grid_size),'ODgrid.csv'),sep=',',index=False)
+        df.to_csv(file_ODgrid_csv,sep=',',index=False)
     if not os.path.isfile(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,str(int(R))))):
         df1.to_csv(os.path.join(save_dir_local,'OD','{0}_oddemand_{1}_{2}_R_{3}.csv'.format(NameCity,start,end,str(int(R)))),sep=',',index=False)
 

@@ -130,7 +130,7 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
     print('ratio: ',total_number_people_considered/(total_number_people_considered+total_number_people_not_considered))
     return df1
 
-def ODVectorFromTij(Tij_modified,R):
+def ODVectorFromTij(Tij_modified,R,origin_column = "origin",destination_column = "destination",n_people_column = "number_people"):
     """
         Input:
             Tij_modified: (pd.DataFrame) -> Tij_modified = Tij[['origin','destination','number_people']]
@@ -141,9 +141,9 @@ def ODVectorFromTij(Tij_modified,R):
     """
     logger.info("Convert Tij to OD_vector...")
     # NOTE: ADD HERE THE POSSIBILITY OF HAVING OD FROM POTENTIAL CONSIDERATIONS
-    O_vector = np.array(Tij_modified['origin'],dtype=int)
-    D_vector = np.array(Tij_modified['destination'],dtype=int)
-    OD_vector = np.array(Tij_modified['number_people'],dtype=int)
+    O_vector = np.array(Tij_modified[origin_column],dtype=int)
+    D_vector = np.array(Tij_modified[destination_column],dtype=int)
+    OD_vector = np.array(Tij_modified[n_people_column],dtype=int)
     TotPeople = np.sum(OD_vector)
     WantedPeople = R*3600
     Multiply = WantedPeople/TotPeople
