@@ -1,4 +1,5 @@
 #!/usr/bin/env nextflow
+// This script is thought to develop the pipeline to understand the phase transition observed in microscopic regional simulations
 // NOTE: The project is thought to be based on TRAFFIC_DIR (environment variable to be set beforehand)
 params.TrafficDir = System.getenv('TRAFFIC_DIR')
 // NOTE: For Each City 

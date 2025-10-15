@@ -287,3 +287,8 @@ keyboard==0.13.5
 pyhull==2015.2.1
 
 relativeneighborhoodgraph==0.0.1
+jax
+jaxlib
+numpyro
+matplotlib
+optax

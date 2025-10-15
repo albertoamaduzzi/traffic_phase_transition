@@ -52,3 +52,15 @@ __pycache__old/
 *.swp
 *.swo
 *~
+
+# Data files
+*.fma
+*.dbf
+*.shp
+
+# Logs
+*.log
+main.log
+
+# Output directories
+OutputPlanarGraph/
