@@ -1,0 +1,66 @@
+citations/
+output/
+data/
+cache/
+tests/cache/
+workspace/
+*Doxyfile
+tests/
+*.yml
+*artemis.json
+OutputPlanarGraph/
+*__pycache__/
+data_1/*
+data_2/*
+MemoryUsage/*
+main.log
+info_simulations.csv
+info_simulations_with_0.216.csv
+main.log
+*.csv
+*.json
+*.txt
+*.png
+*.pdf
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*/data_1/*
+*/data_2/*
+
+# Additional large files to ignore
+data_2/
+MemoryUsage/
+cache/
+__pycache__/
+__pycache__old/
+.vscode/
+
+# Large binary files
+*.tif
+*.gpkg
+*.gz
+*.html
+
+# Generated configuration files
+*_geometric_info.json
+*.nf
+
+# System and IDE files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Data files
+*.fma
+*.dbf
+*.shp
+
+# Logs
+*.log
+main.log
+
+# Output directories
+OutputPlanarGraph/

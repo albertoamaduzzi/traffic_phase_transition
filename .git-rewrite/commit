@@ -1,0 +1,6 @@
+tree 9e8855f2634596bc6b08a67a66cf8f6d149da362
+parent 4549196796661c49d1c0351109250afba047c2a7
+author albertoamaduzzi <aamaduzzi0@gmail.com> 1760542589 -0700
+committer albertoamaduzzi <aamaduzzi0@gmail.com> 1760542589 -0700
+
+RBM model in ReflectingBrownianMotion.ipynb, both one and multidimensional
