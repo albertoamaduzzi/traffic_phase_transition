@@ -19,8 +19,9 @@ else:
     sys.path.append(os.path.join(os.getenv('TRAFFIC_DIR'),'scripts','PreProcessing'))
 from plot import *
 import logging
+from tqdm import tqdm
 logger = logging.getLogger(__name__)
-
+from CreateCartoSimulator import compute_index2osmid_osmid2idx
 
 ## GLOBAL VARIABLES
 NameCity2TractId = {'SFO':'TRACT','LAX':'external_i','LIS':'ID','RIO':'Zona','BOS':'tractid'} # Useful for th extraction of the Polygons that need to be mapped in the OD
@@ -225,19 +226,32 @@ def Map2Geom2OD(gdf_geometry,
                 save_dir_local,
                 resolution):
     '''
+       Input:
+            gdf_geometry: (gpd.GeoDataFrame) geodataframe with the geometry -> polygon, grid, ring
+            GraphFromPhml: (networkx.MultiDiGraph) graph from the cartography or ours
+            GeometryName: (str) 'polygon','grid','ring'
+            save_dir_local: (str) path where to save the files
+            resolution: (float) resolution of the grid or ring
+       Output:
+            OD2Geom: (dict) dictionary that maps the node to the geometry
+            Geom2OD: (dict) dictionary that maps the geometry to the list of nodes
+            gdf_geometry: (gpd.GeoDataFrame) geodataframe with the geometry -> polygon, grid, ring
+       NOTE: The osm_u is the keys that I asked to osmnx -> it is the osmid of the node
        Description:
-            NOTE: Considers just those grids that have road network -> NOTE: This is Important to understand, since, when create OD, there are grids that are populated, but not connected to the road network
+            NOTE: Considers just those grids that have road network 
+            -> NOTE: This is Important to understand, since, when create OD, there are grids that are populated, but not connected to the road network
     '''
     Geom2OD = defaultdict(list)
     OD2Geom = defaultdict(list)
+    # NOTE:  Quickest way to fix the bug. Already computed the dictionary in CreateCartoSimulator -> mobility_panner -> GeometricalSettingPartition
     number_nodes_outside_box = 0
     numbr_nodes_inside_box = 0
     percentage_nodes_outside_box = 0
     logger.info(f"Number Nodes To Control in {save_dir_local}: {len(GraphFromPhml.nodes)}")
     # Loop over the nodes of the graph
-    for node in GraphFromPhml.nodes():
+    for osm_u in tqdm(GraphFromPhml.nodes(), desc="Mapping Nodes to Geometrical Setting, case: {}".format(GeometryName)):
         # Check if the node is inside the geometry
-        containing_geom = gdf_geometry.geometry.apply(lambda x: Point(GraphFromPhml.nodes[node]['x'],GraphFromPhml.nodes[node]['y']).within(x))
+        containing_geom = gdf_geometry.geometry.apply(lambda x: Point(GraphFromPhml.nodes[osm_u]['x'],GraphFromPhml.nodes[osm_u]['y']).within(x))
         # Create the Index Column that goes from 0 to len(gdf_geometry)
         gdf_geometry['index'] = gdf_geometry.index
         idx_containing_geom = gdf_geometry[containing_geom].index
@@ -247,14 +261,14 @@ def Map2Geom2OD(gdf_geometry,
                 tract_id_geom = int(tract_id_geom.tolist()[1])
             except IndexError:
                 tract_id_geom = int(tract_id_geom.tolist()[0])
-            Geom2OD[int(tract_id_geom)].append(node)
-            OD2Geom[node] = int(tract_id_geom)
+            Geom2OD[int(tract_id_geom)].append(osm_u)
+            OD2Geom[osm_u] = int(tract_id_geom)
             numbr_nodes_inside_box += 1
             if (number_nodes_outside_box + numbr_nodes_inside_box) % 100 == 0:
                 percentage_nodes_outside_box = number_nodes_outside_box/(number_nodes_outside_box+numbr_nodes_inside_box)
                 logger.info(f"Nodes outside {number_nodes_outside_box}, inside: {numbr_nodes_inside_box} the box. Percentage Missing: {percentage_nodes_outside_box}")
         elif len(tract_id_geom)>1:
-            print('node: ',GraphFromPhml.nodes[node]['x'],GraphFromPhml.nodes[node]['y'])
+            print('node: ',GraphFromPhml.nodes[osm_u]['x'],GraphFromPhml.nodes[osm_u]['y'])
             print(len([i for i in containing_geom if i==True]))
             print('containing_geom')
             print('tract_id: ',tract_id_geom[0])

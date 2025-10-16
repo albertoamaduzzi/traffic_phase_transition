@@ -186,12 +186,12 @@ class GeometricalSettingsSpatialPartition:
         self.save_dir_server = self.config['save_dir_server'] # DIRECTORY WHERE TO SAVE THE FILES /home/alberto/LPSim/LivingCity/{city}
         self.new_full_network_dir = '/home/alberto/LPSim/LivingCity/berkeley_2018/new_full_network' 
         self.berkeley_2018 = SERVER_TRAFFIC_DIR
-        if os.path.isfile(os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')):
-            self.GraphFromPhml = ox.load_graphml(filepath = os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml')) # GRAPHML FILE
-            self.mobility_planner = mobility_planner(self.city)
+        # NOTE: Mobility Planner -> this is essential for the road network (cartography) to e unique throughout the analysis
+        self.mobility_planner = mobility_planner(self.city)
+        self.GraphFromPhml = self.mobility_planner.G2_simp
+        self.osmid2index = self.mobility_planner.osmid2index
+        self.index2osmid = self.mobility_planner.index2osmid
 
-        else:
-            raise ValueError('Graph City not found: ',os.path.join(self.save_dir_local,self.city + '_new_tertiary_simplified.graphml'))
         if os.path.isfile(os.path.join(self.shape_file_dir_local,self.city + '.shp')):
             self.gdf_polygons = gpd.read_file(os.path.join(self.shape_file_dir_local,self.city + '.shp')) # POLYGON FILE
             self.bounding_box = self.ComputeBoundingBox()
@@ -199,17 +199,7 @@ class GeometricalSettingsSpatialPartition:
             raise ValueError('Polygon City not found')
         self.nodes = None
         self.edges = None
-        if not os.path.isfile(os.path.join(self.save_dir_local,"osmid2idx.json")):
-            self.osmid2index = {data['osmid']: data['index'] for _, _, data in self.GraphFromPhml.edges(data=True) if 'osmid' in data and 'index' in data}
-            #            self.osmid2index = self.GraphFromPhml[['osmid','index']].set_index('osmid').to_dict()['index']
-        else:
-            with open(os.path.join(self.save_dir_local,"osmid2idx.json")) as f:
-                self.osmid2index = json.load(f)
-        if not os.path.isfile(os.path.join(self.save_dir_local,"idx2osmid.json")):
-            self.index2osmid = {v:k for k,v in self.osmid2index.items()}
-        else:
-            with open(os.path.join(self.save_dir_local,"idx2osmid.json")) as f:
-                self.index2osmid = json.load(f)
+        # NOTE: Info about the group control
         self.start = self.config['start_group_control']
         self.end = self.config['end_group_control']
         self.Files2Upload = defaultdict(list)
@@ -343,11 +333,11 @@ class GeometricalSettingsSpatialPartition:
         self.GetLattice()
         # Map Grid2OD and OD2Grid
         self.OD2grid,self.grid2OD,self.grid = Geometry2OD(gdf_geometry = self.grid,
-                                                            GraphFromPhml = self.GraphFromPhml,
-                                                            NameCity = self.city,
-                                                            GeometryName ='grid',
-                                                            save_dir_local = self.save_dir_local,
-                                                            resolution = grid_size)
+                                                        GraphFromPhml = self.GraphFromPhml,
+                                                        NameCity = self.city,
+                                                        GeometryName ='grid',
+                                                        save_dir_local = self.save_dir_local,
+                                                        resolution = grid_size)
         
         self.grid["with_roads"] = self.grid['index'].apply(lambda x: str(x) in list(self.grid2OD.keys()))            
         SaveGrid(self.save_dir_local,self.grid_size,self.grid)
@@ -722,11 +712,11 @@ class GeometricalSettingsSpatialPartition:
             NPeopleOffset = len(self.DfBegin)
             logger.info(f"Append Sim-File ControlGroup GENERATED {self.city}, R: {R}, UCI: {UCI}...")
             Df_GivenR = GenerateDfFluxesFromTij(Modified_Fluxes,
-                                                            self.osmid2index,
-                                                            self.grid2OD,
-                                                            self.start,
-                                                            NPeopleOffset,
-                                                            R) 
+                                                self.osmid2index,
+                                                self.grid2OD,
+                                                self.start,
+                                                NPeopleOffset,
+                                                R) 
             Df = pd.concat([self.DfBegin,Df_GivenR],ignore_index=True)
             NPeopleOffset += len(Df_GivenR)
             DfEnd = self.ShiftFinalInputSimulation(NPeopleOffset) 

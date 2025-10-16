@@ -261,8 +261,9 @@ def GetDirectionMatrix(save_dir_local,grid_size):
         The direction_distance_df is a DataFrame that contains the information of the direction matrix and the distance matrix.
         The index of the grid is the index of the grid. Not the couple (i,j) that is useful for the definition of the gradient.
     '''
-    file_distance_matrix_csv = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.csv")
-    file_distance_matrix_parquet = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"distance_matrix.parquet")
+    file_distance_matrix_csv = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.csv")
+    file_distance_matrix_parquet = os.path.join(save_dir_local,'grid',str(round(grid_size,3)),"direction_distance_matrix.parquet")
+    print(f"Trying to upload direction matrix from: {file_distance_matrix_csv} or {file_distance_matrix_parquet} ...")
     if os.path.isfile(file_distance_matrix_csv): 
         logger.info(f"Uploading direction matrix from: {file_distance_matrix_csv} ...")
         direction_distence_df = pd.read_csv(file_distance_matrix_csv)   

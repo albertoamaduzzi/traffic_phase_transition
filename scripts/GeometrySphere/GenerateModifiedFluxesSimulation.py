@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from ODfromfma import CityName2RminRmax
 import logging
+from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 def CheckAndConvert2AvailableTypesKeys(origin,AvailableTypesKeys,grid2OD):
@@ -22,6 +23,7 @@ def GetAvailableTypesKeys(grid2OD):
         if type(key) not in AvailableTypesKeys:
             AvailableTypesKeys.append(type(key))
     return AvailableTypesKeys
+
 
 
 def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2index,grid2OD,start,NOffset,seconds_in_minute = 60):
@@ -43,6 +45,7 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
     assert osmid2index is not None, 'osmid2index must be provided'
     assert grid2OD is not None, 'grid2OD must be provided'
     assert start is not None, 'start must be provided'
+    logger.info("Generate Info Input Simulation From Grid OD...")
     total_number_people_considered = 0
     total_number_people_not_considered = 0
     count_line = NOffset
@@ -57,15 +60,17 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
     NoneInOD = len([i for i in range(len(OD_vector)) if OD_vector[i] is None])
     logger.info(f'Number of Origin-Destination: {len(O_vector)}')
     logger.debug(f'NoneInOrigins: {NoneInOrigins} NoneInDestinations: %s NoneInOD: %s',NoneInDestinations,NoneInOD)
-    for i in range(len(O_vector)):
-        # Index Origin
+    # NOTE: The origin and destination grid must be with roads
+    for i in tqdm(range(len(O_vector)), desc="Iter over: Origin-Destination"):
+        # Index Origin origin in [0,...,Ngridx] -> vector of shape: (Ngridx*Ngridy,)
         origin = O_vector[i]
-        # Index Destination
+        # Index Destination destination in [0,...,Ngridy] -> vector of shape: (Ngridx*Ngridy,)
         destination = D_vector[i]
-        # Number of people Origin-Destination
+        # Number of people Origin-Destination -> vector of shape: (Ngridx*Ngridy,)
         number_people = OD_vector[i]
         # Add to File Just if There are People for The Origin-Destination                        
         if number_people > 0:
+            # NOTE: Compute the number of bins in time we need to consider to push people in the simulation
             iterations = number_people   
             time_increment = 1/iterations
             # Adequate the key to the grid2OD dictionary
@@ -77,19 +82,19 @@ def GenerateInfoInputSimulationFromGridOD(O_vector,D_vector,OD_vector,osmid2inde
             for it in range(int(iterations)):
                 # Are there Origin and Destination in the Grid?
                 if origin in grid2OD.keys():
-                    Originbigger0 = len(grid2OD[origin])>0
+                    is_grid_origin_contain_more_than_0_nodes = len(grid2OD[origin])>0
                 else:
                     total_number_people_not_considered += number_people
                     print(f'Couple {origin} not considered as one of the 2 not present in grid2OD')
                     break
                 if destination in grid2OD.keys():
-                    Destinationbigger0 = len(grid2OD[destination])>0
+                    is_grid_destination_contain_more_than_0_nodes = len(grid2OD[destination])>0
                 else:
                     total_number_people_not_considered += number_people
                     print(f'Couple {origin}-{destination} not considered as one of the 2 not present in grid2OD')
                     break
                 # Handle the Case there are Origins and Destinations (belonging to the road network) in the Grid
-                if  Originbigger0 and Destinationbigger0:
+                if  is_grid_origin_contain_more_than_0_nodes and is_grid_destination_contain_more_than_0_nodes:
                     # User Id is the count of times this row is applied
                     users_id.append(count_line)
                     # Time in seconds from start*3600 to end*3600

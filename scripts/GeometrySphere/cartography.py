@@ -2,7 +2,7 @@
 
 
 """
-from osmnx import ox
+import osmnx as ox
 import geopandas as gpd
 from typing import Dict,List
 from networkx import Graph
@@ -56,82 +56,135 @@ LANE_DEFAULTS = {'motorway': 4.0,
 
 ## ------------- FROM POLYGON TO ROAD NETWORK ---------------------- ## 
 
-
-def extract_graph_from_gdf_polygon(gdf_polygon:gpd.GeoDataFrame,
-                                   str_network_type_ox: str = "drive"):
+from tqdm import tqdm
+def extract_graph_from_gdf_polygon(gdf_polygon: gpd.GeoDataFrame,
+                                   str_network_type_ox: str = "drive",
+                                   show_progress: bool = True) -> Graph:
     """
         Description:
-            From a shapefile: Usually this shapefile contain polygon or multipolygon as geometry, such multipolygons come from census usually but they can be whatever
+            From a shapefile: Usually this shapefile contain polygon or multipolygon as geometry, 
+            such multipolygons come from census usually but they can be whatever
             Extract the convex hull
             Extract the graph inside the convex hull with the properties of str_network_type_ox 
         Return:
             Graph of the road network inside the hull with not simplified edges.
-
     """
-    # Ensure all geometries are Polygon or MultiPolygon
-    if not all(g.geom_type in ["Polygon", "MultiPolygon"] for g in gdf_polygon.geometry):
-        raise ValueError("All geometries in the GeoDataFrame must be Polygon or MultiPolygon.")
-    # Extract polygon countour
-    polygon = gdf_polygon.unary_union
-    # Take the convex hull containing it
-    polygon_hull = polygon.convex_hull
-    # Project it in space
-    polygon_hull_proj, crs = ox.projection.project_geometry(polygon_hull)
-    # Consider 1 mile from the exterior
-    polygon_hull_proj_buff = polygon_hull_proj.buffer(1600) #1 mile in meters
-    # Project it back in the lat,lon format
-    polygon_hull_buff, crs = ox.projection.project_geometry(polygon_hull_proj_buff, crs=crs, to_latlong=True)    
-    # Extract the drive network that is not simplified yet
-    G2 = ox.graph_from_polygon(polygon_hull_buff, network_type=str_network_type_ox, simplify=False)
+    with tqdm(total=5, desc="Extracting graph from polygon", disable=not show_progress) as pbar:
+        # Step 1: Validate geometries
+        if not all(g.geom_type in ["Polygon", "MultiPolygon"] for g in gdf_polygon.geometry):
+            raise ValueError("All geometries in the GeoDataFrame must be Polygon or MultiPolygon.")
+        pbar.update(1)
+        pbar.set_description("2/5: Extracting polygon contour")
+        # Step 2: Extract polygon contour
+        polygon = gdf_polygon.unary_union
+        polygon_hull = polygon.convex_hull
+        pbar.update(1)
+        pbar.set_description("3/5: Projecting in space")
+        # Step 3: Project in space
+        polygon_hull_proj, crs = ox.projection.project_geometry(polygon_hull)
+        pbar.update(1)
+        pbar.set_description("4/5: Buffering")
+        # Step 4: Buffer (1 mile in meters)
+        polygon_hull_proj_buff = polygon_hull_proj.buffer(1600)
+        polygon_hull_buff, crs = ox.projection.project_geometry(polygon_hull_proj_buff, crs=crs, to_latlong=True)
+        pbar.update(1)
+        # Step 5: Extract the drive network (this is slow - OSM query)
+        pbar.set_description("5/5 Querying OSM (this may take a while)")
+        G2 = ox.graph_from_polygon(polygon_hull_buff, network_type=str_network_type_ox, simplify=False)
+        pbar.update(1)
+    
     return G2
 
-def simplify_graph_from_polygon_gdf(gdf_polygon:gpd.GeoDataFrame,
-                                    types:List,
-                                    index2osmid: Dict,
+
+
+def compute_index2osmid_osmid2idx(G:Graph):
+    """
+        Compute the mapping from index to osmid
+    """
+    index2osmid = {}
+    i = 0
+    for n, _ in tqdm(G.nodes(data=True), desc="Computing index2osmid mapping"):
+        index2osmid[i] = int(n) 
+        i += 1
+    osmid2index = {int(v): int(k) for k, v in index2osmid.items()}    
+    return index2osmid, osmid2index
+
+
+def simplify_graph_from_polygon_gdf(gdf_polygon: gpd.GeoDataFrame,
+                                    types: List,
                                     str_network_type_ox: str = "drive",
                                     str_highway_ox_name: str = 'highway',
                                     str_unique_index_edges: str = "uniqueid",
                                     str_start_node: str = "u",
                                     str_end_node: str = "v",
                                     str_start_node_osmid: str = "osmid_u",
-                                    str_end_node_osmid: str = "osmid_v"
-                                    ):        
+                                    str_end_node_osmid: str = "osmid_v",
+                                    show_progress: bool = True) -> Graph:
     """
-        Obtain graph from 
+        Optimized version with progress tracking and fixed node mapping
     """
-    if not gdf_polygon is None:
-        # Extract the graph from the
-        G2 = extract_graph_from_gdf_polygon(gdf_polygon = gdf_polygon,
-                                            str_network_type_ox = str_network_type_ox)
-        # Compute the minor streets to simplify the network (NOTE: specify what it means this operation)
-        minor_streets = [(u, v, k) for u, v, k, d in G2.edges(keys=True, data=True) if d[str_highway_ox_name] not in types]
-        # Remove minor streets
-        G2.remove_edges_from(minor_streets)
-        # Remove isolated nodes
-        G2 = ox.utils_graph.remove_isolated_nodes(G2)
-        # Choose just the largest component of the road network
-        G2_connected = ox.utils_graph.get_largest_component(G2, strongly=True)
-        # Simplify the network: simplifying the intersection so that at least 3 roads are leaving a node
-        G2_simp = ox.simplify_graph(G2_connected, strict=True)  
-        i = 0
-        for u, v, k, d in G2_simp.edges(data=True, keys=True):
-            d[str_unique_index_edges] = i
-            # Fill the starting node with matrix index
-            d[str_start_node] = u 
-            # Fill the ending node with matrix index
-            d[str_end_node] = v 
-            # Fill the start node with osmid index
-            d[str_start_node_osmid] = index2osmid[u]
-            # Fill the ending node with osmid index
-            d[str_end_node_osmid] = index2osmid[v]
-            i += 1
-    else:
+    if gdf_polygon is None:
         raise ValueError('The Polygon is None, need to upload a valid shape file')
-    return G2_simp
-
-
-
-
+    
+    with tqdm(total=7, desc="Simplifying graph", disable=not show_progress) as pbar:
+        # Step 1: Extract the graph from the polygon
+        pbar.set_description("Step 1/7: Extracting graph from polygon")
+        G2 = extract_graph_from_gdf_polygon(
+            gdf_polygon=gdf_polygon,
+            str_network_type_ox=str_network_type_ox,
+            show_progress=True
+        )
+        pbar.update(1)
+        
+        # Step 2: Filter edges
+        pbar.set_description("Step 2/7: Filtering by road types")
+        minor_streets = [(u, v, k) for u, v, k, d in G2.edges(keys=True, data=True) 
+                         if d[str_highway_ox_name] not in types]
+        pbar.update(1)
+        
+        # Step 3: Remove minor streets
+        pbar.set_description("Step 3/7: Removing minor streets")
+        G2.remove_edges_from(minor_streets)
+        pbar.update(1)
+        
+        # Step 4: Remove isolated nodes
+        pbar.set_description("Step 4/7: Removing isolated nodes")
+        G2 = ox.utils_graph.remove_isolated_nodes(G2)
+        pbar.update(1)
+        
+        # Step 5: Get largest connected component
+        pbar.set_description("Step 5/7: Extracting largest component")
+        G2_connected = ox.utils_graph.get_largest_component(G2, strongly=True)
+        pbar.update(1)
+        
+        # Step 6: Simplify the network
+        pbar.set_description("Step 6/7: Simplifying network topology")
+        G2_simp = ox.simplify_graph(G2_connected, strict=True)
+        pbar.update(1)
+        
+        # Step 7: Add edge attributes
+        # FIX: Build a mapping from current node IDs to osmid from the simplified graph
+        pbar.set_description("Step 7/7: Adding edge attributes")
+        
+        # Extract osmid from node attributes in the simplified graph
+        index2osmid, osmid2index = compute_index2osmid_osmid2idx(G = G2_simp)
+        i = 0
+        for u_osm, v_osm, _, d in tqdm(G2_simp.edges(data=True, keys=True), desc="Processing edges", leave=False, disable=not show_progress):
+            if i == 0:
+                print(f"First edge nodes: u_osm={u_osm}, v_osm={v_osm}, d: {d}")
+            d[str_unique_index_edges] = i
+            u = osmid2index.get(u_osm)
+            v = osmid2index.get(v_osm)
+            if u is None or v is None:
+                raise ValueError(f"Node {u} or {v} not found in index2osmid mapping.")
+            else:
+                d[str_start_node] = u 
+                d[str_end_node] = v 
+            d[str_start_node_osmid] = u_osm
+            d[str_end_node_osmid] = v_osm
+            i += 1
+        pbar.update(1)
+    return G2_simp, index2osmid, osmid2index
 ## ----------------- Graph to edges, nodes -------------------- #
 def from_graph_to_edges_nodes_format(G:Graph):
     if G is not None:
@@ -160,57 +213,83 @@ def reindex_nodes(nodes,
 
 
 ## --------------------- Edges ---------------------- ##
+        
 
 def process_highway(edges,
                     useful_cols,
-                    column_highway = "highway",
-                    column_lanes = "lanes",
-                    column_max_speed = "maxspeed"):
+                    column_highway="highway",
+                    column_lanes="lanes",
+                    column_max_speed="maxspeed",
+                    show_progress: bool = True):
     """
-        Ensures the following standard for edge files:
+        Ensures the following standard for edge files with progress tracking:
         - avoid the multiple edges -> just one highway value
         -                          -> just one number of lanes
-
     """
-    if edges is not None:
-        # Adjust the multi-edges highway such that the slowest is chosen
+    if edges is None:
+        raise ValueError('Edges is None, cannot process highway')
+    
+    with tqdm(total=8, desc="Processing highway data", disable=not show_progress) as pbar:
+        # Step 1: Process highway column
+        pbar.set_description("Step 1/8: Converting highway lists")
         edges[column_highway] = edges[column_highway].map(convert_lists)
+        pbar.update(1)
+        
+        pbar.set_description("Step 2/8: Collapsing highway values")
         edges[column_highway] = edges[column_highway].map(collapse_multiple_hwy_values)
-        # Adjust lane columns such that just integers are there
+        pbar.update(1)
+        
+        # Step 3-4: Process lanes column
+        pbar.set_description("Step 3/8: Processing lanes")
         edges[column_lanes] = edges[column_lanes].map(convert_lists)
         edges[column_lanes] = edges[column_lanes].map(collapse_multiple_lane_values)
         edges[column_lanes] = edges[column_lanes].map(remove_hyphens)
         edges[column_lanes] = edges[column_lanes].map(remove_semicolons)
         edges[column_lanes] = edges[column_lanes].astype(float)
-        # Lanes
+        pbar.update(1)
+        
+        # Step 5: Compute lane defaults
+        pbar.set_description("Step 4/8: Computing lane defaults")
         lane_defaults = edges.groupby(column_highway)[column_lanes].median()
-        lane_defaults = lane_defaults.fillna(value=2).to_dict() #'road' type is null
-        # Compute the number of lanes
+        lane_defaults = lane_defaults.fillna(value=2).to_dict()
         edges[column_lanes] = edges.apply(impute_lanes, axis=1).astype(int)
         edges[column_lanes] = edges.apply(allocate_lanes, axis=1)
         edges.loc[edges[column_lanes] < 1, column_lanes] = 1
         edges['lanes_capped'] = edges[column_lanes]
         edges.loc[edges['lanes_capped'] > 4, 'lanes_capped'] = 4
+        pbar.update(1)
+        
+        # Step 6: Process maxspeed
+        pbar.set_description("Step 5/8: Processing max speeds")
         edges[column_max_speed] = edges[column_max_speed].map(convert_lists)
         edges[column_max_speed] = edges[column_max_speed].map(collapse_multiple_maxspeed_values)
         edges[column_max_speed] = edges[column_max_speed].map(parse_speed_strings)
+        pbar.update(1)
+        
+        # Step 7: Merge known and inferred speeds
+        pbar.set_description("Step 6/8: Inferring missing speeds")
         known_speeds = edges[pd.notnull(edges[column_max_speed])][column_max_speed]
-        known_speeds = known_speeds.astype(int)           
+        known_speeds = known_speeds.astype(int)
         inferred_speeds = edges[pd.isnull(edges[column_max_speed])].apply(infer_speed, axis=1)
-        # merge known speeds with inferred speeds to get a free-flow speed for each edge
         edges['speed_mph'] = known_speeds._append(inferred_speeds, ignore_index=False, verify_integrity=True)
+        pbar.update(1)
+        
+        # Step 8: Compute capacities
+        pbar.set_description("Step 7/8: Computing capacities")
         edges['capacity_lane_hour'] = edges.apply(infer_capacity, axis=1)
         edges['capacity_hour'] = edges['capacity_lane_hour'] * edges[column_lanes]
         edges['length'] = edges['length'].round(1)
-        edges.drop(columns=['u','v','key'], inplace=True)
+        pbar.update(1)
+        
+        # Step 9: Final cleanup
+        pbar.set_description("Step 8/8: Final cleanup")
+        edges.drop(columns=['u', 'v', 'key'], inplace=True)
         edges.reset_index(inplace=True)
         edges_save = edges[useful_cols]
-#            edges_save['osmid_u'] = edges_save['u']
-#            edges_save['osmid_v'] = edges_save['v']            
-    else:
-        raise ValueError('Edges is None, cannot process highway')
+        pbar.update(1)
+    
     return edges_save
-        
+
 def collapse_multiple_hwy_values(hwy):
     """
         Description:
